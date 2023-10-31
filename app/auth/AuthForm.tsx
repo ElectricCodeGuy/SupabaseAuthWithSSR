@@ -115,7 +115,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ authState }) => {
                     '&:hover': { backgroundColor: '#2C75F4' }
                   }}
                   startIcon={<GoogleIcon />}
-                  onClick={() => signInWithProvider({ provider: 'google' })}
+                  onClick={() => signInWithProvider('google')}
                 >
                   Sign In with Google
                 </Button>
@@ -130,7 +130,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ authState }) => {
                     '&:hover': { backgroundColor: '#1E2226' }
                   }}
                   startIcon={<GitHubIcon />}
-                  onClick={() => signInWithProvider({ provider: 'github' })}
+                  onClick={() => signInWithProvider('github')}
                 >
                   Sign In with GitHub
                 </Button>

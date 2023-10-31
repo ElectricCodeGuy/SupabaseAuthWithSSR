@@ -1,14 +1,22 @@
-export async function signInWithProvider(credentials: {
-  provider: 'google' | 'github';
-}) {
-  const response = await fetch('/api/auth/sign-in-with-provider', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(credentials)
-  });
+import { createClient } from '@/lib/client/client';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
-  const data = await response.json();
-  return data.error;
+// Initialize your Supabase client using the createClient function
+const supabase: SupabaseClient = createClient();
+
+type OAuthProvider = 'google' | 'github';
+
+export async function signInWithProvider(
+  provider: OAuthProvider
+): Promise<void> {
+  if (!['google', 'github'].includes(provider)) {
+    throw new Error('Invalid OAuth provider specified');
+  }
+
+  await supabase.auth.signInWithOAuth({
+    provider,
+    options: {
+      redirectTo: `http://localhost:3000/api/auth/callback`
+    }
+  });
 }
