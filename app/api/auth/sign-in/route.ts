@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     );
   }
 
-  return NextResponse.redirect(`${requestUrl.origin}/auth/auth-callback`, {
+  return NextResponse.redirect(`${requestUrl.origin}/api/auth/auth-callback`, {
     // a 301 status is required to redirect from a POST to a GET route
     status: 301
   });
