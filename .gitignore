@@ -34,7 +34,6 @@ yarn-error.log*
 
 # local env files
 .env.local
-.env.local.*
 .env.development.local
 .env.test.local
 .env.production.local
@@ -56,14 +55,3 @@ Desktop.ini
 *.tsbuildinfo
 dist/
 
-# python
-*.pyc
-__pycache__/
-
-# docker
-Dockerfile.*
-docker-compose.override.yml
-
-# MacOS
-.AppleDouble
-.LSOverride
