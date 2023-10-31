@@ -173,7 +173,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ authState }) => {
             )}
             <HCaptcha
               ref={captchaRef}
-              sitekey="984bf476-33f7-44b7-9697-66e95d492280"
+              sitekey="xxx"
               theme="dark"
               onVerify={(token, _ekey) => {
                 setCaptchaToken(token);
