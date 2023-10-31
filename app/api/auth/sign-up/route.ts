@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     email,
     password,
     options: {
-      emailRedirectTo: `${requestUrl.origin}/auth/callback`,
+      emailRedirectTo: `${requestUrl.origin}/api/auth/callback`,
       captchaToken // Include the captchaToken in the options
     }
   });
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.redirect(
-    `${requestUrl.origin}/login?message=Check email to continue sign in process`,
+    `${requestUrl.origin}/auth/signin?message=Check email to continue sign in process`,
     {
       // a 301 status is required to redirect from a POST to a GET route
       status: 301
