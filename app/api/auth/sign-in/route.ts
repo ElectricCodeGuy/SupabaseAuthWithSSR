@@ -7,7 +7,7 @@ export async function POST(request: Request) {
   const formData = await request.formData();
   const email = String(formData.get('email'));
   const password = String(formData.get('password'));
-  const captchaToken = String(formData.get('captchaToken')); // Extract the captchaToken from the formData
+  const captchaToken = String(formData.get('captchaToken'));
 
   const cookieStore = cookies();
   const supabase = createClient(cookieStore);
@@ -15,21 +15,23 @@ export async function POST(request: Request) {
   const { error } = await supabase.auth.signInWithPassword({
     email,
     password,
-    options: { captchaToken } // Include the captchaToken in the options
+    options: { captchaToken }
   });
 
   if (error) {
     return NextResponse.redirect(
       `${requestUrl.origin}/auth/signin?error=Could not authenticate user`,
       {
-        // a 301 status is required to redirect from a POST to a GET route
         status: 301
       }
     );
   }
 
-  return NextResponse.redirect(`${requestUrl.origin}/api/auth/auth-callback`, {
-    // a 301 status is required to redirect from a POST to a GET route
-    status: 301
-  });
+  // Always redirect to the transition page with a "method" parameter
+  return NextResponse.redirect(
+    `${requestUrl.origin}/redirect/transition?method=password`,
+    {
+      status: 301
+    }
+  );
 }

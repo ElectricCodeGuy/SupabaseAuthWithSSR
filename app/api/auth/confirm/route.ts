@@ -34,10 +34,14 @@ export async function GET(request: Request) {
       token_hash
     });
     if (!error) {
-      return NextResponse.redirect(new URL(`/${next.slice(1)}`, request.url));
+      return NextResponse.redirect(
+        new URL(`/redirect/transition?next=${next}&method=otp`, request.url)
+      );
     }
-  }
+  } // <- Added the missing closing brace here
 
   // return the user to an error page with some instructions
-  return NextResponse.redirect(new URL('/auth/auth-code-error', request.url));
+  return NextResponse.redirect(
+    new URL('/redirect/auth-code-error', request.url)
+  );
 }

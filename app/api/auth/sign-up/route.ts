@@ -7,6 +7,7 @@ export async function POST(request: Request) {
   const formData = await request.formData();
   const email = String(formData.get('email'));
   const password = String(formData.get('password'));
+  const fullName = String(formData.get('fullName')); // Extract the full name from formData
   const captchaToken = String(formData.get('captchaToken')); // Extract the captchaToken from the formData
 
   const cookieStore = cookies();
@@ -17,13 +18,15 @@ export async function POST(request: Request) {
     password,
     options: {
       emailRedirectTo: `${requestUrl.origin}/api/auth/callback`,
-      captchaToken // Include the captchaToken in the options
+      captchaToken, // Include the captchaToken in the options
+      data: { full_name: fullName } // Pass the full name as user metadata
     }
   });
 
   if (error) {
+    console.error(`Error during sign-up: ${error.message}`);
     return NextResponse.redirect(
-      `${requestUrl.origin}/auth/signin?error=Could not authenticate user`,
+      `${requestUrl.origin}/auth/signup?error=Could not authenticate user`,
       {
         // a 301 status is required to redirect from a POST to a GET route
         status: 301
@@ -32,7 +35,7 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.redirect(
-    `${requestUrl.origin}/auth/signin?message=Check email to continue sign in process`,
+    `${requestUrl.origin}/auth/signup?message=Check email to continue sign in process`,
     {
       // a 301 status is required to redirect from a POST to a GET route
       status: 301
