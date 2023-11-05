@@ -64,6 +64,70 @@ GOOGLE_SECRET_ID=your_google_secret_id
 ## 🔍 Usage
 📖 Follow the provided examples to integrate Supabase Auth with SSR in your Next.js project.
 
+## 📧 Email Templates
+
+To ensure that the authentication flow works correctly with the API routes provided in this codebase, please update your email templates in the Supabase project settings according to the templates provided below:
+
+### Confirm Your Signup
+
+When users sign up, they'll receive an email to confirm their account. The template should look like this:
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Confirm Your Signup</title>
+    <!-- Add styles and head content here -->
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Welcome to You Company Name</h1>
+    </div>
+
+    <h2>Confirm your signup</h2>
+    <p>Follow this link to confirm your user:</p>
+    <a href="{{ .SiteURL }}/api/auth/confirm?token_hash={{ .TokenHash }}&type=email">Confirm your email</a>
+
+    <div class="footer">
+        <p>For any queries, reach out to us at <a href="mailto:support@nordiskapihub.com">support@YourCompanyName.com</a></p>
+    </div>
+</div>
+</body>
+</html>
+
+Invite User Email
+When you invite new users to your platform, they should receive an invitation like this:
+
+<h2>You have been invited</h2>
+<p>You have been invited to create a user on {{ .SiteURL }}. Follow this link to accept the invite:</p>
+<a href="{{ .SiteURL }}/api/auth/confirm?token_hash={{ .TokenHash }}&type=invite&next=/auth-password-update">Accept the invite</a>
+
+Magic Link Email
+For passwordless login, the magic link email template should be set as follows:
+
+<h2>Magic Link</h2>
+<p>Follow this link to login:</p>
+<a href="{{ .SiteURL }}/api/auth/confirm?token_hash={{ .TokenHash }}&type=email">Log In</a>
+
+Confirm Email Change
+When users need to confirm their new email, use the following template:
+
+<h2>Confirm Change of Email</h2>
+<p>Follow this link to confirm the update of your email from {{ .Email }} to {{ .NewEmail }}:</p>
+<a href="{{ .ConfirmationURL }}">Change Email</a>
+
+Reset Password Email
+For users that have requested a password reset:
+
+<h2>Reset Password</h2>
+<p>Follow this link to reset the password for your user:</p>
+<a href="{{ .SiteURL }}/api/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/auth-password-update">Reset Password</a>
+
+```
+
+
+
 ## 📜 License
 🔖 Licensed under the MIT License. See LICENSE.md for details.
 

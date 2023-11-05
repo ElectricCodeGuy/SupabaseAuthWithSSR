@@ -2,6 +2,8 @@ import { createClient } from '@/lib/server/server';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
+export const runtime = 'edge';
+
 export async function POST(request: Request) {
   const requestUrl = new URL(request.url);
   const formData = await request.formData();

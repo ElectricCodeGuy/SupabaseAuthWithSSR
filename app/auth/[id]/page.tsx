@@ -1,4 +1,3 @@
-// pages/auth/[authState].tsx
 import React from 'react';
 import AuthForm from '../AuthForm'; // Importing the AuthForm component
 import Box from '@mui/material/Box';

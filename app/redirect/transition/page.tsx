@@ -16,6 +16,7 @@ function TransitionPage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setCompleted(true);
+      // Redirect to the homepage after a delay when the process is completed
       setTimeout(() => {
         router.push('/');
       }, 1000);
@@ -24,11 +25,13 @@ function TransitionPage() {
     return () => clearTimeout(timer); // Cleanup timer on unmount
   }, [router]);
 
-  // Messages based on authentication method
+  // Extend the messages object to include a message for the 'recovery' method
   const messages: Record<string, string> = {
     password: 'Logging in...',
     otp: 'Verifying OTP...',
     exchange: 'Exchanging session...',
+    code: 'Verifying code...',
+    recovery: 'Your password has been updated. Redirecting...', // Add this line for the recovery method
     default: 'Processing...'
   };
 

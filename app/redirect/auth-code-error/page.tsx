@@ -35,9 +35,9 @@ const AuthCodeErrorPage: React.FC = () => {
         options:
       </Typography>
 
-      <Link href="/auth/resend-code" passHref>
+      <Link href="/auth/signup" passHref>
         <Button variant="outlined" color="primary" sx={{ m: 1 }}>
-          Resend Code
+          Try again
         </Button>
       </Link>
 

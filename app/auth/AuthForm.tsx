@@ -18,6 +18,7 @@ import GitHubIcon from '@mui/icons-material/GitHub';
 import { signInWithProvider } from './authHelpers';
 
 type AuthState = 'signin' | 'signup' | 'reset';
+type OAuthProvider = 'google' | 'github';
 
 interface AuthFormProps {
   authState: AuthState;
@@ -38,12 +39,14 @@ const AuthForm: React.FC<AuthFormProps> = ({ authState }) => {
     signup: '/api/auth/sign-up',
     reset: '/api/auth/reset-password'
   }[authState];
-
+  const handleProviderSignIn = (selectedProvider: OAuthProvider) => {
+    signInWithProvider(selectedProvider);
+  };
   return (
     <Grid container component="main" sx={{ height: '100vh' }}>
       <Grid
         item
-        xs={false}
+        xs={12}
         sm={4}
         md={7}
         sx={{
@@ -61,6 +64,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ authState }) => {
         <Box
           sx={{
             mx: 4,
+            my: 2, // Adjust margin for mobile devices
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -73,7 +77,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ authState }) => {
           <Avatar sx={{ m: 1, bgcolor: 'secondary.main' }}>
             <LockOutlinedIcon />
           </Avatar>
-          <Typography component="h1" variant="h5">
+          <Typography component="h1" variant="h5" sx={{ mb: 2 }}>
             {authState === 'signin'
               ? 'Sign In'
               : authState === 'signup'
@@ -115,7 +119,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ authState }) => {
                     '&:hover': { backgroundColor: '#2C75F4' }
                   }}
                   startIcon={<GoogleIcon />}
-                  onClick={() => signInWithProvider('google')}
+                  onClick={() => {
+                    console.log('Attempting to sign in with Google');
+                    handleProviderSignIn('google');
+                  }}
                 >
                   Sign In with Google
                 </Button>
@@ -130,12 +137,16 @@ const AuthForm: React.FC<AuthFormProps> = ({ authState }) => {
                     '&:hover': { backgroundColor: '#1E2226' }
                   }}
                   startIcon={<GitHubIcon />}
-                  onClick={() => signInWithProvider('github')}
+                  onClick={() => {
+                    console.log('Attempting to sign in with GitHub');
+                    handleProviderSignIn('github');
+                  }}
                 >
                   Sign In with GitHub
                 </Button>
               </>
             )}
+
             {authState === 'signup' && (
               <>
                 <FormInput
@@ -173,7 +184,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ authState }) => {
             )}
             <HCaptcha
               ref={captchaRef}
-              sitekey="xxx"
+              sitekey="CHAPCHA_SITE_KEY"
               theme="dark"
               onVerify={(token, _ekey) => {
                 setCaptchaToken(token);

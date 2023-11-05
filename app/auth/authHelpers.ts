@@ -16,7 +16,7 @@ export async function signInWithProvider(
   await supabase.auth.signInWithOAuth({
     provider,
     options: {
-      redirectTo: `http://localhost:3000/api/auth/callback`
+      redirectTo: `localhost:3000/api/auth/callback`
     }
   });
 }

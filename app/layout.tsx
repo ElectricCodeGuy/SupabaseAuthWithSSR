@@ -2,7 +2,7 @@ import React, { ReactNode } from 'react';
 import SideBarServer from '@/app/components/ui/Navbar/SideBarServer';
 import Footer from '@/app/components/ui/Footer/Footer';
 import RootErrorBoundary from '@/app/components/errorBoundary/SpecificErrorBoundary';
-import RootProvider from './auth/RootProvider';
+import ThemeRegistry from '@/theme/ThemeRegistry';
 import Box from '@mui/material/Box';
 
 interface RootLayoutProps {
@@ -19,7 +19,7 @@ export const metadata = {
 const RootLayout: React.FC<RootLayoutProps> = ({ children }) => {
   return (
     <html lang="en" style={{ margin: 0, padding: 0, height: '100%' }}>
-      <RootProvider>
+      <ThemeRegistry>
         <RootErrorBoundary>
           <body
             style={{
@@ -35,7 +35,7 @@ const RootLayout: React.FC<RootLayoutProps> = ({ children }) => {
             <Footer />
           </body>
         </RootErrorBoundary>
-      </RootProvider>
+      </ThemeRegistry>
     </html>
   );
 };
