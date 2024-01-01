@@ -2,7 +2,8 @@ import { createClient } from '@/lib/server/server';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-export const runtime = 'edge';
+// Specifies that this is an Edge Function, for use in an edge runtime environment
+//export const runtime = 'edge';
 
 export async function POST(request: Request) {
   try {

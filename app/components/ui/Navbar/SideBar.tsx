@@ -12,7 +12,6 @@ import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import MenuOutlinedIcon from '@mui/icons-material/MenuOutlined';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'; // For closing the drawer
 import TerminalIcon from '@mui/icons-material/Terminal';
-import Darkmode from './darkmode';
 import SignOutButton from './SignOut';
 import type { Session } from '@supabase/supabase-js';
 import { useTheme } from '@mui/material/styles';
@@ -97,13 +96,6 @@ const Sidebar: FC<SidebarProps> = ({ session }) => {
               <ListItemText primary="Sign in" />
             </ListItemButton>
           )}
-
-          {/* Dark mode toggle */}
-          <ListItem>
-            <ListItemIcon>
-              <Darkmode />
-            </ListItemIcon>
-          </ListItem>
 
           {/* Sign out button if session exists */}
           <ListItem>{session ? <SignOutButton /> : null}</ListItem>

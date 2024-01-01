@@ -81,8 +81,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ authState }) => {
             {authState === 'signin'
               ? 'Sign In'
               : authState === 'signup'
-              ? 'Sign Up'
-              : 'Reset Password'}
+                ? 'Sign Up'
+                : 'Reset Password'}
           </Typography>
           <Box
             component="form"
@@ -204,8 +204,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ authState }) => {
               {authState === 'signin'
                 ? 'Sign In'
                 : authState === 'signup'
-                ? 'Sign Up'
-                : 'Reset Password'}
+                  ? 'Sign Up'
+                  : 'Reset Password'}
             </Button>
             <Messages />
           </Box>

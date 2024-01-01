@@ -4,6 +4,7 @@ import Footer from '@/app/components/ui/Footer/Footer';
 import RootErrorBoundary from '@/app/components/errorBoundary/SpecificErrorBoundary';
 import ThemeRegistry from '@/theme/ThemeRegistry';
 import Box from '@mui/material/Box';
+import { AppRouterCacheProvider } from '@mui/material-nextjs/v14-appRouter';
 
 interface RootLayoutProps {
   children: ReactNode;
@@ -30,9 +31,11 @@ const RootLayout: React.FC<RootLayoutProps> = ({ children }) => {
               minHeight: '100vh'
             }}
           >
-            <SideBarServer />
-            <Box sx={{ flexGrow: 1 }}>{children}</Box>
-            <Footer />
+            <AppRouterCacheProvider>
+              <SideBarServer />
+              <Box sx={{ flexGrow: 1 }}>{children}</Box>
+              <Footer />
+            </AppRouterCacheProvider>
           </body>
         </RootErrorBoundary>
       </ThemeRegistry>

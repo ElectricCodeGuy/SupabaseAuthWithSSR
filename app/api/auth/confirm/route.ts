@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
 // Specifies that this is an Edge Function, for use in an edge runtime environment
-export const runtime = 'edge';
+//export const runtime = 'edge';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);

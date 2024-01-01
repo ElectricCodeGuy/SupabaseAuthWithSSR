@@ -1,6 +1,6 @@
 module.exports = {
   images: {
-    domains: ['source.unsplash.com']
+    remotePatterns: [{ protocol: 'https', hostname: 'source.unsplash.com' }]
   },
   async redirects() {
     return [

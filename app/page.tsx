@@ -4,12 +4,14 @@ import Profile from './landingpage/Profile';
 import Box from '@mui/material/Box';
 import Divider from '@mui/material/Divider';
 import FeatureCard from './landingpage/FeatureCard';
+import { getSession } from '@/lib/client/supabase'; // Import getSession
 
 export default async function LandingPage() {
+  const session = await getSession(); // Get session
   return (
     <>
       <Box>
-        <BannerComponent />
+        <BannerComponent session={session} />
       </Box>
       <Box>
         <FeatureCard />

@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
 // Set the runtime to 'edge' for Vercel Edge Functions or Next.js Middleware
-export const runtime = 'edge';
+//export const runtime = 'edge';
 
 export async function GET(request: Request) {
   // Extract the search parameters from the URL of the incoming request

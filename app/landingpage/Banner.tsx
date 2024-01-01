@@ -4,8 +4,13 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Link from '@mui/material/Link';
 import Typography from '@mui/material/Typography';
+import type { Session } from '@supabase/supabase-js';
 
-const BannerComponent = () => {
+interface BannerProps {
+  session: Session | null;
+}
+
+const BannerComponent: React.FC<BannerProps> = ({ session }) => {
   return (
     <Box
       sx={{
@@ -25,16 +30,19 @@ const BannerComponent = () => {
             : theme.palette.grey[900]
       }}
     >
-      {/* Catchy header */}
+      {/* Conditional header based on session */}
       <Typography
         variant="h3"
         sx={{
           color: 'white',
-          textShadow: '2px 2px 4px rgba(0, 0, 0, 0.5)', // This adds a shadow to the text for better readability
-          zIndex: 1
+          textShadow: '2px 2px 8px rgba(0, 0, 0, 0.7)', // Increased shadow for better readability
+          zIndex: 1,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent background for the text
+          padding: '10px',
+          borderRadius: '10px'
         }}
       >
-        Supabase SSR Auth Starter
+        {session ? 'You are now signed in!' : 'Supabase SSR Auth Starter'}
       </Typography>
 
       <Box textAlign="center" color="primary.main" sx={{ mt: 100 }}>

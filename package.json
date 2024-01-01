@@ -16,13 +16,15 @@
     "@hcaptcha/react-hcaptcha": "^1.8.1",
     "@mui/icons-material": "^5.14.16",
     "@mui/material": "^5.14.16",
-    "@supabase/ssr": "^0.0.9",
+    "@mui/material-nextjs": "^5.15.0",
+    "@supabase/ssr": "^0.0.10",
     "@supabase/supabase-js": "^2.38.4",
     "next": "^14.0.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
+    "@types/node": "^20.10.6",
     "@types/react": "^18.2.35",
     "@typescript-eslint/eslint-plugin": "^6.9.1",
     "@typescript-eslint/parser": "^6.9.1",
