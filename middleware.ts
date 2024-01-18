@@ -6,7 +6,7 @@ export const config = {
 };
 
 export async function middleware(request: NextRequest): Promise<NextResponse> {
-  let response = NextResponse.next({
+  const response = NextResponse.next({
     request: {
       headers: request.headers
     }
@@ -16,31 +16,30 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      auth: {
+        autoRefreshToken: true
+      },
       cookies: {
         get(name: string) {
           return request.cookies.get(name)?.value;
         },
         set(name: string, value: string, options: CookieOptions) {
-          // Setting the cookie to HTTP only.
-          const httpOnlyOptions = { ...options, httpOnly: true };
-          request.cookies.set({ name, value, ...httpOnlyOptions });
-          response = NextResponse.next({
-            request: { headers: request.headers }
+          response.cookies.set({
+            name,
+            value,
+            ...options
           });
-          response.cookies.set({ name, value, ...httpOnlyOptions });
         },
         remove(name: string, options: CookieOptions) {
-          const httpOnlyOptions = { ...options, httpOnly: true };
-          request.cookies.set({ name, value: '', ...httpOnlyOptions });
-          response = NextResponse.next({
-            request: { headers: request.headers }
+          response.cookies.set({
+            name,
+            value: '',
+            ...options
           });
-          response.cookies.set({ name, value: '', ...httpOnlyOptions });
         }
       }
     }
   );
-
   await supabase.auth.getSession();
 
   return response;
