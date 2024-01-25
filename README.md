@@ -25,6 +25,10 @@
 ### 🔧 Prerequisites
 
 - A [Supabase account](https://supabase.io/)
+ - create supabase account
+ - create new project
+ - add keys to lib/client/client.ts
+ - make sure to match tables and column names
 - [Next.js](https://nextjs.org/) project setup
 
 ### 💽 Installation
