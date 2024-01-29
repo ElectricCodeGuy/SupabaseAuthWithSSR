@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
+import { useTheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
-import HCaptcha from '@hcaptcha/react-hcaptcha';
+//import HCaptcha from '@hcaptcha/react-hcaptcha';
 import FormInput from './FormInput';
 import EmailIcon from '@mui/icons-material/Email';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
@@ -16,6 +18,7 @@ import Grid from '@mui/material/Grid';
 import GoogleIcon from '@mui/icons-material/Google';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import { signInWithProvider } from './authHelpers';
+import Image from 'next/image';
 
 type AuthState = 'signin' | 'signup' | 'reset';
 type OAuthProvider = 'google' | 'github';
@@ -28,11 +31,15 @@ const AuthForm: React.FC<AuthFormProps> = ({ authState }) => {
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [fullName, setFullName] = useState<string>('');
+  /*
   const [captchaToken, setCaptchaToken] = useState<string | undefined>(
     undefined
   );
+  */
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  const captchaRef = useRef<HCaptcha>(null);
+  //const captchaRef = useRef<HCaptcha>(null);
 
   const formAction = {
     signin: '/api/auth/sign-in',
@@ -42,29 +49,90 @@ const AuthForm: React.FC<AuthFormProps> = ({ authState }) => {
   const handleProviderSignIn = (selectedProvider: OAuthProvider) => {
     signInWithProvider(selectedProvider);
   };
+
   return (
-    <Grid container component="main" sx={{ height: '100vh' }}>
+    <Grid
+      container
+      component="main"
+      sx={{ height: '100vh', overflow: 'hidden' }}
+    >
       <Grid
         item
         xs={12}
         sm={4}
-        md={7}
+        md={6}
         sx={{
-          backgroundImage: 'url(https://source.unsplash.com/random?wallpapers)',
-          backgroundRepeat: 'no-repeat',
-          backgroundColor: (t) =>
-            t.palette.mode === 'light'
-              ? t.palette.grey[50]
-              : t.palette.grey[900],
-          backgroundSize: 'cover',
-          backgroundPosition: 'center'
+          position: 'relative',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          p: isMobile ? 2 : 4
         }}
-      />
-      <Grid item xs={12} sm={8} md={5} component={Paper} elevation={6} square>
+      >
+        {isMobile && (
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              zIndex: -1,
+              '& > span': {
+                height: '100% !important'
+              }
+            }}
+          >
+            <Image
+              src="https://source.unsplash.com/random?wallpapers"
+              alt="Background"
+              fill // Using `fill` to cover the parent box
+              style={{ objectFit: 'cover', objectPosition: 'center' }} // Direct styles for object-fit and object-position
+            />
+          </Box>
+        )}
+        {!isMobile && (
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              '& > span': {
+                height: '100% !important'
+              }
+            }}
+          >
+            <Image
+              src="https://source.unsplash.com/random?wallpapers"
+              alt="Background"
+              fill
+              style={{ objectFit: 'cover', objectPosition: 'center' }}
+            />
+          </Box>
+        )}
+      </Grid>
+      <Grid
+        item
+        xs={12}
+        sm={8}
+        md={6}
+        component={Paper}
+        elevation={6}
+        square
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          p: isMobile ? 2 : 4
+        }}
+      >
         <Box
           sx={{
             mx: 4,
-            my: 2, // Adjust margin for mobile devices
+            my: 2,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -77,7 +145,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ authState }) => {
           <Avatar sx={{ m: 1, bgcolor: 'secondary.main' }}>
             <LockOutlinedIcon />
           </Avatar>
-          <Typography component="h1" variant="h5" sx={{ mb: 2 }}>
+          <Typography component="h1" variant="h5" sx={{ mb: 1 }}>
             {authState === 'signin'
               ? 'Sign In'
               : authState === 'signup'
@@ -113,8 +181,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ authState }) => {
                   fullWidth
                   variant="contained"
                   sx={{
-                    mt: 3,
-                    mb: 2,
+                    mt: 1,
+                    mb: 1,
                     backgroundColor: '#4285F4',
                     '&:hover': { backgroundColor: '#2C75F4' }
                   }}
@@ -131,8 +199,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ authState }) => {
                   fullWidth
                   variant="contained"
                   sx={{
-                    mt: 3,
-                    mb: 2,
+                    mt: 1,
+                    mb: 1,
                     backgroundColor: '#24292E',
                     '&:hover': { backgroundColor: '#1E2226' }
                   }}
@@ -146,7 +214,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ authState }) => {
                 </Button>
               </>
             )}
-
             {authState === 'signup' && (
               <>
                 <FormInput
@@ -182,6 +249,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ authState }) => {
                 icon={<EmailIcon />}
               />
             )}
+            {/* 
             <HCaptcha
               ref={captchaRef}
               sitekey="CHAPCHA_SITE_KEY"
@@ -195,11 +263,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ authState }) => {
               name="captchaToken"
               value={captchaToken || ''}
             />
+            */}
             <Button
               type="submit"
               fullWidth
               variant="contained"
-              sx={{ mt: 3, mb: 2 }}
+              sx={{ mt: 1, mb: 1 }}
             >
               {authState === 'signin'
                 ? 'Sign In'

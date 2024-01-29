@@ -1,6 +1,6 @@
 'use client';
 import React, { FC, useState } from 'react';
-import { useRouter } from 'next/navigation'; // Assuming this is the correct import for your project setup
+import { useRouter } from 'next/navigation';
 import Drawer from '@mui/material/Drawer';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
@@ -10,8 +10,9 @@ import ListItemButton from '@mui/material/ListItemButton';
 import IconButton from '@mui/material/IconButton';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import MenuOutlinedIcon from '@mui/icons-material/MenuOutlined';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'; // For closing the drawer
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import TerminalIcon from '@mui/icons-material/Terminal';
+import LockIcon from '@mui/icons-material/Lock'; // Icon for protected page
 import SignOutButton from './SignOut';
 import type { Session } from '@supabase/supabase-js';
 import { useTheme } from '@mui/material/styles';
@@ -62,17 +63,16 @@ const Sidebar: FC<SidebarProps> = ({ session }) => {
         onClose={handleDrawerToggle}
         anchor="left"
         ModalProps={{
-          keepMounted: true
+          keepMounted: true // Better open performance on mobile.
         }}
         PaperProps={{
           elevation: 3,
           style: {
-            width: 250 // Increased width to accommodate the close button
+            width: 250 // Adjust width as needed.
           }
         }}
       >
         <List>
-          {/* Toggle button inside the drawer */}
           <ListItemButton onClick={handleDrawerToggle}>
             <ListItemIcon>
               <ChevronLeftIcon />
@@ -80,13 +80,21 @@ const Sidebar: FC<SidebarProps> = ({ session }) => {
             <ListItemText primary="Close" />
           </ListItemButton>
 
-          {/* Navigation items */}
           <ListItemButton onClick={() => handleNavigation('/')}>
             <ListItemIcon>
               <HomeOutlinedIcon />
             </ListItemIcon>
             <ListItemText primary="Home" />
           </ListItemButton>
+
+          {session ? (
+            <ListItemButton onClick={() => handleNavigation('/protected')}>
+              <ListItemIcon>
+                <LockIcon />
+              </ListItemIcon>
+              <ListItemText primary="Protected Page" />
+            </ListItemButton>
+          ) : null}
 
           {!session && (
             <ListItemButton onClick={() => handleNavigation('/auth/signin')}>
@@ -97,8 +105,11 @@ const Sidebar: FC<SidebarProps> = ({ session }) => {
             </ListItemButton>
           )}
 
-          {/* Sign out button if session exists */}
-          <ListItem>{session ? <SignOutButton /> : null}</ListItem>
+          {session && (
+            <ListItem>
+              <SignOutButton />
+            </ListItem>
+          )}
         </List>
       </Drawer>
     </>

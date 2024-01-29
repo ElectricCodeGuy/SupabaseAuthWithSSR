@@ -18,7 +18,7 @@ export const metadata = {
 // RootLayout.tsx
 const RootLayout: React.FC<RootLayoutProps> = ({ children }) => {
   return (
-    <html lang="en" style={{ margin: 0, padding: 0, height: '100%' }}>
+    <html lang="en">
       <ThemeRegistry>
         <RootErrorBoundary>
           <body

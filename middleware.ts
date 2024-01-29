@@ -2,9 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 
 export const config = {
-  matcher: ['/:path*', '/api/:path*']
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico).*)'
+  ]
 };
-
 export async function middleware(request: NextRequest): Promise<NextResponse> {
   const response = NextResponse.next({
     request: {
@@ -40,7 +48,13 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       }
     }
   );
-  await supabase.auth.getSession();
+  const { data: session } = await supabase.auth.getSession();
 
-  return response;
+  // If there's no session and the user is trying to access /protected, redirect them to /auth
+  if (!session && request.nextUrl.pathname.startsWith('/protected')) {
+    return NextResponse.redirect(new URL('/auth/signin', request.url));
+  }
+
+  // Continue with the next middleware or return the response
+  return NextResponse.next();
 }

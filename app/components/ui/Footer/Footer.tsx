@@ -8,59 +8,58 @@ import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
 
 export default function Footer() {
+  const currentYear = new Date().getFullYear();
+
   return (
     <Box
       component="footer"
       sx={{
         py: 3,
         px: 2,
-        mt: 'auto'
+        mt: 'auto',
+        backgroundColor: '#f7f7f7' // Adjust the background color
       }}
     >
       <Container maxWidth="lg">
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={4}>
-            <Box display="flex" alignItems="center" gap={2}>
-              <Typography variant="h6" color="text.primary">
-                Supabase SSR Authentication 🛡️
-              </Typography>
-            </Box>
-            <Typography variant="body2" color="text.secondary">
-              Seamlessly integrate server-side rendering with Supabases robust
-              authentication mechanisms. Enhance security, speed, and user
-              experience with the power of SSR and Supabase combined. 🚀
-            </Typography>
-          </Grid>
-
-          <Grid item xs={12} sm={4}>
-            <Typography variant="h6" color="text.primary">
-              Useful Links 🌐
-            </Typography>
-            <Box display="flex" flexDirection="column" gap={0.5}>
-              <Typography variant="body2" color="text.secondary">
-                <Link href="#" target="_blank">
-                  Info
-                </Link>
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                <Link href="#" target="_blank">
-                  Info
-                </Link>
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                <Link href="#" target="_blank">
-                  Info
-                </Link>
-              </Typography>
-            </Box>
-          </Grid>
-
-          <Grid item xs={12} sm={4}>
+        <Grid container spacing={4} justifyContent="space-between">
+          <Grid item xs={12} sm={6} md={4}>
             <Box
               display="flex"
-              flexDirection="row"
-              justifyContent="space-between"
+              flexDirection="column"
+              alignItems="start"
+              gap={1}
             >
+              <Typography variant="h6" color="primary">
+                Supabase SSR Authentication 🛡️
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Seamlessly integrate server-side rendering with Supabase&apos;s
+                robust authentication mechanisms. Enhance security, speed, and
+                user experience with the power of SSR and Supabase combined. 🚀
+              </Typography>
+            </Box>
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={4}>
+            <Box display="flex" flexDirection="column" gap={1}>
+              <Typography variant="h6" color="primary">
+                Useful Links 🌐
+              </Typography>
+              {/* Example links */}
+              <Link href="#" target="_blank" color="secondary">
+                Documentation
+              </Link>
+              <Link href="#" target="_blank" color="secondary">
+                Support
+              </Link>
+              <Link href="#" target="_blank" color="secondary">
+                Contact
+              </Link>
+            </Box>
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <Box display="flex" flexDirection="column" alignItems="end" gap={1}>
               <Box display="flex" alignItems="center" gap={2}>
                 <Image
                   src="/assets/next-js-icon.svg"
@@ -87,14 +86,13 @@ export default function Footer() {
           </Grid>
         </Grid>
 
-        <Box>
-          <Typography variant="body2" color="text.secondary" align="center">
-            {'Copyright © '}
+        <Box mt={3} textAlign="center">
+          <Typography variant="body2" color="text.secondary">
+            Copyright ©{' '}
             <Link color="inherit" href="#" target="_blank">
               Your Company
             </Link>{' '}
-            {new Date().getFullYear()}
-            {'.'}
+            {currentYear}.
           </Typography>
         </Box>
       </Container>
