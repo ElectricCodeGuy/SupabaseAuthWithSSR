@@ -14,7 +14,6 @@ export default async function LandingPage() {
     <>
       <Box>
         <BannerComponent session={session} />
-        <Divider />
       </Box>
       <Box>
         <FeatureCard />

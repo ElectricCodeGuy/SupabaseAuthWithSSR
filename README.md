@@ -136,7 +136,7 @@ When users sign up, they'll receive an email to confirm their account. The templ
       <h2>Confirm your signup</h2>
       <p>Follow this link to confirm your user:</p>
       <a
-        href="{{ .SiteURL }}/api/auth/confirm?token_hash={{ .TokenHash }}&type=email"
+        href="{{ .SiteURL }}/api/auth/callback?token_hash={{ .TokenHash }}&type=email"
         >Confirm your email</a
       >
 
@@ -163,7 +163,7 @@ receive an invitation like this:
   accept the invite:
 </p>
 <a
-  href="{{ .SiteURL }}/api/auth/confirm?token_hash={{ .TokenHash }}&type=invite&next=/auth-password-update"
+  href="{{ .SiteURL }}/api/auth/callback?token_hash={{ .TokenHash }}&type=invite&next=/auth-password-update"
   >Accept the invite</a
 >
 ```
@@ -174,7 +174,8 @@ set as follows:
 ```html
 <h2>Magic Link</h2>
 <p>Follow this link to login:</p>
-<a href="{{ .SiteURL }}/api/auth/confirm?token_hash={{ .TokenHash }}&type=email"
+<a
+  href="{{ .SiteURL }}/api/auth/callback?token_hash={{ .TokenHash }}&type=email"
   >Log In</a
 >
 ```
@@ -197,7 +198,7 @@ Reset Password Email For users that have requested a password reset:
 <h2>Reset Password</h2>
 <p>Follow this link to reset the password for your user:</p>
 <a
-  href="{{ .SiteURL }}/api/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/auth-password-update"
+  href="{{ .SiteURL }}/api/auth/callback?token_hash={{ .TokenHash }}&type=recovery&next=/auth-password-update"
   >Reset Password</a
 >
 ```

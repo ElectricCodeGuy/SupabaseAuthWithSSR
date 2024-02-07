@@ -1,287 +1,225 @@
 'use client';
-
-import React, { useState } from 'react';
-import { useTheme } from '@mui/material/styles';
-import useMediaQuery from '@mui/material/useMediaQuery';
-import Button from '@mui/material/Button';
+import React, { useState, useCallback } from 'react';
 import Box from '@mui/material/Box';
-//import HCaptcha from '@hcaptcha/react-hcaptcha';
+import Button from '@mui/material/Button';
 import FormInput from './FormInput';
 import EmailIcon from '@mui/icons-material/Email';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import PersonIcon from '@mui/icons-material/Person';
 import Messages from './messages';
 import Avatar from '@mui/material/Avatar';
-import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
-import Grid from '@mui/material/Grid';
-import GoogleIcon from '@mui/icons-material/Google';
-import GitHubIcon from '@mui/icons-material/GitHub';
-import { signInWithProvider } from './authHelpers';
-import Image from 'next/image';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import WorkIcon from '@mui/icons-material/Work';
+import { login, signup, resetPasswordForEmail, addToWaitlist } from './action';
 
-type AuthState = 'signin' | 'signup' | 'reset';
-type OAuthProvider = 'google' | 'github';
-
-interface AuthFormProps {
-  authState: AuthState;
-}
-
-const AuthForm: React.FC<AuthFormProps> = ({ authState }) => {
+const AuthFormContent: React.FC = () => {
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [fullName, setFullName] = useState<string>('');
-  /*
-  const [captchaToken, setCaptchaToken] = useState<string | undefined>(
-    undefined
+  const [workTitle, setWorkTitle] = useState<string>('');
+  const [activationCode, setActivationCode] = useState<string>('');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const as = searchParams.get('as') || 'signin';
+
+  const handleStateChange = useCallback(
+    (newState: string) => {
+      const params = new URLSearchParams();
+      params.set('as', newState);
+      const newUrl = `${pathname}?${params.toString()}`;
+      router.push(newUrl);
+    },
+    [pathname, router]
   );
-  */
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
 
-  //const captchaRef = useRef<HCaptcha>(null);
+    const formData = new FormData();
+    formData.append('email', email);
+    formData.append('password', password);
+    formData.append('fullName', fullName);
+    formData.append('workTitle', workTitle);
+    formData.append('activationCode', activationCode);
 
-  const formAction = {
-    signin: '/api/auth/sign-in',
-    signup: '/api/auth/sign-up',
-    reset: '/api/auth/reset-password'
-  }[authState];
-  const handleProviderSignIn = (selectedProvider: OAuthProvider) => {
-    signInWithProvider(selectedProvider);
+    switch (as) {
+      case 'signin':
+        await login(formData);
+        break;
+      case 'signup':
+        await signup(formData);
+        break;
+      case 'reset':
+        await resetPasswordForEmail(formData);
+        break;
+      case 'waitlist':
+        await addToWaitlist(formData);
+        break;
+      default:
+        console.error('Invalid as');
+    }
   };
 
   return (
-    <Grid
-      container
-      component="main"
-      sx={{ height: '100vh', overflow: 'hidden' }}
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        position: 'relative',
+        p: 4,
+        borderRadius: 2,
+        width: '100%'
+      }}
     >
-      <Grid
-        item
-        xs={12}
-        sm={4}
-        md={6}
+      <Button
+        onClick={() => router.push('/')} // Navigate to the homepage
         sx={{
-          position: 'relative',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          p: isMobile ? 2 : 4
+          position: 'absolute',
+          top: 16,
+          right: 16,
+          color: '#1976d2'
         }}
       >
-        {isMobile && (
-          <Box
-            sx={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              zIndex: -1,
-              '& > span': {
-                height: '100% !important'
-              }
-            }}
-          >
-            <Image
-              src="https://source.unsplash.com/random?wallpapers"
-              alt="Background"
-              fill // Using `fill` to cover the parent box
-              style={{ objectFit: 'cover', objectPosition: 'center' }} // Direct styles for object-fit and object-position
-            />
-          </Box>
-        )}
-        {!isMobile && (
-          <Box
-            sx={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              '& > span': {
-                height: '100% !important'
-              }
-            }}
-          >
-            <Image
-              src="https://source.unsplash.com/random?wallpapers"
-              alt="Background"
-              fill
-              style={{ objectFit: 'cover', objectPosition: 'center' }}
-            />
-          </Box>
-        )}
-      </Grid>
-      <Grid
-        item
-        xs={12}
-        sm={8}
-        md={6}
-        component={Paper}
-        elevation={6}
-        square
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          p: isMobile ? 2 : 4
-        }}
-      >
-        <Box
-          sx={{
-            mx: 4,
-            my: 2,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: '100%',
-            maxWidth: '400px',
-            margin: '0 auto'
-          }}
-        >
-          <Avatar sx={{ m: 1, bgcolor: 'secondary.main' }}>
-            <LockOutlinedIcon />
-          </Avatar>
-          <Typography component="h1" variant="h5" sx={{ mb: 1 }}>
-            {authState === 'signin'
-              ? 'Sign In'
-              : authState === 'signup'
-                ? 'Sign Up'
-                : 'Reset Password'}
-          </Typography>
-          <Box
-            component="form"
-            noValidate
-            action={formAction}
-            method="post"
-            sx={{ mt: 1 }}
-            encType="multipart/form-data"
-          >
-            {authState === 'signin' && (
-              <>
-                <FormInput
-                  id="email"
-                  label="Email Address"
-                  value={email}
-                  onChange={setEmail}
-                  icon={<EmailIcon />}
-                />
-                <FormInput
-                  id="password"
-                  label="Password"
-                  type="password"
-                  value={password}
-                  onChange={setPassword}
-                  icon={<LockOutlinedIcon />}
-                />
-                <Button
-                  fullWidth
-                  variant="contained"
-                  sx={{
-                    mt: 1,
-                    mb: 1,
-                    backgroundColor: '#4285F4',
-                    '&:hover': { backgroundColor: '#2C75F4' }
-                  }}
-                  startIcon={<GoogleIcon />}
-                  onClick={() => {
-                    console.log('Attempting to sign in with Google');
-                    handleProviderSignIn('google');
-                  }}
-                >
-                  Sign In with Google
-                </Button>
+        Tilbage
+      </Button>
+      <Avatar sx={{ m: 1, bgcolor: 'secondary.main' }}>
+        <LockOutlinedIcon />
+      </Avatar>
+      <Typography component="h1" variant="h5" sx={{ mb: 2 }}>
+        {as === 'signin'
+          ? 'Log Ind'
+          : as === 'signup'
+            ? 'Opret Konto'
+            : as === 'reset'
+              ? 'Nulstil Adgangskode'
+              : as === 'waitlist'
+                ? 'Tilmeld Venteliste'
+                : 'Welcome'}{' '}
+      </Typography>
 
-                <Button
-                  fullWidth
-                  variant="contained"
-                  sx={{
-                    mt: 1,
-                    mb: 1,
-                    backgroundColor: '#24292E',
-                    '&:hover': { backgroundColor: '#1E2226' }
-                  }}
-                  startIcon={<GitHubIcon />}
-                  onClick={() => {
-                    console.log('Attempting to sign in with GitHub');
-                    handleProviderSignIn('github');
-                  }}
-                >
-                  Sign In with GitHub
-                </Button>
-              </>
-            )}
-            {authState === 'signup' && (
-              <>
-                <FormInput
-                  id="email"
-                  label="Email Address"
-                  value={email}
-                  onChange={setEmail}
-                  icon={<EmailIcon />}
-                />
-                <FormInput
-                  id="fullName"
-                  label="Full Name"
-                  value={fullName}
-                  onChange={setFullName}
-                  icon={<PersonIcon />}
-                />
-                <FormInput
-                  id="password"
-                  label="Password"
-                  type="password"
-                  value={password}
-                  onChange={setPassword}
-                  icon={<LockOutlinedIcon />}
-                />
-              </>
-            )}
-            {authState === 'reset' && (
-              <FormInput
-                id="email"
-                label="Email Address"
-                value={email}
-                onChange={setEmail}
-                icon={<EmailIcon />}
-              />
-            )}
-            {/* 
-            <HCaptcha
-              ref={captchaRef}
-              sitekey="CHAPCHA_SITE_KEY"
-              theme="dark"
-              onVerify={(token, _ekey) => {
-                setCaptchaToken(token);
-              }}
+      <Box
+        component="form"
+        noValidate
+        onSubmit={handleSubmit} // Use onSubmit handler for form submission
+        sx={{ mt: 1, width: '100%' }}
+      >
+        {as === 'signin' && (
+          <>
+            <FormInput
+              id="email"
+              label="Email Adresse"
+              value={email}
+              onChange={setEmail}
+              icon={<EmailIcon />}
             />
-            <input
-              type="hidden"
-              name="captchaToken"
-              value={captchaToken || ''}
+            <FormInput
+              id="password"
+              label="Adgangskode"
+              type="password"
+              value={password}
+              onChange={setPassword}
+              icon={<LockOutlinedIcon />}
             />
-            */}
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              sx={{ mt: 1, mb: 1 }}
-            >
-              {authState === 'signin'
-                ? 'Sign In'
-                : authState === 'signup'
-                  ? 'Sign Up'
-                  : 'Reset Password'}
-            </Button>
-            <Messages />
-          </Box>
-        </Box>
-      </Grid>
-    </Grid>
+          </>
+        )}
+        {as === 'signup' && (
+          <>
+            <FormInput
+              id="email"
+              label="Email Adresse"
+              value={email}
+              onChange={(value) => setEmail(value)}
+              icon={<EmailIcon />}
+            />
+            <FormInput
+              id="fullName"
+              label="Fulde Navn"
+              value={fullName}
+              onChange={(value) => setFullName(value)}
+              icon={<PersonIcon />}
+            />
+            <FormInput
+              id="password"
+              label="Adgangskode"
+              type="password"
+              value={password}
+              onChange={(value) => setPassword(value)}
+              icon={<LockOutlinedIcon />}
+            />
+            <FormInput
+              id="activationCode"
+              label="Aktiverings Kode"
+              value={activationCode}
+              onChange={(value) => setActivationCode(value)}
+              icon={<WorkIcon />}
+            />
+          </>
+        )}
+        {as === 'reset' && (
+          <FormInput
+            id="email"
+            label="Email Adresse"
+            value={email}
+            onChange={setEmail}
+            icon={<EmailIcon />}
+          />
+        )}
+        {as === 'waitlist' && (
+          <>
+            <FormInput
+              id="email"
+              label="Email Adresse"
+              value={email}
+              onChange={setEmail}
+              icon={<EmailIcon />}
+            />
+            <FormInput
+              id="fullName"
+              label="Fulde Navn"
+              value={fullName}
+              onChange={(value) => setFullName(value)}
+              icon={<PersonIcon />}
+            />
+            <FormInput
+              id="workTitle"
+              label="Erhverv"
+              value={workTitle}
+              onChange={(value) => setWorkTitle(value)}
+              icon={<WorkIcon />}
+            />
+          </>
+        )}
+        <Button
+          type="submit"
+          fullWidth
+          variant="contained"
+          sx={{ mt: 3, mb: 2 }}
+        >
+          {as === 'signin'
+            ? 'Log Ind'
+            : as === 'signup'
+              ? 'Opret Konto'
+              : as === 'reset'
+                ? 'Nulstil Adgangskode'
+                : as === 'waitlist'
+                  ? 'Tilmeld Venteliste' // Text for the waitlist state
+                  : 'Submit'}{' '}
+        </Button>
+
+        <Messages />
+        <Button onClick={() => handleStateChange('signin')}>Log Ind</Button>
+        <Button onClick={() => handleStateChange('signup')}>Opret Konto</Button>
+        <Button onClick={() => handleStateChange('reset')}>
+          Nulstil Adgangskode
+        </Button>
+        <Button onClick={() => handleStateChange('waitlist')}>
+          Venteliste
+        </Button>
+      </Box>
+    </Box>
   );
 };
 
-export default AuthForm;
+export default AuthFormContent;

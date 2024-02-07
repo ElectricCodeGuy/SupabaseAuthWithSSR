@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
     "target": "es2019",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strictNullChecks": true,
@@ -25,9 +21,7 @@
     "jsx": "preserve",
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"]
     },
     "incremental": true,
     "noFallthroughCasesInSwitch": true,
@@ -47,7 +41,5 @@
     "types/global.d.ts", // Add this line
     "app/gpt/newcomponents/useSaveMessageToDB.ts"
   ],
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules"]
 }

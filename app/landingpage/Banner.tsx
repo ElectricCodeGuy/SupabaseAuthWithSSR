@@ -11,10 +11,10 @@ import CodeIcon from '@mui/icons-material/Code';
 import { SvgIconProps } from '@mui/material/SvgIcon'; // Import type for icon props
 import CloudIcon from '@mui/icons-material/Cloud'; // New icon for cloud capabilities
 import IntegrationInstructionsIcon from '@mui/icons-material/IntegrationInstructions'; // New icon for easy integration
-import type { Session } from '@supabase/supabase-js';
+import type { User } from '@supabase/supabase-js';
 
 interface BannerProps {
-  session: Session | null;
+  session: User | null;
 }
 interface FeatureProps {
   Icon: React.ComponentType<SvgIconProps>; // Specifies that Icon is a React component that accepts SvgIconProps
@@ -66,7 +66,7 @@ const BannerComponent: React.FC<BannerProps> = ({ session }) => {
         <Grid item xs={12} md={4}>
           <Typography variant="h4" sx={{ mb: 1, color: 'primary.main' }}>
             {session
-              ? `Welcome back, ${session.user?.email || 'User'}!`
+              ? `Welcome back, ${session.email || 'User'}!`
               : 'Empower Your Next.js App with Supabase Auth'}
           </Typography>
           <Typography variant="body1" sx={{ mb: 2 }}>

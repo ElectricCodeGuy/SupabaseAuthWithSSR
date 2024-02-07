@@ -1,0 +1,246 @@
+'use server';
+
+import { z } from 'zod';
+import { revalidatePath } from 'next/cache';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+
+import { createClient } from '@/lib/server/action';
+
+const formDataSchemaSignin = z.object({
+  email: z.string().email(),
+  password: z.string().min(6)
+});
+
+export async function login(formData: FormData) {
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
+
+  const result = formDataSchemaSignin.safeParse({
+    email: formData.get('email'),
+    password: formData.get('password')
+  });
+
+  if (!result.success) {
+    redirect('/error?message=' + encodeURIComponent('Invalid Input'));
+  }
+
+  const { email, password } = result.data;
+
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    redirect(
+      '/auth?authState=signin&error=' + encodeURIComponent('Login Error')
+    );
+  }
+
+  revalidatePath('/', 'layout');
+  redirect('/');
+}
+
+const formDataSchemaSignup = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
+  fullName: z.string().optional()
+});
+
+export async function signup(formData: FormData) {
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
+
+  const result = formDataSchemaSignup.safeParse({
+    email: formData.get('email') ? String(formData.get('email')) : '',
+    password: formData.get('password') ? String(formData.get('password')) : '',
+    fullName: formData.get('fullName')
+      ? String(formData.get('fullName'))
+      : undefined
+  });
+
+  if (!result.success) {
+    redirect(
+      '/auth?authState=signup&error=' + encodeURIComponent('Invalid Input')
+    );
+  }
+
+  const { email, password, fullName } = result.data;
+
+  const { data: allowedEmails, error: allowedEmailsError } = await supabase
+    .from('allowed_emails')
+    .select('isallowed')
+    .eq('email', email)
+    .single();
+
+  if (allowedEmailsError || !allowedEmails || !allowedEmails.isallowed) {
+    redirect(
+      '/auth?authState=signup&error=' +
+        encodeURIComponent(
+          'Email is not allowed to sign up. If you believe this is a mistake, please contact support@yourapihub.com'
+        )
+    );
+  }
+
+  const { error } = await supabase.auth.signUp({
+    email: email,
+    password: password,
+    options: {
+      data: { full_name: fullName }
+    }
+  });
+  if (error) {
+    redirect(
+      '/auth?authState=signup&error=' + encodeURIComponent('Invalid input')
+    );
+  }
+
+  redirect(
+    '/auth?authState=signup&message=' +
+      encodeURIComponent('Check your email to confirm your account')
+  );
+}
+
+const formDataSchemaReset = z.object({
+  email: z.string().email()
+});
+
+export async function resetPasswordForEmail(formData: FormData) {
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
+  const email = formData.get('email') ? String(formData.get('email')) : '';
+
+  const result = formDataSchemaReset.safeParse({ email: email });
+
+  if (!result.success) {
+    redirect(
+      '/auth?authState=reset&error=' +
+        encodeURIComponent('Failed to send password reset email')
+    );
+  }
+  const { error } = await supabase.auth.resetPasswordForEmail(email);
+
+  if (error) {
+    redirect(
+      '/auth?authState=reset&error=' +
+        encodeURIComponent('Failed to send password reset email')
+    );
+  }
+
+  redirect(
+    '/auth?authState=reset&message=' +
+      encodeURIComponent(
+        'Check your email to continue the password reset process'
+      )
+  );
+}
+
+export async function signout() {
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
+
+  const signOutResult = await supabase.auth.signOut();
+
+  if (signOutResult?.error) {
+    redirect(
+      '/auth?authState=signin?error=' + encodeURIComponent('Logout error')
+    );
+  } else {
+    redirect('/');
+  }
+}
+
+const formDataSchemaWaitlist = z.object({
+  email: z.string().email(),
+  fullName: z.string().min(1),
+  erhverv: z.string().optional()
+});
+
+export async function addToWaitlist(formData: FormData) {
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
+
+  const result = formDataSchemaWaitlist.safeParse({
+    email: formData.get('email') ? String(formData.get('email')).trim() : '',
+    fullName: formData.get('fullName')
+      ? String(formData.get('fullName')).trim()
+      : '',
+    erhverv: formData.get('erhverv')
+      ? String(formData.get('erhverv')).trim()
+      : undefined
+  });
+
+  if (!result.success) {
+    redirect(
+      '/auth?authState=waitlist&error=' + encodeURIComponent('Invalid input')
+    );
+  }
+
+  const { email, fullName, erhverv } = result.data;
+
+  const { data, error } = await supabase
+    .from('waiting_list')
+    .select('email')
+    .eq('email', email);
+
+  if (error) {
+    redirect(
+      '/auth?authState=waitlist&error=' +
+        encodeURIComponent('Error checking waitlist')
+    );
+  }
+
+  if (data) {
+    redirect(
+      `/auth?authState=waitlist&error=${encodeURIComponent('Email is already on the waitlist')}`
+    );
+  }
+
+  const { error: insertError } = await supabase
+    .from('waiting_list')
+    .insert([{ email, fullname: fullName, erhverv }]);
+
+  if (insertError) {
+    redirect(
+      '/auth?authState=waitlist&error=' +
+        encodeURIComponent('Could not add to waitlist')
+    );
+  }
+
+  redirect(
+    '/auth?authState=waitlist&message=' +
+      encodeURIComponent('You are now on the waitlist')
+  );
+}
+
+const formDataSchemaProvider = z.object({
+  provider: z.enum(['google'])
+});
+type OAuthProvider = 'google';
+
+export async function signInWithProvider(formData: FormData) {
+  const cookieStore = cookies();
+  const supabase = createClient(cookieStore);
+  const provider: OAuthProvider = formData.get('provider') as OAuthProvider;
+
+  const result = formDataSchemaProvider.safeParse({ provider });
+
+  if (!result.success) {
+    redirect('/auth?authState=signin&error=Invalid OAuth provider');
+  }
+
+  try {
+    await supabase.auth.signInWithOAuth({
+      provider: result.data.provider,
+      options: {
+        redirectTo: `http://yourcallbackurl.com/api/auth/callback`
+      }
+    });
+  } catch (error) {
+    console.error(`Error signing in with ${provider}:`, error);
+    redirect(
+      '/auth?authState=signin&error=Error logging in with OAuth provider'
+    );
+  }
+}

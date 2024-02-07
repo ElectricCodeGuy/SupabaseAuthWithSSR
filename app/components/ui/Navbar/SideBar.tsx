@@ -1,6 +1,5 @@
 'use client';
 import React, { FC, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Drawer from '@mui/material/Drawer';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
@@ -12,14 +11,15 @@ import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import MenuOutlinedIcon from '@mui/icons-material/MenuOutlined';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import TerminalIcon from '@mui/icons-material/Terminal';
-import LockIcon from '@mui/icons-material/Lock'; // Icon for protected page
+import LockOpenIcon from '@mui/icons-material/LockOpen';
 import SignOutButton from './SignOut';
-import type { Session } from '@supabase/supabase-js';
+import type { User } from '@supabase/supabase-js';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
+import Link from 'next/link';
 
 interface SidebarProps {
-  session: Session | null;
+  session: User | null;
 }
 
 const Sidebar: FC<SidebarProps> = ({ session }) => {
@@ -27,15 +27,8 @@ const Sidebar: FC<SidebarProps> = ({ session }) => {
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
 
-  const router = useRouter();
-
   const handleDrawerToggle = () => {
     setOpen(!open);
-  };
-
-  const handleNavigation = (link: string) => {
-    setOpen(false);
-    router.push(link);
   };
 
   return (
@@ -63,12 +56,12 @@ const Sidebar: FC<SidebarProps> = ({ session }) => {
         onClose={handleDrawerToggle}
         anchor="left"
         ModalProps={{
-          keepMounted: true // Better open performance on mobile.
+          keepMounted: true
         }}
         PaperProps={{
           elevation: 3,
           style: {
-            width: 250 // Adjust width as needed.
+            width: 250 // Increased width to accommodate the close button
           }
         }}
       >
@@ -80,36 +73,37 @@ const Sidebar: FC<SidebarProps> = ({ session }) => {
             <ListItemText primary="Close" />
           </ListItemButton>
 
-          <ListItemButton onClick={() => handleNavigation('/')}>
-            <ListItemIcon>
-              <HomeOutlinedIcon />
-            </ListItemIcon>
-            <ListItemText primary="Home" />
-          </ListItemButton>
-
-          {session ? (
-            <ListItemButton onClick={() => handleNavigation('/protected')}>
+          <Link href="/" passHref>
+            <ListItemButton onClick={handleDrawerToggle}>
               <ListItemIcon>
-                <LockIcon />
+                <HomeOutlinedIcon />
               </ListItemIcon>
-              <ListItemText primary="Protected Page" />
+              <ListItemText primary="Home" />
             </ListItemButton>
-          ) : null}
+          </Link>
 
           {!session && (
-            <ListItemButton onClick={() => handleNavigation('/auth/signin')}>
-              <ListItemIcon>
-                <TerminalIcon />
-              </ListItemIcon>
-              <ListItemText primary="Sign in" />
-            </ListItemButton>
+            <Link href="/auth" passHref>
+              <ListItemButton onClick={handleDrawerToggle}>
+                <ListItemIcon>
+                  <TerminalIcon />
+                </ListItemIcon>
+                <ListItemText primary="Sign in" />
+              </ListItemButton>
+            </Link>
           )}
 
-          {session && (
-            <ListItem>
-              <SignOutButton />
-            </ListItem>
-          )}
+          <Link href="/protected" passHref>
+            <ListItemButton onClick={handleDrawerToggle} disabled={!session}>
+              <ListItemIcon>
+                <LockOpenIcon />
+              </ListItemIcon>
+              <ListItemText primary="Protected" />
+            </ListItemButton>
+          </Link>
+
+          {/* Sign out button if session exists */}
+          <ListItem>{session ? <SignOutButton /> : null}</ListItem>
         </List>
       </Drawer>
     </>

@@ -1,51 +1,36 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { type EmailOtpType } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
-import { NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 
-// Set the runtime to 'edge' for Vercel Edge Functions or Next.js Middleware
-//export const runtime = 'edge';
+import { createClient } from '@/lib/server/action';
 
-export async function GET(request: Request) {
-  // Extract the search parameters from the URL of the incoming request
+export async function GET(request: NextRequest) {
+  const cookieStore = cookies();
+
   const { searchParams } = new URL(request.url);
-  const code = searchParams.get('code'); // Get the OAuth code from the URL
-  const next = searchParams.get('next') ?? '/'; // Set the redirect path after auth
+  const token_hash = searchParams.get('token_hash');
+  const type = searchParams.get('type') as EmailOtpType | null;
+  const next = searchParams.get('next') ?? '/';
 
-  if (code) {
-    // Initialize the cookie store
-    const cookieStore = cookies();
+  const redirectTo = request.nextUrl.clone();
+  redirectTo.pathname = next;
+  redirectTo.searchParams.delete('token_hash');
+  redirectTo.searchParams.delete('type');
 
-    // Create a Supabase client for server-side interactions with cookie handling
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value; // Get a cookie by name
-          },
-          set(name: string, value: string, options: CookieOptions) {
-            cookieStore.set({ name, value, ...options }); // Set a cookie
-          },
-          remove(name: string, options: CookieOptions) {
-            cookieStore.delete({ name, ...options }); // Remove a cookie
-          }
-        }
-      }
-    );
+  if (token_hash && type) {
+    const supabase = createClient(cookieStore);
 
-    // Exchange the OAuth code for a session token
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { error } = await supabase.auth.verifyOtp({
+      type,
+      token_hash
+    });
     if (!error) {
-      // Redirect to the next page if no error occurred
-      return NextResponse.redirect(
-        new URL(`/redirect/transition?next=${next}&method=code`, request.url)
-      );
+      redirectTo.searchParams.delete('next');
+      return NextResponse.redirect(redirectTo);
     }
   }
 
-  // If an error occurred or no code is present, redirect to an error page
-  return NextResponse.redirect(
-    new URL('/redirect/auth-code-error', request.url)
-  );
+  // return the user to an error page with some instructions
+  redirectTo.pathname = '/redirect/auth-code-error';
+  return NextResponse.redirect(redirectTo);
 }

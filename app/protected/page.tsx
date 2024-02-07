@@ -12,11 +12,12 @@ import {
   ListItemIcon,
   ListItemText
 } from '@mui/material';
-import EmailIcon from '@mui/icons-material/Email'; // For representing email
-import PersonIcon from '@mui/icons-material/Person'; // For representing the user's name
-import LocationOnIcon from '@mui/icons-material/LocationOn'; // For representing location
-import CalendarTodayIcon from '@mui/icons-material/CalendarToday'; // For representing the join date
-import InfoIcon from '@mui/icons-material/Info'; // For representing additional info or bio
+import EmailIcon from '@mui/icons-material/Email';
+import PersonIcon from '@mui/icons-material/Person';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import InfoIcon from '@mui/icons-material/Info';
+import { redirect } from 'next/navigation';
 
 // Sample function to format dates
 const formatDate = (dateString: Date): string => {
@@ -28,8 +29,6 @@ const formatDate = (dateString: Date): string => {
   return new Date(dateString).toLocaleDateString('da-DK', options); // Added 'da-DK' locale for Danish formatting
 };
 
-//import { redirect } from 'next/navigation';
-
 // Revalidation period set to 3600 seconds (1 hour) for data
 // Note: For server components, direct management of caching and re-fetching is within your data fetching utilities.
 // This serves as a conceptual application; adjust based on actual data management needs.
@@ -39,23 +38,8 @@ export const revalidate = 3600;
 
 export default async function ProtectedPage() {
   const session = await getSession();
-
-  // Optional: Redirect if no session is found
-  // Uncomment the next line to enable redirecting to the login page if the user is not logged in
-  // This can also be chcked in the edge middleware.
-  // if (!session) return redirect('/login');
-
-  if (!session) {
-    return (
-      <Container>
-        <Typography variant="h6" color="error">
-          You must be logged in to view this page.
-        </Typography>
-      </Container>
-    );
-  }
-
-  const userInfo = await getUserInfo(session.user.id);
+  if (!session) return redirect('/login');
+  const userInfo = await getUserInfo(session.id);
 
   if (!userInfo) {
     return (

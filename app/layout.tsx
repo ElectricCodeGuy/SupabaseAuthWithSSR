@@ -1,10 +1,9 @@
 import React, { ReactNode } from 'react';
 import SideBarServer from '@/app/components/ui/Navbar/SideBarServer';
 import Footer from '@/app/components/ui/Footer/Footer';
-import RootErrorBoundary from '@/app/components/errorBoundary/SpecificErrorBoundary';
 import ThemeRegistry from '@/theme/ThemeRegistry';
 import Box from '@mui/material/Box';
-
+import RootErrorBoundary from '@/app/components/errorBoundary/ErrorBoundaryPage';
 interface RootLayoutProps {
   children: ReactNode;
 }

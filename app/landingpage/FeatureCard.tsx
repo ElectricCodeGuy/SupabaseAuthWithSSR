@@ -105,7 +105,6 @@ export default function Component() {
               letterSpacing: '0.1em',
               backgroundClip: 'text',
               WebkitBackgroundClip: 'text',
-              color: 'transparent',
               backgroundGradient: 'linear(to r, white, grey.500)'
             }}
           >
