@@ -87,6 +87,73 @@ Before launching your application, you must configure the database schema within
 
    Ensure that "New users can sign up" is enabled in your project's Auth settings. Find this option at `Settings > Auth` in your Supabase dashboard. For more details, visit [Supabase Auth Settings](https://supabase.com/docs/guides/auth).
 
+## Setting Up the Waitlist Database in Supabase
+
+### Step 1: Create the `waiting_list` Table
+
+Execute this SQL query in your Supabase SQL editor to create the `waiting_list` table:
+
+```sql
+CREATE TABLE waiting_list (
+    id BIGSERIAL PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    fullname TEXT,
+    erhverv TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+### Step 2: Configure Row Level Security (RLS)
+
+1. **Enable RLS for the `waiting_list` table**:
+
+   - Go to the `Authentication` > `Policies` section of your Supabase project dashboard.
+   - Select your `waiting_list` table and toggle on RLS.
+
+2. **Create an RLS policy for inserts**:
+   - Still under `Policies`, click "New Policy".
+   - Set the **Policy Name** to `Allow user inserts`.
+   - For **Policy Definition**, choose `INSERT` as the action.
+   - Use `(auth.role() = 'authenticated')` for the **Using expression**.
+   - Leave the **Check expression** blank or adjust it according to your requirements.
+   - Finalize by setting the **Policy Command** to `INSERT`.
+
+This setup allows authenticated users to insert new entries into the `waiting_list` table while preventing them from reading other entries.
+
+## Setting Up the Error Feedback Database in Supabase
+
+### Step 1: Create the `error_feedback` Table
+
+To store error feedback data, execute this SQL query in your Supabase SQL editor:
+
+```sql
+CREATE TABLE error_feedback (
+    id BIGSERIAL PRIMARY KEY,
+    feedback TEXT NOT NULL,
+    category TEXT,
+    errorMessage TEXT,
+    errorStack TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+This table will store feedback messages, their categories, any associated error messages, and the error stack trace to help with debugging.
+
+### Step 2: Configure Row Level Security (RLS)
+
+1. **Enable RLS for the `error_feedback` table**:
+
+   - Navigate to `Authentication` > `Policies` in your Supabase project dashboard.
+   - Select the `error_feedback` table and enable RLS.
+
+2. **Create an RLS policy for inserts (Optional)**:
+   - If you want to restrict who can insert data into this table, you can create a policy.
+   - Click "New Policy", provide a name like `Allow feedback insertion`.
+   - Set the **Policy Definition** to allow `INSERT` operations.
+   - For the **Using expression**, you could use `(auth.role() = 'authenticated')` to only allow authenticated users to insert feedback.
+   - Leave the **Check expression** as is if no further restrictions are needed or adjust according to your requirements.
+   - Ensure the **Policy Command** is set to `INSERT`.
+
 ### Environment Variables
 
 Configure your environment by renaming `.env.local.example` to `.env.local` and updating it with your Supabase project details:
