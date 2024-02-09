@@ -68,21 +68,6 @@ export async function signup(formData: FormData) {
 
   const { email, password, fullName } = result.data;
 
-  const { data: allowedEmails, error: allowedEmailsError } = await supabase
-    .from('allowed_emails')
-    .select('isallowed')
-    .eq('email', email)
-    .single();
-
-  if (allowedEmailsError || !allowedEmails || !allowedEmails.isallowed) {
-    redirect(
-      '/auth?authState=signup&error=' +
-        encodeURIComponent(
-          'Email is not allowed to sign up. If you believe this is a mistake, please contact support@yourapihub.com'
-        )
-    );
-  }
-
   const { error } = await supabase.auth.signUp({
     email: email,
     password: password,

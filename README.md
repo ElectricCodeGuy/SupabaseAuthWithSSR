@@ -58,24 +58,14 @@ Before launching your application, you must configure the database schema within
    Navigate to your Supabase project's SQL editor and execute:
 
    ```sql
-   CREATE TABLE users (
-       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-       full_name VARCHAR(255),
+   CREATE TABLE public.users (
+       id uuid not null,
+       full_name VARCHAR(255) DEFAULT 'UserName_Default',
        email VARCHAR(255) UNIQUE NOT NULL
    );
    ```
 
-2. **Insert an Example User**
-
-   To test the authentication flow, insert an example user:
-
-   ```sql
-   INSERT INTO users (full_name, email) VALUES ('Jane Doe', 'jane.doe@example.com');
-   ```
-
-   Replace the placeholders with your desired test user's information.
-
-3. **Enable Row Level Security (RLS)**
+2. **Enable Row Level Security (RLS)**
 
    Secure your data by enabling RLS and setting up a user-specific access policy:
 
@@ -87,7 +77,23 @@ Before launching your application, you must configure the database schema within
 
    Ensure that "New users can sign up" is enabled in your project's Auth settings. Find this option at `Settings > Auth` in your Supabase dashboard. For more details, visit [Supabase Auth Settings](https://supabase.com/docs/guides/auth).
 
-## Setting Up the Waitlist Database in Supabase
+   ```sql
+   ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+   CREATE POLICY insert_for_auth_users ON public.users FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+   CREATE POLICY user_is_owner ON public.users FOR SELECT USING (auth.uid() = id);
+   ```
+
+3. **Sign Up for an Account**
+
+   - Navigate to `http://localhost:3000/auth` in your web browser.
+   - Use the sign-up form to create an account. Ensure you use a valid email address that you have access to, as you'll need to verify it in the next step.
+
+4. **Verify Your Email**
+
+   - After signing up, Supabase will send an email to the address you provided. Check your inbox for an email from Supabase or your application.
+   - Open the email and click on the verification link to confirm your email address. This step is crucial for activating your account and ensuring that you can log in and access the application's features.
+
+## Setting Up the Waitlist Database in Supabase OPTIONAL
 
 ### Step 1: Create the `waiting_list` Table
 
@@ -95,11 +101,11 @@ Execute this SQL query in your Supabase SQL editor to create the `waiting_list` 
 
 ```sql
 CREATE TABLE waiting_list (
-    id BIGSERIAL PRIMARY KEY,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    fullname TEXT,
-    erhverv TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW()
+id BIGSERIAL PRIMARY KEY,
+email VARCHAR(255) UNIQUE NOT NULL,
+fullname TEXT,
+erhverv TEXT,
+created_at TIMESTAMPTZ DEFAULT NOW()
 );
 ```
 
@@ -120,7 +126,7 @@ CREATE TABLE waiting_list (
 
 This setup allows authenticated users to insert new entries into the `waiting_list` table while preventing them from reading other entries.
 
-## Setting Up the Error Feedback Database in Supabase
+## Setting Up the Error Feedback Database in Supabase OPTIONAL
 
 ### Step 1: Create the `error_feedback` Table
 

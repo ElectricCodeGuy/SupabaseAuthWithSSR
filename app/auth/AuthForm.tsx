@@ -18,7 +18,6 @@ const AuthFormContent: React.FC = () => {
   const [password, setPassword] = useState<string>('');
   const [fullName, setFullName] = useState<string>('');
   const [workTitle, setWorkTitle] = useState<string>('');
-  const [activationCode, setActivationCode] = useState<string>('');
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -41,7 +40,6 @@ const AuthFormContent: React.FC = () => {
     formData.append('password', password);
     formData.append('fullName', fullName);
     formData.append('workTitle', workTitle);
-    formData.append('activationCode', activationCode);
 
     switch (as) {
       case 'signin':
@@ -147,13 +145,6 @@ const AuthFormContent: React.FC = () => {
               value={password}
               onChange={(value) => setPassword(value)}
               icon={<LockOutlinedIcon />}
-            />
-            <FormInput
-              id="activationCode"
-              label="Aktiverings Kode"
-              value={activationCode}
-              onChange={(value) => setActivationCode(value)}
-              icon={<WorkIcon />}
             />
           </>
         )}
