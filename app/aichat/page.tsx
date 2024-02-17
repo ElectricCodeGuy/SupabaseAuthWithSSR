@@ -35,9 +35,13 @@ export default async function ChatPage({
   const userId = session?.id || 'unknown-user';
   const chatKey = `chat:${chatId}-user:${userId}`;
 
-  const chatPrompts = await fetchChatMessages(chatKey, 'prompts');
-  const chatCompletions = await fetchChatMessages(chatKey, 'completions');
-  const { metadata: chatMetadata } = await fetchChatMetadata(chatKey);
+  const [chatPrompts, chatCompletions, chatMetadataResult] = await Promise.all([
+    fetchChatMessages(chatKey, 'prompts'),
+    fetchChatMessages(chatKey, 'completions'),
+    fetchChatMetadata(chatKey)
+  ]);
+
+  const { metadata: chatMetadata } = chatMetadataResult;
 
   const chatData: MessageFromDB = {
     id: chatId,
