@@ -5,7 +5,7 @@ export default async function NavBar() {
   const session = await getSession(); // Get session
 
   // Console logging the session data
-  console.log('Session data:', session);
+  //console.log('Session data:', session);
 
   return <Sidebar session={session} />;
 }

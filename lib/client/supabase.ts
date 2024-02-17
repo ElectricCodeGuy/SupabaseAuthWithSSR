@@ -64,3 +64,18 @@ export const getUserInfo = cache(async (userId: string) => {
     return null;
   }
 });
+export const findUserDetailsById = async (userId: string) => {
+  const supabase = createServerSupabaseClient();
+  try {
+    const { data: user } = await supabase
+      .from('users')
+      .select('id, filter_tags')
+      .eq('id', userId)
+      .single();
+
+    return user;
+  } catch (error) {
+    console.error('Error finding user details:', error);
+    return null;
+  }
+};

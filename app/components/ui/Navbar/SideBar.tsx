@@ -102,6 +102,15 @@ const Sidebar: FC<SidebarProps> = ({ session }) => {
             </ListItemButton>
           </Link>
 
+          <Link href="/aichat" passHref>
+            <ListItemButton onClick={handleDrawerToggle} disabled={!session}>
+              <ListItemIcon>
+                <LockOpenIcon />
+              </ListItemIcon>
+              <ListItemText primary="Ai Chat" />
+            </ListItemButton>
+          </Link>
+
           {/* Sign out button if session exists */}
           <ListItem>{session ? <SignOutButton /> : null}</ListItem>
         </List>

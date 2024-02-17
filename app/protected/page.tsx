@@ -1,4 +1,4 @@
-// protected.tsx
+import 'server-only';
 import { getUserInfo, getSession } from '@/lib/client/supabase';
 import {
   Typography,

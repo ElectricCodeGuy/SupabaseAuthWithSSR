@@ -1,3 +1,4 @@
+import 'server-only';
 import React from 'react';
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
@@ -5,6 +6,7 @@ import AuthFormContent from './AuthForm';
 import { notFound } from 'next/navigation';
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/client/supabase';
+
 export default async function AuthPage({
   searchParams
 }: {
@@ -15,9 +17,7 @@ export default async function AuthPage({
 
   const as = searchParams['as'] || 'signin';
 
-  const isValidAuthState = ['signin', 'signup', 'reset', 'waitlist'].includes(
-    as
-  );
+  const isValidAuthState = ['signin', 'signup', 'reset'].includes(as);
 
   return (
     <Box

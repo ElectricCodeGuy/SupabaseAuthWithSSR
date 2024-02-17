@@ -12,6 +12,7 @@ Welcome to the Supabase Auth using SSR package repository! This project demonstr
   - [Environment Variables](#environment-variables)
 - [Usage](#-usage)
 - [Email Templates](#-email-templates)
+- [Chat Interface Integration](#chat-interface-integration)
 - [License](#-license)
 - [Acknowledgements](#-acknowledgements)
 - [Packages Used](#-packages-used)
@@ -181,6 +182,13 @@ For third-party auth configurations, include:
 - `GOOGLE_CLIENT_ID`
 - `GOOGLE_SECRET_ID`
 
+For Openai, Perplexity and Upstash/Redis
+
+- `PERPLEXITY_API_KEY=`
+- `OPENAI_API_KEY=`
+- `UPSTASH_REDIS_REST_URL=`
+- `UPSTASH_REDIS_REST_TOKEN=`
+
 ## 🔍 Usage
 
 📖 Follow the provided examples to integrate Supabase Auth with SSR in your Next.js project.
@@ -276,23 +284,50 @@ Reset Password Email For users that have requested a password reset:
 >
 ```
 
+## Chat Interface Integration
+
+### OpenAI and Perplexity API
+
+This project includes integration with OpenAI and Perplexity API endpoints for powering an advanced chat interface. Users can interact with an AI model, with the option to switch between different models or APIs for varied responses.
+
+### Upstash Redis for Chat History
+
+Chat conversations are stored and managed using Upstash Redis, allowing for efficient retrieval of chat history. This ensures users can access previous conversations, enhancing the chat experience.
+
+### Implementation
+
+To integrate the chat features:
+
+1. **Set Up API Routes**: Create API routes in your Next.js project for interacting with OpenAI and Perplexity API.
+
+2. **Configure Upstash Redis**: Set up Upstash Redis for storing chat conversations. Ensure environment variables for Upstash Redis are correctly configured.
+
+3. **Update the Chat Interface**: Utilize the provided chat interface component, adjusting the API endpoint based on the selected model type.
+
 ## 📜 License
 
 🔖 Licensed under the MIT License. See LICENSE.md for details.
 
 ## 🙏 Acknowledgements
 
-🎉 A special thank you to the Supabase team for developing such a versatile and user-friendly tool.
-🛠 This project was built with TypeScript, leveraging the power of Supabase and the innovative @supabase/ssr package.
+- 🎉 A special thank you to the **Supabase team** for developing such a versatile and user-friendly tool. Their commitment to making database interaction seamless and efficient has greatly enhanced this project.
+- 🛠 Appreciation goes to **TypeScript** for its powerful type system that makes JavaScript code safer and easier to understand. This project leverages TypeScript to ensure code reliability and maintainability.
+- 🌐 Thanks to **Vercel** for their innovative platform and tools like `@vercel/ai`, which simplify the deployment process and enhance the integration of AI features into web applications.
+- 🤖 Gratitude to **Langchain** for their toolkit that makes it easier to build language AI applications, enabling this project to integrate complex AI functionalities with ease.
+- 💡 This project also benefits from the innovative `@supabase/ssr` package, which seamlessly integrates Supabase authentication with Next.js server-side rendering, providing a robust foundation for secure and efficient user authentication.
+
+Each of these contributions has been invaluable in creating a comprehensive, secure, and user-friendly application. Thank you for your tools, services, and the community support that makes projects like this possible.
 
 ## 📦 Packages Used
 
 - 🧰 Material-UI (`@mui/material`, `@mui/icons-material`): Provides a comprehensive suite of UI tools for React applications.
-- 🛡 @hcaptcha/react-hcaptcha: Integrate hCaptcha for bot protection and spam prevention.
 - 🎨 @emotion/react, @emotion/styled, @emotion/cache: CSS-in-JS libraries used for styling components in a more expressive and dynamic way.
 - 🚀 @supabase/supabase-js, @supabase/ssr: Official Supabase client for JavaScript, enabling interaction with Supabase services including authentication, database queries, and more, with support for server-side rendering.
 - 🖼 Next.js (`next`): A React framework for building server-rendered applications, static websites, and more.
 - ⚛️ React (`react`, `react-dom`): A JavaScript library for building user interfaces.
 - 🆕 @mui/material-nextjs: An experimental package for integrating Material-UI with Next.js projects.
+- 🤖 Langchain (`langchain`): A toolkit for building language AI applications, simplifying the integration of large language models.
+- 🧠 AI by Vercel (`@vercel/ai`): Provides easy access to AI tools and models directly within the Vercel platform.
+- 📝 React Markdown (`react-markdown`): A component to render Markdown text in React applications, used for formatting chat messages.
 
-Integrate hcaptcha from Supabase for added security and spam protection.
+Each package plays a crucial role in building, styling, and securing the application, ensuring a seamless user experience and robust functionality.

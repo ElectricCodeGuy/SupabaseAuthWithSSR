@@ -1,9 +1,9 @@
 import React from 'react';
-import BannerComponent from './landingpage/Banner';
-import Profile from './landingpage/Profile';
+import BannerComponent from './components/landingpage/Banner';
+import Profile from './components/landingpage/Profile';
 import Box from '@mui/material/Box';
 import Divider from '@mui/material/Divider';
-import FeatureCard from './landingpage/FeatureCard';
+import FeatureCard from './components/landingpage/FeatureCard';
 import { getSession } from '@/lib/client/supabase'; // Import getSession
 
 export const revalidate = 3600; // revalidate the data at most every hour

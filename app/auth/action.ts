@@ -136,69 +136,6 @@ export async function signout() {
   }
 }
 
-const formDataSchemaWaitlist = z.object({
-  email: z.string().email(),
-  fullName: z.string().min(1),
-  erhverv: z.string().optional()
-});
-
-export async function addToWaitlist(formData: FormData) {
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
-
-  const result = formDataSchemaWaitlist.safeParse({
-    email: formData.get('email') ? String(formData.get('email')).trim() : '',
-    fullName: formData.get('fullName')
-      ? String(formData.get('fullName')).trim()
-      : '',
-    erhverv: formData.get('erhverv')
-      ? String(formData.get('erhverv')).trim()
-      : undefined
-  });
-
-  if (!result.success) {
-    redirect(
-      '/auth?authState=waitlist&error=' + encodeURIComponent('Invalid input')
-    );
-  }
-
-  const { email, fullName, erhverv } = result.data;
-
-  const { data, error } = await supabase
-    .from('waiting_list')
-    .select('email')
-    .eq('email', email);
-
-  if (error) {
-    redirect(
-      '/auth?authState=waitlist&error=' +
-        encodeURIComponent('Error checking waitlist')
-    );
-  }
-
-  if (data) {
-    redirect(
-      `/auth?authState=waitlist&error=${encodeURIComponent('Email is already on the waitlist')}`
-    );
-  }
-
-  const { error: insertError } = await supabase
-    .from('waiting_list')
-    .insert([{ email, fullname: fullName, erhverv }]);
-
-  if (insertError) {
-    redirect(
-      '/auth?authState=waitlist&error=' +
-        encodeURIComponent('Could not add to waitlist')
-    );
-  }
-
-  redirect(
-    '/auth?authState=waitlist&message=' +
-      encodeURIComponent('You are now on the waitlist')
-  );
-}
-
 const formDataSchemaProvider = z.object({
   provider: z.enum(['google'])
 });

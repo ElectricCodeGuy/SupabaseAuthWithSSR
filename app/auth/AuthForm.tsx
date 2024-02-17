@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, FC, FormEvent } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import FormInput from './FormInput';
@@ -10,18 +10,20 @@ import Messages from './messages';
 import Avatar from '@mui/material/Avatar';
 import Typography from '@mui/material/Typography';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import WorkIcon from '@mui/icons-material/Work';
-import { login, signup, resetPasswordForEmail, addToWaitlist } from './action';
+import { login, signup, resetPasswordForEmail } from './action';
+import { useFormStatus } from 'react-dom';
+import CircularProgress from '@mui/material/CircularProgress';
 
-const AuthFormContent: React.FC = () => {
+const AuthFormContent: FC = () => {
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [fullName, setFullName] = useState<string>('');
-  const [workTitle, setWorkTitle] = useState<string>('');
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const as = searchParams.get('as') || 'signin';
+
+  const { pending } = useFormStatus();
 
   const handleStateChange = useCallback(
     (newState: string) => {
@@ -32,14 +34,13 @@ const AuthFormContent: React.FC = () => {
     },
     [pathname, router]
   );
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const formData = new FormData();
     formData.append('email', email);
     formData.append('password', password);
     formData.append('fullName', fullName);
-    formData.append('workTitle', workTitle);
 
     switch (as) {
       case 'signin':
@@ -50,9 +51,6 @@ const AuthFormContent: React.FC = () => {
         break;
       case 'reset':
         await resetPasswordForEmail(formData);
-        break;
-      case 'waitlist':
-        await addToWaitlist(formData);
         break;
       default:
         console.error('Invalid as');
@@ -87,14 +85,12 @@ const AuthFormContent: React.FC = () => {
       </Avatar>
       <Typography component="h1" variant="h5" sx={{ mb: 2 }}>
         {as === 'signin'
-          ? 'Log Ind'
+          ? 'Sign In'
           : as === 'signup'
-            ? 'Opret Konto'
+            ? 'Create Account'
             : as === 'reset'
-              ? 'Nulstil Adgangskode'
-              : as === 'waitlist'
-                ? 'Tilmeld Venteliste'
-                : 'Welcome'}{' '}
+              ? 'Reset Password'
+              : 'Welcome'}{' '}
       </Typography>
 
       <Box
@@ -126,7 +122,7 @@ const AuthFormContent: React.FC = () => {
           <>
             <FormInput
               id="email"
-              label="Email Adresse"
+              label="Email Address"
               value={email}
               onChange={(value) => setEmail(value)}
               icon={<EmailIcon />}
@@ -151,62 +147,49 @@ const AuthFormContent: React.FC = () => {
         {as === 'reset' && (
           <FormInput
             id="email"
-            label="Email Adresse"
+            label="Email Address"
             value={email}
             onChange={setEmail}
             icon={<EmailIcon />}
           />
         )}
-        {as === 'waitlist' && (
-          <>
-            <FormInput
-              id="email"
-              label="Email Adresse"
-              value={email}
-              onChange={setEmail}
-              icon={<EmailIcon />}
-            />
-            <FormInput
-              id="fullName"
-              label="Fulde Navn"
-              value={fullName}
-              onChange={(value) => setFullName(value)}
-              icon={<PersonIcon />}
-            />
-            <FormInput
-              id="workTitle"
-              label="Erhverv"
-              value={workTitle}
-              onChange={(value) => setWorkTitle(value)}
-              icon={<WorkIcon />}
-            />
-          </>
-        )}
         <Button
           type="submit"
           fullWidth
           variant="contained"
+          disabled={pending}
           sx={{ mt: 3, mb: 2 }}
         >
-          {as === 'signin'
-            ? 'Log Ind'
-            : as === 'signup'
-              ? 'Opret Konto'
-              : as === 'reset'
-                ? 'Nulstil Adgangskode'
-                : as === 'waitlist'
-                  ? 'Tilmeld Venteliste' // Text for the waitlist state
-                  : 'Submit'}{' '}
+          {pending ? (
+            <CircularProgress
+              size={24}
+              sx={{
+                color: 'white',
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                marginTop: '-12px',
+                marginLeft: '-12px'
+              }}
+            />
+          ) : as === 'signin' ? (
+            'Sign in'
+          ) : as === 'signup' ? (
+            'Sign up'
+          ) : as === 'reset' ? (
+            'Reset Password'
+          ) : (
+            'Submit'
+          )}
         </Button>
 
         <Messages />
-        <Button onClick={() => handleStateChange('signin')}>Log Ind</Button>
-        <Button onClick={() => handleStateChange('signup')}>Opret Konto</Button>
-        <Button onClick={() => handleStateChange('reset')}>
-          Nulstil Adgangskode
+        <Button onClick={() => handleStateChange('signin')}>Sign in</Button>
+        <Button onClick={() => handleStateChange('signup')}>
+          Create Account
         </Button>
-        <Button onClick={() => handleStateChange('waitlist')}>
-          Venteliste
+        <Button onClick={() => handleStateChange('reset')}>
+          Reset Password
         </Button>
       </Box>
     </Box>
