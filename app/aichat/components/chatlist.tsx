@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, FormEvent } from 'react';
 import Drawer from '@mui/material/Drawer';
 import MuiLink from '@mui/material/Link';
 import List from '@mui/material/List';
@@ -14,6 +14,7 @@ import IconButton from '@mui/material/IconButton';
 import DeleteIcon from '@mui/icons-material/Delete';
 import Backdrop from '@mui/material/Backdrop';
 import { deleteChatData } from '../actions';
+import { useRouter } from 'next/navigation';
 
 type ChatPreview = {
   id: string;
@@ -29,6 +30,7 @@ const ChatList: React.FC<ChatListProps> = ({ userId, chatPreviews }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const pathname = usePathname();
+  const router = useRouter(); // Use the useRouter hook
   const searchParams = useSearchParams();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
@@ -66,6 +68,27 @@ const ChatList: React.FC<ChatListProps> = ({ userId, chatPreviews }) => {
     }
 
     return link;
+  };
+
+  const handleSubmit = async (
+    event: FormEvent<HTMLFormElement>,
+    chatId: string
+  ) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget); // Create FormData from the form
+    formData.append('userId', userId);
+    formData.append('chatId', chatId);
+    try {
+      await deleteChatData(formData); // Adjust deleteChatData to accept FormData
+      // On successful deletion, remove chatId from the URL
+      const currentSearchParams = new URLSearchParams(window.location.search);
+      currentSearchParams.delete('chatId');
+      router.replace(`${pathname}?${currentSearchParams.toString()}`, {
+        scroll: false
+      });
+    } catch (error) {
+      console.error('Failed to delete chat:', error);
+    }
   };
 
   return (
@@ -144,18 +167,13 @@ const ChatList: React.FC<ChatListProps> = ({ userId, chatPreviews }) => {
                 </MuiLink>
 
                 {isSelected(id) && (
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      deleteChatData(userId, id);
-                    }}
-                  >
+                  <form onSubmit={(e) => handleSubmit(e, id)}>
                     <IconButton
                       type="submit"
                       size="small"
                       sx={{ padding: '4px' }}
                     >
-                      <DeleteIcon fontSize="small" /> {/* Adjusted font size */}
+                      <DeleteIcon fontSize="small" />
                     </IconButton>
                   </form>
                 )}

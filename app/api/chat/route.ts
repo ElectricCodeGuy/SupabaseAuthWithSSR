@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ChatOpenAI } from '@langchain/openai';
 import { saveChatToRedis } from './redis';
 import { authenticateAndInitialize } from './Auth';
+
 import {
   GeneralChatMessagePrompt,
   TechnicalSupportChatMessagePrompt,

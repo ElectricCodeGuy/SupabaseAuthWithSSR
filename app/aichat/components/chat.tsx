@@ -10,7 +10,7 @@ import React, {
   FormEvent,
   KeyboardEvent
 } from 'react';
-import { useChat, Message } from 'ai/react';
+import { useChat, type Message } from 'ai/react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import ListItem from '@mui/material/ListItem';
@@ -157,6 +157,7 @@ const ChatCompoent: FC<ChatProps> = ({ session, currentChat }) => {
         });
       }
     },
+
     onError: (error) => {
       let message = 'An error occurred, please try again';
       if (error.message.includes('timeout')) {

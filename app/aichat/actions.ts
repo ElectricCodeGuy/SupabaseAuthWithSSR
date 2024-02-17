@@ -1,6 +1,7 @@
 'use server';
 import { Redis } from '@upstash/redis';
 import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
 
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL!,
@@ -44,7 +45,20 @@ export async function fetchChatMetadata(chatKey: string): Promise<{
     return { metadata: null, metadataString: '' };
   }
 }
-export async function deleteChatData(userId: string, chatId: string) {
+
+export async function deleteChatData(formData: FormData) {
+  const formDataDeleteChat = z.object({
+    chatId: z.string(),
+    userId: z.string()
+  });
+  const result = formDataDeleteChat.safeParse({
+    chatId: formData.get('chatId') ? String(formData.get('chatId')) : '',
+    userId: formData.get('userId') ? String(formData.get('userId')) : ''
+  });
+  if (!result.success) {
+    return { message: 'Invalid input', success: false };
+  }
+  const { chatId, userId } = result.data;
   const chatKey = `chat:${chatId}-user:${userId}`;
 
   try {
@@ -52,7 +66,7 @@ export async function deleteChatData(userId: string, chatId: string) {
     await redis.del(chatKey);
     await redis.del(`${chatKey}:prompts`);
     await redis.del(`${chatKey}:completions`);
-    revalidatePath('/chatai');
+    revalidatePath('/aichat');
     return { message: 'Filter tag and document chunks deleted successfully' };
   } catch (error) {
     console.error('Error during deletion:', error);

@@ -1,3 +1,4 @@
+import 'server-only';
 import React from 'react';
 import BannerComponent from './components/landingpage/Banner';
 import Profile from './components/landingpage/Profile';
