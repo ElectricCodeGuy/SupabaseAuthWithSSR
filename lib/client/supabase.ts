@@ -1,4 +1,3 @@
-'use server';
 import { cache } from 'react';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
