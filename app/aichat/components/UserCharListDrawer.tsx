@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 'use client';
 import React, { type FC, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
