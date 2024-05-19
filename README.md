@@ -46,8 +46,6 @@ Welcome to the Supabase Auth using SSR package repository! This project demonstr
    git clone https://github.com/ElectricCodeGuy/SupabaseAuthWithSSR.git
    ```
 
-````
-
 2. **Navigate to the Project Directory**
 
    ```bash
@@ -325,4 +323,7 @@ Each of these contributions has been invaluable in creating a comprehensive, sec
 - 📝 React Markdown (`react-markdown`): A component to render Markdown text in React applications, used for formatting chat messages.
 
 Each package plays a crucial role in building, styling, and securing the application, ensuring a seamless user experience and robust functionality.
-````
+
+```
+
+```
