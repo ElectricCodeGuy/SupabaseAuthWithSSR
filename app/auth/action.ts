@@ -72,7 +72,7 @@ export async function signup(formData: FormData) {
     email: email,
     password: password,
     options: {
-      data: { full_name: fullName }
+      data: { full_name: fullName || 'default_user' }
     }
   });
   if (error) {
@@ -133,36 +133,5 @@ export async function signout() {
     );
   } else {
     redirect('/');
-  }
-}
-
-const formDataSchemaProvider = z.object({
-  provider: z.enum(['google'])
-});
-type OAuthProvider = 'google';
-
-export async function signInWithProvider(formData: FormData) {
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
-  const provider: OAuthProvider = formData.get('provider') as OAuthProvider;
-
-  const result = formDataSchemaProvider.safeParse({ provider });
-
-  if (!result.success) {
-    redirect('/auth?authState=signin&error=Invalid OAuth provider');
-  }
-
-  try {
-    await supabase.auth.signInWithOAuth({
-      provider: result.data.provider,
-      options: {
-        redirectTo: `http://yourcallbackurl.com/api/auth/callback`
-      }
-    });
-  } catch (error) {
-    console.error(`Error signing in with ${provider}:`, error);
-    redirect(
-      '/auth?authState=signin&error=Error logging in with OAuth provider'
-    );
   }
 }

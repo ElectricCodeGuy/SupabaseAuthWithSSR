@@ -6,6 +6,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { authenticateAndInitialize } from './AuthAndInit';
 import { Redis } from '@upstash/redis';
 import { Ratelimit } from '@upstash/ratelimit';
+import { revalidateTag } from 'next/cache';
+import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 
 const perplexity = new OpenAI({
   apiKey: process.env.PERPLEXITY_API_KEY || '',
@@ -17,7 +19,9 @@ const redis = new Redis({
   token: process.env.UPSTASH_REDIS_REST_TOKEN!
 });
 
-export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
+export const revalidate = true;
 
 export async function POST(req: NextRequest) {
   const authAndInitResult = await authenticateAndInitialize(req);
@@ -42,36 +46,32 @@ export async function POST(req: NextRequest) {
       }
     });
   }
+
   const body = await req.json();
   const messages: Message[] = body.messages ?? [];
-  const chatHistory = messages
-    .slice(0, -1)
-    .map((msg) => msg.content)
-    .join('\n');
-  const currentMessage = messages[messages.length - 1];
+  const chatSessionId =
+    body.chatId && body.chatId.trim() !== '' ? body.chatId : uuidv4();
+  const isNewChat = !body.chatId || body.chatId.trim() === '';
 
-  // Ensure the current message has a string content
-  if (typeof currentMessage.content !== 'string') {
-    throw new Error('Invalid message content format');
-  }
-
-  // Concatenate chat history with the current message, clearly marking the current message
-  const fullMessageContent = `--- Chat History ---\n${chatHistory}\n\n--- Current Message ---\n${currentMessage.content}`;
-  const systemMessageContent = `
-  - You are a Helpfull assistant that always provide clear and accurate answers! For Helpfull information use Markdown. Use remark-math formatting for Math Equations\n
-  - References: Reference official documentation and trusted sources where applicable. Link to sources using Markdown.
-  `.trim();
-  const chatId = body.chatId;
-  const chatSessionId = chatId || uuidv4();
+  const fullMessages: ChatCompletionMessageParam[] = [
+    {
+      role: 'system',
+      content: `
+    - You are a helpful assistant that always provides clear and accurate answers! For helpful information use Markdown. Use remark-math formatting for Math Equations\n
+    - References: Reference official documentation and trusted sources where applicable. Link to sources using Markdown.
+    `.trim()
+    },
+    ...messages.map((message) => ({
+      role: message.role as 'user' | 'assistant' | 'system',
+      content: message.content
+    }))
+  ];
 
   try {
     const response = await perplexity.chat.completions.create({
       model: 'pplx-70b-online',
       stream: true,
-      messages: [
-        { role: 'system', content: systemMessageContent },
-        { role: 'user', content: fullMessageContent }
-      ]
+      messages: fullMessages
     });
 
     // Stream response handling
@@ -80,17 +80,19 @@ export async function POST(req: NextRequest) {
         saveChatToRedis(
           chatSessionId,
           userId,
-          currentMessage.content,
+          messages[messages.length - 1].content,
           completion
         );
+        if (isNewChat) {
+          revalidateTag('datafetch');
+        }
       }
     });
 
     // Return the streaming response
     return new StreamingTextResponse(stream, {
       headers: {
-        'x-chat-id': chatSessionId,
-        'Content-Type': 'text/event-stream'
+        'x-chat-id': chatSessionId
       }
     });
   } catch (error) {

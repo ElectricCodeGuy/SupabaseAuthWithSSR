@@ -1,4 +1,5 @@
-import React, { ReactNode } from 'react';
+import React, { type ReactNode } from 'react';
+import { Inter } from 'next/font/google';
 import SideBarServer from '@/app/components/ui/Navbar/SideBarServer';
 import Footer from '@/app/components/ui/Footer/Footer';
 import ThemeRegistry from '@/theme/ThemeRegistry';
@@ -7,6 +8,9 @@ import RootErrorBoundary from '@/app/components/errorBoundary/ErrorBoundaryPage'
 interface RootLayoutProps {
   children: ReactNode;
 }
+
+const inter = Inter({ subsets: ['latin'] });
+
 export const metadata = {
   metadataBase: new URL('http://localhost:3000/'),
   title: 'Supabase SSR Auth Example',
@@ -21,9 +25,8 @@ const RootLayout: React.FC<RootLayoutProps> = ({ children }) => {
       <ThemeRegistry>
         <RootErrorBoundary>
           <body
+            className={inter.className}
             style={{
-              margin: 0,
-              padding: 0,
               display: 'flex',
               flexDirection: 'column',
               minHeight: '100vh'

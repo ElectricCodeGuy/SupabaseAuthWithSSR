@@ -1,32 +1,33 @@
+'use client';
 import { createTheme } from '@mui/material/styles';
 
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#003366' // A deep navy blue, professional and trustworthy
+      main: '#003366'
     },
     secondary: {
-      main: '#4D4D4D' // A dark gray for contrast
+      main: '#4D4D4D'
     },
     error: {
-      main: '#d32f2f' // Standard error color for clarity
+      main: '#d32f2f'
     },
     warning: {
-      main: '#ffa000' // Standard warning color for visibility
+      main: '#ffa000'
     },
     info: {
-      main: '#31708E' // A softer blue for informational messages
+      main: '#31708E'
     },
     success: {
-      main: '#388e3c' // Standard success green for positive feedback
+      main: '#388e3c'
     },
     background: {
-      default: '#F4F4F4', // A light gray background, less stark than white
-      paper: '#FFFFFF' // White for paper elements, clear and clean
+      default: '#F4F4F4',
+      paper: '#FFFFFF'
     },
     text: {
-      primary: '#333333', // Dark gray for primary text, strong and readable
-      secondary: '#4D4D4D' // Slightly lighter for secondary text, complementary
+      primary: '#333333',
+      secondary: '#4D4D4D'
     }
   },
   typography: {
@@ -104,15 +105,15 @@ const theme = createTheme({
     MuiTextField: {
       styleOverrides: {
         root: {
-          margin: '8px 0'
+          margin: '2px 0'
         }
       }
     },
     MuiCard: {
       styleOverrides: {
         root: {
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)', // Subtle shadow for depth
-          borderRadius: '8px' // Slightly rounded corners for a modern feel
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+          borderRadius: '2px'
         }
       }
     },
@@ -120,9 +121,9 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           textDecoration: 'none',
-          color: '#003366', // Use primary color for links
+          color: '#003366',
           '&:hover': {
-            textDecoration: 'underline' // Underline on hover for clear interaction
+            textDecoration: 'underline'
           }
         }
       }
@@ -132,7 +133,7 @@ const theme = createTheme({
         root: {
           borderCollapse: 'collapse',
           '& th, & td': {
-            borderColor: '#E0E0E0' // Soft color for table borders
+            borderColor: '#E0E0E0'
           }
         }
       }
@@ -140,13 +141,17 @@ const theme = createTheme({
     MuiTooltip: {
       styleOverrides: {
         tooltip: {
-          backgroundColor: '#4D4D4D', // Dark background for contrast
-          color: 'white', // White text for readability
-          fontSize: '0.875rem' // Slightly larger font for clarity
+          backgroundColor: '#4D4D4D',
+          color: 'white',
+          fontSize: '0.875rem'
         }
       }
+    },
+    MuiInputBase: {
+      defaultProps: {
+        disableInjectingGlobalStyles: true
+      }
     }
-    // ... other component customizations
   }
 });
 

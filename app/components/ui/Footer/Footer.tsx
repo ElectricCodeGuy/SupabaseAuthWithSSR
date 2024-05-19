@@ -14,7 +14,7 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   // If the current pathname is '/aichat', do not render the component
-  if (pathname === '/aichat') {
+  if (pathname.startsWith('/aichat')) {
     return null;
   }
 

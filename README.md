@@ -1,5 +1,13 @@
 # Supabase Auth with SSR 🚀
 
+## UPDATES
+
+- **Newest AI Package**: Updated to the latest AI package from Vercel.
+- **Langchain**: Upgraded to the newest version for better integration.
+- **Chat History**: Implemented chat history for a seamless user experience.
+- **Mobile Friendly Chat**: The chat dynamically adjusts the width and size based on screen size for a better mobile experience.
+- **Modern Professional Styles**: The `/auth` page has been updated with new styles for sign-in, sign-up, and reset password, providing a modern and professional look.
+
 Welcome to the Supabase Auth using SSR package repository! This project demonstrates seamless integration of authentication in Next.js projects utilizing Supabase's server-side rendering (SSR) capabilities.
 
 ## Table of Contents
@@ -10,12 +18,12 @@ Welcome to the Supabase Auth using SSR package repository! This project demonstr
   - [Installation](#installation)
   - [Database Setup](#database-setup)
   - [Environment Variables](#environment-variables)
-- [Usage](#-usage)
-- [Email Templates](#-email-templates)
+- [Usage](#usage)
+- [Email Templates](#email-templates)
 - [Chat Interface Integration](#chat-interface-integration)
-- [License](#-license)
-- [Acknowledgements](#-acknowledgements)
-- [Packages Used](#-packages-used)
+- [License](#license)
+- [Acknowledgements](#acknowledgements)
+- [Packages Used](#packages-used)
 
 ## Features
 
@@ -38,6 +46,8 @@ Welcome to the Supabase Auth using SSR package repository! This project demonstr
    git clone https://github.com/ElectricCodeGuy/SupabaseAuthWithSSR.git
    ```
 
+````
+
 2. **Navigate to the Project Directory**
 
    ```bash
@@ -56,76 +66,60 @@ Before launching your application, you must configure the database schema within
 
 1. **Create the Users Table**
 
-   Navigate to your Supabase project's SQL editor and execute:
-
    ```sql
-   CREATE TABLE public.users (
-       id uuid not null,
-       full_name VARCHAR(255) DEFAULT 'UserName_Default',
-       email VARCHAR(255) UNIQUE NOT NULL
+   create table users (
+     -- UUID from auth.users
+     id uuid references auth.users not null primary key,
+     full_name text,
    );
    ```
 
+   This SQL statement creates a `users` table with columns for storing user data such as `id`, `full_name`. The `id` column is a foreign key referencing the `auth.users` table.
+
 2. **Enable Row Level Security (RLS)**
 
-   Secure your data by enabling RLS and setting up a user-specific access policy:
-
    ```sql
-   ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-
-   CREATE POLICY user_is_owner ON users FOR SELECT USING (auth.uid() = id);
+   alter table users enable row level security;
+   create policy "Can view own user data." on users for select using (auth.uid() = id);
+   create policy "Can update own user data." on users for update using (auth.uid() = id);
    ```
 
-   Ensure that "New users can sign up" is enabled in your project's Auth settings. Find this option at `Settings > Auth` in your Supabase dashboard. For more details, visit [Supabase Auth Settings](https://supabase.com/docs/guides/auth).
+   These SQL statements enable Row Level Security (RLS) on the `users` table and create policies to allow users to view and update their own data.
+
+3. **Create a Trigger Function**
 
    ```sql
-   ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-   CREATE POLICY insert_for_auth_users ON public.users FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-   CREATE POLICY user_is_owner ON public.users FOR SELECT USING (auth.uid() = id);
+   create function public.handle_new_user()
+   returns trigger as $$
+   begin
+     insert into public.users (id, full_name)
+     values (new.id, new.raw_user_meta_data->>'full_name');
+     return new;
+   end;
+   $$ language plpgsql security definer;
    ```
 
-3. **Sign Up for an Account**
+   This SQL function is a trigger function that automatically inserts a new user entry into the `public.users` table when a new user signs up via Supabase Auth. It extracts the `id`, `full_name` from the `auth.users` table and inserts them into the corresponding columns in the `public.users` table.
+
+4. **Create a Trigger**
+
+   ```sql
+   create trigger on_auth_user_created
+     after insert on auth.users
+     for each row execute procedure public.handle_new_user();
+   ```
+
+   This SQL statement creates a trigger named `on_auth_user_created` that executes the `public.handle_new_user()` function after each new user is inserted into the `auth.users` table.
+
+5. **Sign Up for an Account**
 
    - Navigate to `http://localhost:3000/auth` in your web browser.
    - Use the sign-up form to create an account. Ensure you use a valid email address that you have access to, as you'll need to verify it in the next step.
 
-4. **Verify Your Email**
+6. **Verify Your Email**
 
    - After signing up, Supabase will send an email to the address you provided. Check your inbox for an email from Supabase or your application.
    - Open the email and click on the verification link to confirm your email address. This step is crucial for activating your account and ensuring that you can log in and access the application's features.
-
-## Setting Up the Waitlist Database in Supabase OPTIONAL
-
-### Step 1: Create the `waiting_list` Table
-
-Execute this SQL query in your Supabase SQL editor to create the `waiting_list` table:
-
-```sql
-CREATE TABLE waiting_list (
-id BIGSERIAL PRIMARY KEY,
-email VARCHAR(255) UNIQUE NOT NULL,
-fullname TEXT,
-erhverv TEXT,
-created_at TIMESTAMPTZ DEFAULT NOW()
-);
-```
-
-### Step 2: Configure Row Level Security (RLS)
-
-1. **Enable RLS for the `waiting_list` table**:
-
-   - Go to the `Authentication` > `Policies` section of your Supabase project dashboard.
-   - Select your `waiting_list` table and toggle on RLS.
-
-2. **Create an RLS policy for inserts**:
-   - Still under `Policies`, click "New Policy".
-   - Set the **Policy Name** to `Allow user inserts`.
-   - For **Policy Definition**, choose `INSERT` as the action.
-   - Use `(auth.role() = 'authenticated')` for the **Using expression**.
-   - Leave the **Check expression** blank or adjust it according to your requirements.
-   - Finalize by setting the **Policy Command** to `INSERT`.
-
-This setup allows authenticated users to insert new entries into the `waiting_list` table while preventing them from reading other entries.
 
 ## Setting Up the Error Feedback Database in Supabase OPTIONAL
 
@@ -331,3 +325,4 @@ Each of these contributions has been invaluable in creating a comprehensive, sec
 - 📝 React Markdown (`react-markdown`): A component to render Markdown text in React applications, used for formatting chat messages.
 
 Each package plays a crucial role in building, styling, and securing the application, ensuring a seamless user experience and robust functionality.
+````

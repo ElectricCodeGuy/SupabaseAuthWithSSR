@@ -1,4 +1,4 @@
-'use server';
+import 'server-only';
 import { cache } from 'react';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
@@ -29,7 +29,7 @@ export const createServerSupabaseClient = () => {
 // React Cache: https://react.dev/reference/react/cache
 // Caches the session retrieval operation. This helps in minimizing redundant calls
 // across server components for the same session data.
-export const getSession = cache(async () => {
+async function getSessionUser() {
   const supabase = createServerSupabaseClient();
   try {
     const {
@@ -40,23 +40,20 @@ export const getSession = cache(async () => {
     console.error('Error:', error);
     return null;
   }
-});
+}
+
+export const getSession = cache(getSessionUser);
 
 // Caches the user information retrieval operation. Similar to getSession,
 // this minimizes redundant data fetching across components for the same user data.
 export const getUserInfo = cache(async (userId: string) => {
   const supabase = createServerSupabaseClient();
   try {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('users')
       .select('full_name, email')
       .eq('id', userId)
       .single();
-
-    if (error) {
-      console.error('Error fetching user info:', error);
-      return null;
-    }
 
     return data;
   } catch (error) {

@@ -1,8 +1,6 @@
-'use client';
-
+import React from 'react';
 import { useSearchParams } from 'next/navigation';
-import Alert from '@mui/material/Alert';
-import Box from '@mui/material/Box';
+import { Alert, Box } from '@mui/material';
 
 export default function Messages() {
   const searchParams = useSearchParams();
@@ -12,7 +10,6 @@ export default function Messages() {
   return (
     <Box
       sx={{
-        mt: 4,
         width: '100%',
         display: 'flex',
         flexDirection: 'column',
@@ -21,12 +18,12 @@ export default function Messages() {
     >
       {error && (
         <Alert severity="error" sx={{ maxWidth: '90%' }}>
-          {error}
+          {decodeURIComponent(error)}
         </Alert>
       )}
       {message && (
         <Alert severity="info" sx={{ maxWidth: '90%' }}>
-          {message}
+          {decodeURIComponent(message)}
         </Alert>
       )}
     </Box>

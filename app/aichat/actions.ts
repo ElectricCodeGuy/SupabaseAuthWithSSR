@@ -1,73 +1,79 @@
 'use server';
-import { Redis } from '@upstash/redis';
+
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { cookies } from 'next/headers';
+import { redis } from '@/lib/server/server';
 
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!
+const AutoScrollEnabledSchema = z.object({
+  autoScrollEnabled: z.boolean()
 });
-export async function fetchChatMessages(
-  chatKey: string,
-  type: 'prompts' | 'completions'
-): Promise<string[]> {
-  try {
-    return await redis.lrange(`${chatKey}:${type}`, -20, -1);
-  } catch (error) {
-    console.error(`Error fetching chat ${type} from Redis:`, error);
-    return [];
-  }
-}
-type MessageFromDB = {
-  id: string;
-  prompt: string;
-  completion: string;
-  user_id: string | null;
-  created_at: string;
-  updated_at: string;
-};
 
-export async function fetchChatMetadata(chatKey: string): Promise<{
-  metadata: Omit<MessageFromDB, 'prompt' | 'completion'> | null;
-  metadataString: string;
-}> {
-  try {
-    const metadata =
-      await redis.hgetall<Omit<MessageFromDB, 'prompt' | 'completion'>>(
-        chatKey
-      );
-    const metadataKey = `${chatKey}:metadata`;
-    const metadataString = (await redis.get(metadataKey)) || ''; // Cast as string
+export async function autoScrollCookie(formData: FormData) {
+  const autoScrollEnabledFormData = formData.get('autoScrollEnabled');
+  const autoScrollEnabledBoolean =
+    autoScrollEnabledFormData === 'true' ? true : false;
 
-    return { metadata, metadataString: metadataString as string }; // Type assertion
-  } catch (error) {
-    console.error('Error fetching chat metadata from Redis:', error);
-    return { metadata: null, metadataString: '' };
+  // Use the updated boolean value to validate against the schema
+  const result = AutoScrollEnabledSchema.safeParse({
+    autoScrollEnabled: autoScrollEnabledBoolean
+  });
+
+  if (result.success) {
+    cookies().set(
+      'autoScrollEnabled',
+      result.data.autoScrollEnabled ? 'true' : 'false',
+      {
+        maxAge: 60 * 60 * 24 * 7, // 1 week
+        httpOnly: false,
+        secure: false,
+        path: '/'
+      }
+    );
+  } else {
+    // Log the error if the validation fails
+    console.error('Invalid formData for autoScrollEnabled:', result.error);
+    // Optionally, throw an error or handle this case as needed
   }
 }
 
-export async function deleteChatData(formData: FormData) {
-  const formDataDeleteChat = z.object({
-    chatId: z.string(),
-    userId: z.string()
-  });
-  const result = formDataDeleteChat.safeParse({
-    chatId: formData.get('chatId') ? String(formData.get('chatId')) : '',
-    userId: formData.get('userId') ? String(formData.get('userId')) : ''
-  });
-  if (!result.success) {
-    return { message: 'Invalid input', success: false };
+const userIdSchema = z.string().min(1, { message: 'UserId cannot be empty' });
+const chatIdSchema = z.string().min(1, { message: 'ChatId cannot be empty' });
+
+export async function deleteChatData(userId: string, chatId: string) {
+  const userResult = userIdSchema.safeParse(userId);
+  const chatResult = chatIdSchema.safeParse(chatId);
+
+  // Check for validation failure
+  if (!userResult.success) {
+    throw new Error(userResult.error.message);
   }
-  const { chatId, userId } = result.data;
+  if (!chatResult.success) {
+    throw new Error(chatResult.error.message);
+  }
   const chatKey = `chat:${chatId}-user:${userId}`;
+  const userChatsIndexKey = `userChatsIndex:${userId}`; // Key for the ZSET that indexes chats for the user
 
   try {
+    // Start a Redis transaction
+    const transaction = redis.multi();
+
     // Delete chat-related keys from Redis
-    await redis.del(chatKey);
-    await redis.del(`${chatKey}:prompts`);
-    await redis.del(`${chatKey}:completions`);
-    revalidatePath('/aichat');
-    return { message: 'Filter tag and document chunks deleted successfully' };
+    transaction.del(chatKey);
+    transaction.del(`${chatKey}:prompts`);
+    transaction.del(`${chatKey}:completions`);
+    transaction.del(`${chatKey}:sources`);
+
+    // Remove the chat session reference from the user's sorted set
+    transaction.zrem(userChatsIndexKey, chatId);
+
+    // Execute the transaction
+    await transaction.exec();
+
+    // Optionally, trigger revalidation if you're using some form of static generation with ISR
+    revalidatePath('/aichat', 'layout');
+
+    return { message: 'Chat data and references deleted successfully' };
   } catch (error) {
     console.error('Error during deletion:', error);
     throw error; // Re-throw the error to be handled by the caller

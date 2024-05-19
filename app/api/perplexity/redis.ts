@@ -1,30 +1,26 @@
-import { Redis } from '@upstash/redis';
+import { redis } from '@/lib/server/server';
 
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!
-});
-
-type OpenAiLog = {
+export type OpenAiLog = {
   id: string;
   user_id: string | null;
   created_at: string;
   updated_at: string;
 };
+
 export const saveChatToRedis = async (
   chatSessionId: string,
   userId: string | null,
   currentMessageContent: string,
   completion: string
 ): Promise<void> => {
-  // Check if the chatSessionId is an empty string and throw an error if true
-  if (!chatSessionId.trim()) {
-    throw new Error('chatSessionId cannot be empty');
+  if (!chatSessionId) {
+    console.warn('Chat session ID is empty. Skipping saving chat to Redis.');
+    return;
   }
-
   const chatKey = `chat:${chatSessionId}-user:${userId}`;
   const promptsKey = `${chatKey}:prompts`;
   const completionsKey = `${chatKey}:completions`;
+  const userChatsIndexKey = `userChatsIndex:${userId}`;
 
   // Fetch the existing chat metadata
   const existingData = await redis.hgetall<OpenAiLog>(chatKey);
@@ -44,7 +40,9 @@ export const saveChatToRedis = async (
       : new Date().toISOString(),
     updated_at: new Date().toISOString()
   };
-
+  const score = isExistingChat
+    ? new Date(existingData.created_at).getTime() // Convert existing date to timestamp
+    : Date.now();
   try {
     // Use a pipeline to batch Redis operations
     const pipeline = redis.pipeline();
@@ -55,11 +53,10 @@ export const saveChatToRedis = async (
     // Append the new prompt and completion to their respective lists
     pipeline.rpush(promptsKey, currentMessageContent);
     pipeline.rpush(completionsKey, completion);
+    pipeline.zadd(userChatsIndexKey, { score: score, member: chatSessionId });
 
     // Execute the batched operations
     await pipeline.exec();
-
-    console.log('Successfully saved chat to Redis:', chatKey);
   } catch (error) {
     console.error('Error saving chat to Redis:', error);
   }

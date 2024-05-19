@@ -7,8 +7,6 @@ import Divider from '@mui/material/Divider';
 import FeatureCard from './components/landingpage/FeatureCard';
 import { getSession } from '@/lib/client/supabase'; // Import getSession
 
-export const revalidate = 3600; // revalidate the data at most every hour
-
 export default async function LandingPage() {
   const session = await getSession(); // Get session
   return (

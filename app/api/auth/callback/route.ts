@@ -1,66 +1,56 @@
 import { type EmailOtpType } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
-import { type NextRequest, NextResponse } from 'next/server';
-
+import { NextResponse, NextRequest } from 'next/server';
 import { createClient } from '@/lib/server/action';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   const cookieStore = cookies();
 
-  // Log incoming request details for debugging
-  console.log('Request URL:', request.url);
-
   const { searchParams } = new URL(request.url);
-  const token_hash = searchParams.get('token_hash');
+  const token_hash_searchParam = searchParams.get('token_hash');
+  const code = searchParams.get('code'); // New parameter for code
   const type = searchParams.get('type') as EmailOtpType | null;
-  const next = searchParams.get('next') ?? '/';
-
-  console.log('OTP Verification Details:', { token_hash, type });
-
+  const next = searchParams.get('next');
   const redirectTo = request.nextUrl.clone();
-  redirectTo.pathname = next;
-  redirectTo.searchParams.delete('token_hash');
-  redirectTo.searchParams.delete('type');
+
+  // Choose code if it's available; otherwise, use token_hash
+  const token_hash = code || token_hash_searchParam;
 
   if (token_hash && type) {
     const supabase = createClient(cookieStore);
 
-    // Attempt to verify OTP
-    const { data, error } = await supabase.auth.verifyOtp({
+    const { data } = await supabase.auth.verifyOtp({
       type,
       token_hash
     });
 
-    console.log('OTP Verification Response:', { data, error });
-
-    if (!error && data.user) {
-      // Insert user into the 'users' table directly after successful OTP verification
-      const { error: insertError } = await supabase
-        .from('users')
-        .insert([{ email: data.user.email, id: data.user.id }])
-        .single();
-
-      console.log(
-        'User Insertion Response:',
-        insertError ? { error: insertError } : 'Success'
-      );
-
-      if (insertError) {
-        console.error('Error inserting user:', insertError);
-        // Redirect to an error page on failure to insert user
-        redirectTo.pathname = '/redirect/auth-code-error';
-        return NextResponse.redirect(redirectTo);
+    if (data) {
+      if (next) {
+        // If the 'next' parameter exists, redirect to its value
+        redirectTo.pathname = next;
+      } else {
+        redirectTo.pathname = '/auth';
+        redirectTo.searchParams.set(
+          'message',
+          encodeURIComponent('You can now sign in.')
+        ); // Add the message in Danish
       }
-
-      // Successfully verified and inserted the user, now redirect
-      redirectTo.searchParams.delete('next');
-      return NextResponse.redirect(redirectTo);
+    } else {
+      // OTP verification failed, redirect to error page
+      redirectTo.pathname = '/redirect/auth-code-error';
     }
   } else {
-    console.log('Missing token_hash or type for OTP verification.');
+    // No valid token or type provided
+    redirectTo.pathname = '/redirect/auth-code-error';
   }
 
-  // Redirect to an error page if verification fails or if required parameters are missing
-  redirectTo.pathname = '/redirect/auth-code-error';
+  // Ensure to remove query parameters that are no longer needed
+  redirectTo.searchParams.delete('token_hash');
+  redirectTo.searchParams.delete('code'); // Also remove the code parameter
+  redirectTo.searchParams.delete('type');
+  redirectTo.searchParams.delete('next'); // Remove the 'next' parameter
+
   return NextResponse.redirect(redirectTo);
 }

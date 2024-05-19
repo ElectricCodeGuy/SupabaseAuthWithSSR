@@ -18,29 +18,13 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import InfoIcon from '@mui/icons-material/Info';
 import { redirect } from 'next/navigation';
-
-// Sample function to format dates
-const formatDate = (dateString: Date): string => {
-  const options: Intl.DateTimeFormatOptions = {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  };
-  return new Date(dateString).toLocaleDateString('da-DK', options); // Added 'da-DK' locale for Danish formatting
-};
-
-// Revalidation period set to 3600 seconds (1 hour) for data
-// Note: For server components, direct management of caching and re-fetching is within your data fetching utilities.
-// This serves as a conceptual application; adjust based on actual data management needs.
-// https://nextjs.org/docs/app/building-your-application/data-fetching/fetching-caching-and-revalidating
-
-export const revalidate = 3600;
+import { format } from 'date-fns';
 
 export default async function ProtectedPage() {
   const session = await getSession();
   if (!session) return redirect('/login');
-  const userInfo = await getUserInfo(session.id);
 
+  const userInfo = await getUserInfo(session.id);
   if (!userInfo) {
     return (
       <Container>
@@ -54,10 +38,9 @@ export default async function ProtectedPage() {
   // Hypothetical user attributes (example)
   // In a real application, this information would be retrieved from a Supabase schema
   // along with other user details. Here, it's included as a static example.
-
   const userAttributes = {
-    location: 'Copenhagen, Denmark',
-    joinDate: formatDate(new Date()),
+    location: 'New York, USA',
+    joinDate: format(new Date(), 'MMMM d, yyyy'),
     bio: 'Developer with a passion for web technologies and open source. Loves exploring new techniques and collaborating on global projects.'
   };
 
@@ -99,7 +82,7 @@ export default async function ProtectedPage() {
                     <CalendarTodayIcon />
                   </ListItemIcon>
                   <ListItemText
-                    primary={`Joined: ${formatDate(new Date() as Date)}`}
+                    primary={`Joined: ${userAttributes.joinDate}`}
                   />
                 </ListItem>
                 <ListItem>
