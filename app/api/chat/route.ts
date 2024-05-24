@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { StreamingTextResponse, Message, LangChainAdapter } from 'ai';
+import { streamText } from 'ai';
 import { v4 as uuidv4 } from 'uuid';
-import { ChatOpenAI } from '@langchain/openai';
-import { ChatAnthropic } from '@langchain/anthropic';
 import { saveChatToRedis } from './redis';
 import { authenticateAndInitialize } from './Auth';
 import { Redis } from '@upstash/redis';
 import { Ratelimit } from '@upstash/ratelimit';
-import { HumanMessage, AIMessage } from '@langchain/core/messages';
 import { revalidateTag } from 'next/cache';
+import { openai } from '@ai-sdk/openai';
+import { anthropic } from '@ai-sdk/anthropic';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -19,31 +18,23 @@ const redis = new Redis({
   token: process.env.UPSTASH_REDIS_REST_TOKEN!
 });
 
+const SYSTEM_TEMPLATE = `You are a helpful assistant. Answer all questions to the best of your ability. Helpfull answers in markdown`;
+
 const getModel = (selectedModel: string) => {
   if (selectedModel === 'claude3-opus') {
-    return new ChatAnthropic({
-      model: 'claude-3-opus-20240229',
-      maxTokens: 4000,
-      temperature: 0,
-      streaming: true,
-      verbose: true
-    });
+    return anthropic('claude-3-opus-20240229');
   } else {
-    return new ChatOpenAI({
-      temperature: 0.8,
-      modelName: selectedModel,
-      streaming: true,
-      verbose: true
-    });
+    return openai(selectedModel);
   }
 };
+
 export async function POST(req: NextRequest) {
   const authAndInitResult = await authenticateAndInitialize(req);
   const userId = authAndInitResult.userid.session.id;
 
   const ratelimit = new Ratelimit({
     redis,
-    limiter: Ratelimit.slidingWindow(30, '10s')
+    limiter: Ratelimit.slidingWindow(2, '10s')
   });
 
   const { success, limit, reset, remaining } = await ratelimit.limit(
@@ -62,52 +53,53 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const messages: Message[] = body.messages ?? [];
+  const messages = body.messages ?? [];
   const chatSessionId =
-    body.chatId && body.chatId.trim() !== '' && body.chatId !== '1'
-      ? body.chatId
-      : uuidv4(); // Generate a new chat ID if it's not provided. Also if the chat ID is '1' we generate a new chat ID. see page.tsx for explanation.
+    body.chatId && body.chatId.trim() !== '' ? body.chatId : uuidv4();
   const isNewChat = !body.chatId || body.chatId.trim() === '';
   const selectedModel = body.option ?? 'gpt-3.5-turbo-1106';
 
   const abortController = new AbortController();
   const signal = abortController.signal;
 
-  let partialCompletion = ''; // If user cancels the chat, or the stream is otherwise canceled we still save what ever that have been generated.
-
   req.signal.addEventListener('abort', () => {
     saveChatToRedis(
       chatSessionId,
       userId,
-      messages[messages.length - 1].content,
-      partialCompletion
+      messages[messages.length - 1]?.content || '',
+      ''
     );
     abortController.abort();
   });
 
   try {
-    const model = getModel(selectedModel as 'claude3' | 'chatgpt4');
+    const model = getModel(selectedModel);
 
-    const stream = await model.stream(
-      messages.map((message) =>
-        message.role == 'user'
-          ? new HumanMessage(message.content)
-          : new AIMessage(message.content)
-      ),
-      { signal }
-    );
+    const result = await streamText({
+      model,
+      messages: [
+        {
+          role: 'system',
+          content: SYSTEM_TEMPLATE
+        },
+        ...messages
+      ],
+      abortSignal: signal
+    });
 
-    const aiStream = LangChainAdapter.toAIStream(stream, {
+    let partialCompletion = '';
+
+    const aiStream = result.toAIStream({
       onToken: (token: string) => {
         partialCompletion += token;
       },
       onFinal: () => {
         try {
           saveChatToRedis(
-            chatSessionId, // Chat ID
-            userId, // User ID
-            messages[messages.length - 1].content, // Last user message
-            partialCompletion // Last user message
+            chatSessionId,
+            userId,
+            messages[messages.length - 1]?.content || '',
+            partialCompletion
           );
           console.log('Chat saved to Redis:', chatSessionId);
         } catch (error) {
@@ -119,7 +111,7 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    return new StreamingTextResponse(aiStream, {
+    return new NextResponse(aiStream, {
       headers: {
         'x-chat-id': chatSessionId,
         'x-new-chat': isNewChat ? 'true' : 'false',
@@ -135,9 +127,9 @@ export async function POST(req: NextRequest) {
         }
       });
     }
-    console.error('Error occurred:', e); // Log the actual error
+    console.error('Error occurred:', e);
     return new NextResponse('En uventet fejl opstod.', {
-      status: 500, // 500 Internal Server Error
+      status: 500,
       headers: {
         'Content-Type': 'application/json'
       }

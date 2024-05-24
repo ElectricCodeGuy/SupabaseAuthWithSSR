@@ -22,40 +22,34 @@ type ChatPreview = {
   firstMessage: string;
   created_at: string;
 };
-const fetchChatData = cache(
-  async function FetchChat(chatKey: string): Promise<{
-    metadata: Omit<MessageFromDB, 'prompt' | 'completion'> | null;
-    prompts: string[];
-    completions: string[];
-  }> {
-    try {
-      const pipeline = redis.pipeline(); // Use a pipeline to batch Redis operations
-      pipeline.hgetall(chatKey);
-      pipeline.lrange(`${chatKey}:prompts`, -20, -1);
-      pipeline.lrange(`${chatKey}:completions`, -20, -1);
 
-      const [metadata, prompts, completions] = await pipeline.exec();
+async function FetchChat(chatKey: string): Promise<{
+  metadata: Omit<MessageFromDB, 'prompt' | 'completion'> | null;
+  prompts: string[];
+  completions: string[];
+}> {
+  try {
+    const pipeline = redis.pipeline(); // Use a pipeline to batch Redis operations
+    pipeline.hgetall(chatKey);
+    pipeline.lrange(`${chatKey}:prompts`, 0, -1);
+    pipeline.lrange(`${chatKey}:completions`, 0, -1);
 
-      return {
-        metadata: metadata as Omit<
-          MessageFromDB,
-          'prompt' | 'completion'
-        > | null,
-        prompts: prompts as string[],
-        completions: completions as string[]
-      };
-    } catch (error) {
-      console.error('Error fetching chat data from Redis:', error);
-      return {
-        metadata: null,
-        prompts: [],
-        completions: []
-      };
-    }
-  },
-  ['datafetch'],
-  { tags: ['datafetch'], revalidate: 3600 }
-);
+    const [metadata, prompts, completions] = await pipeline.exec();
+
+    return {
+      metadata: metadata as Omit<MessageFromDB, 'prompt' | 'completion'> | null,
+      prompts: prompts as string[],
+      completions: completions as string[]
+    };
+  } catch (error) {
+    console.error('Error fetching chat data from Redis:', error);
+    return {
+      metadata: null,
+      prompts: [],
+      completions: []
+    };
+  }
+}
 
 const fetchChatPreviews = cache(
   async function fetchData(userId: string): Promise<ChatPreview[]> {
@@ -108,7 +102,7 @@ export default async function ChatPage({ params }: { params: { id: string } }) {
 
   const [chatPreviews, chatDataResult] = await Promise.all([
     fetchChatPreviews(userId),
-    chatKey ? fetchChatData(chatKey) : Promise.resolve(null)
+    chatKey ? FetchChat(chatKey) : Promise.resolve(null)
   ]);
 
   /*

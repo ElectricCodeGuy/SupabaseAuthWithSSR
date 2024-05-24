@@ -4,6 +4,7 @@ import React, {
   useEffect,
   useMemo,
   useState,
+  memo,
   FC,
   FormEvent,
   KeyboardEvent,
@@ -99,6 +100,189 @@ interface ChatProps {
   currentChat?: MessageFromDB | null;
   chatId?: string;
 }
+interface ChatMessageProps {
+  messages: Message[];
+}
+// Memoizing the Message component with React.memo
+// This optimization helps prevent unnecessary re-renders of the Message component.
+// React.memo will only re-render the component if its props change.
+// In this case, the Message component will only re-render when the 'message' prop changes.
+// This can improve performance by reducing the number of unnecessary re-renders.
+const MemoizedMessage = memo(({ message }: { message: Message }) => {
+  const [isCopied, setIsCopied] = useState(false);
+  const router = useRouter();
+  const componentsAI: Partial<Components> = {
+    a: ({ href, children }) => (
+      <a
+        href={href}
+        onClick={(e) => {
+          e.preventDefault();
+          if (href) {
+            router.push(href);
+          }
+        }}
+      >
+        {children}
+      </a>
+    ),
+    code({ className, children, ...props }) {
+      const match = /language-(\w+)/.exec(className || '');
+      const language = match && match[1] ? match[1] : '';
+      const inline = !language;
+      if (inline) {
+        return (
+          <code className={className} {...props}>
+            {children}
+          </code>
+        );
+      }
+
+      return (
+        <div
+          style={{
+            position: 'relative',
+            borderRadius: '5px',
+            padding: '20px',
+            marginTop: '20px',
+            maxWidth: '100%'
+          }}
+        >
+          <span
+            style={{
+              position: 'absolute',
+              top: '0',
+              left: '5px',
+              fontSize: '0.8em',
+              textTransform: 'uppercase'
+            }}
+          >
+            {language}
+          </span>
+          <div
+            style={{
+              overflowX: 'auto',
+              maxWidth: '1100px'
+            }}
+          >
+            <pre style={{ margin: '0' }}>
+              <code className={className} {...props}>
+                {children}
+              </code>
+            </pre>
+          </div>
+        </div>
+      );
+    }
+  };
+
+  const componentsUser: Partial<Components> = {
+    a: ({ href, children }) => (
+      <a
+        href={href}
+        onClick={(e) => {
+          e.preventDefault();
+          if (href) {
+            router.push(href);
+          }
+        }}
+      >
+        {children}
+      </a>
+    )
+  };
+  const copyToClipboard = (str: string): void => {
+    void window.navigator.clipboard.writeText(str);
+  };
+
+  const handleCopy = (content: string) => {
+    copyToClipboard(content);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 1000);
+  };
+
+  return (
+    <ListItem
+      sx={
+        message.role === 'user'
+          ? messageStyles.userMessage
+          : messageStyles.aiMessage
+      }
+    >
+      <Box
+        sx={{
+          position: 'absolute',
+          top: '10px',
+          left: '10px'
+        }}
+      >
+        {message.role === 'user' ? (
+          <PersonIcon sx={{ color: '#4caf50' }} />
+        ) : (
+          <AndroidIcon sx={{ color: '#607d8b' }} />
+        )}
+      </Box>
+      {message.role === 'assistant' && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '5px',
+            right: '5px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 24,
+            height: 24
+          }}
+          onClick={() => handleCopy(message.content)}
+        >
+          {isCopied ? (
+            <CheckCircleIcon fontSize="inherit" />
+          ) : (
+            <ContentCopyIcon fontSize="inherit" />
+          )}
+        </Box>
+      )}
+      <Box sx={{ overflowWrap: 'break-word' }}>
+        <Typography
+          variant="caption"
+          sx={{ fontWeight: 'bold', display: 'block' }}
+        >
+          {message.role === 'user' ? 'You' : 'AI'}
+        </Typography>
+        {message.role === 'user' ? (
+          <ReactMarkdown
+            components={componentsUser}
+            remarkPlugins={[remarkGfm, remarkMath]}
+            rehypePlugins={[rehypeHighlight]}
+          >
+            {message.content}
+          </ReactMarkdown>
+        ) : (
+          <ReactMarkdown
+            components={componentsAI}
+            remarkPlugins={[remarkGfm, remarkMath]}
+            rehypePlugins={[[rehypeHighlight, highlightOptionsAI]]}
+          >
+            {message.content}
+          </ReactMarkdown>
+        )}
+      </Box>
+    </ListItem>
+  );
+});
+
+MemoizedMessage.displayName = 'MemoizedMessage';
+
+const ChatMessage: FC<ChatMessageProps> = ({ messages }) => {
+  return (
+    <>
+      {messages.map((message, index) => (
+        <MemoizedMessage key={`${message.id}-${index}`} message={message} />
+      ))}
+    </>
+  );
+};
 
 const ChatComponent: FC<ChatProps> = ({ session, currentChat, chatId }) => {
   const token = session?.id;
@@ -107,7 +291,6 @@ const ChatComponent: FC<ChatProps> = ({ session, currentChat, chatId }) => {
   const router = useRouter();
   const pathname = usePathname();
 
-  const [isCopied, setIsCopied] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [showScrollToTop, setShowScrollToTop] = useState(false);
   const [chatIdToAppend, setChatIdToAppend] = useState<string | null>(null);
@@ -249,164 +432,6 @@ const ChatComponent: FC<ChatProps> = ({ session, currentChat, chatId }) => {
     }
   };
 
-  const componentsAI: Partial<Components> = {
-    a: ({ href, children }) => (
-      <a
-        href={href}
-        onClick={(e) => {
-          e.preventDefault();
-          if (href) {
-            router.push(href);
-          }
-        }}
-      >
-        {children}
-      </a>
-    ),
-    code({ className, children, ...props }) {
-      const match = /language-(\w+)/.exec(className || '');
-      const language = match && match[1] ? match[1] : '';
-      const inline = !language;
-      if (inline) {
-        return (
-          <code className={className} {...props}>
-            {children}
-          </code>
-        );
-      }
-
-      return (
-        <div
-          style={{
-            position: 'relative',
-            borderRadius: '5px',
-            padding: '20px',
-            marginTop: '20px',
-            maxWidth: '100%'
-          }}
-        >
-          <span
-            style={{
-              position: 'absolute',
-              top: '0',
-              left: '5px',
-              fontSize: '0.8em',
-              textTransform: 'uppercase'
-            }}
-          >
-            {language}
-          </span>
-          <div
-            style={{
-              overflowX: 'auto',
-              maxWidth: '1100px'
-            }}
-          >
-            <pre style={{ margin: '0' }}>
-              <code className={className} {...props}>
-                {children}
-              </code>
-            </pre>
-          </div>
-        </div>
-      );
-    }
-  };
-
-  const componentsUser: Partial<Components> = {
-    a: ({ href, children }) => (
-      <a
-        href={href}
-        onClick={(e) => {
-          e.preventDefault();
-          if (href) {
-            router.push(href);
-          }
-        }}
-      >
-        {children}
-      </a>
-    )
-  };
-  const copyToClipboard = (str: string): void => {
-    void window.navigator.clipboard.writeText(str);
-  };
-  const handleCopy = (content: string) => {
-    copyToClipboard(content);
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 1000);
-  };
-
-  const messageElements = messages.map((m, index) => (
-    <ListItem
-      key={`${m.id}-${index}`}
-      sx={
-        m.role === 'user' ? messageStyles.userMessage : messageStyles.aiMessage
-      }
-    >
-      <Box
-        sx={{
-          position: 'absolute',
-          top: '10px',
-          left: '10px'
-        }}
-      >
-        {m.role === 'user' ? (
-          <PersonIcon sx={{ color: '#4caf50' }} />
-        ) : (
-          <AndroidIcon sx={{ color: '#607d8b' }} />
-        )}
-      </Box>
-      {m.role === 'assistant' && (
-        <Box
-          sx={{
-            position: 'absolute',
-            top: '5px',
-            right: '5px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 24,
-            height: 24
-          }}
-          onClick={() => handleCopy(m.content)}
-        >
-          {isCopied ? (
-            <CheckCircleIcon fontSize="inherit" />
-          ) : (
-            <ContentCopyIcon fontSize="inherit" />
-          )}
-        </Box>
-      )}
-      <Box sx={{ overflowWrap: 'break-word' }}>
-        <Typography
-          variant="caption"
-          sx={{ fontWeight: 'bold', display: 'block' }}
-        >
-          {m.role === 'user' ? 'You' : 'AI'}
-        </Typography>
-        {m.role === 'user' ? (
-          <ReactMarkdown
-            components={componentsUser}
-            remarkPlugins={[remarkGfm, remarkMath]}
-            rehypePlugins={[rehypeHighlight]}
-          >
-            {m.content}
-          </ReactMarkdown>
-        ) : (
-          <ReactMarkdown
-            components={componentsAI}
-            remarkPlugins={[remarkGfm, remarkMath]}
-            rehypePlugins={[[rehypeHighlight, highlightOptionsAI]]}
-          >
-            {m.content}
-          </ReactMarkdown>
-        )}
-      </Box>
-    </ListItem>
-  ));
-
   const modelTypes = ['standart', 'perplex'];
 
   const createQueryString = useCallback(
@@ -491,7 +516,7 @@ const ChatComponent: FC<ChatProps> = ({ session, currentChat, chatId }) => {
             marginBottom: '120px'
           }}
         >
-          {messageElements}
+          <ChatMessage messages={messages} />
         </List>
       )}
       <Box
