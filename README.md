@@ -19,7 +19,7 @@
 
 ## CHANGELOG
 
-## [v1.3.0] - 2023-06-20
+## [v1.3.0] - 2024-05-25
 
 ### Added
 
@@ -33,7 +33,7 @@
 
 - **Memoized Message Component**: Implemented memoization for the `Message` component using `React.memo`. This optimization helps prevent unnecessary re-renders of the `Message` component by only re-rendering when its props change. Memoization improves performance by reducing the number of re-renders, especially in scenarios with large amounts of messages and frequent updates, such as streaming.
 
-### [v1.2.0] - 2023-06-15
+### [v1.2.0] - 2024-05-24
 
 #### Added
 
@@ -48,7 +48,7 @@
   - Enhanced code block rendering with syntax highlighting and language detection, providing a visually appealing and readable format for shared code snippets.
   - Upgraded the chat input area with multiline support, retry and stop buttons, and optimized integration with the selected AI model, enhancing the overall user input experience.
 
-### [v1.1.0] - 2023-05-24
+### [v1.1.0] - 2024-05-23
 
 #### Added
 
@@ -62,7 +62,7 @@
 - **Optimized Drawer Rendering**: Enhanced drawer rendering performance for users with numerous chats by leveraging `useMemo` to minimize unnecessary re-renders, resulting in a smoother and more efficient user interface.
 - **Optimized UseChat Component**: Improved the `UseChat` component's responsiveness and performance across various screen sizes, providing a consistent and optimized user experience.
 
-### [v1.0.0] - 2023-04-30
+### [v1.0.0] - 2024-05-22
 
 #### Added
 
