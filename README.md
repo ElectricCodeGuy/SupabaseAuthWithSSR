@@ -7,8 +7,8 @@
 ## UPDATES
 
 - **Latest AI Package**: Upgraded to the most recent AI package from Vercel, ensuring access to the latest features and improvements.
-- **Langchain Integration**: Integrated the newest version of Langchain for seamless and efficient communication between the application and the AI models.
-- **Seamless Chat History**: Introduced a user-friendly chat history feature, allowing users to easily navigate and reference previous conversations.
+- **Langchain Integration**: Integrated the newest version of Langchain for efficient communication between the application and the AI models.
+- **Chat History**: Introduced a user-friendly chat history feature, allowing users to easily navigate and reference previous conversations.
 - **Responsive Chat Interface**: Implemented a mobile-friendly chat interface that automatically adapts its width and size to fit various screen sizes, providing an optimal user experience across devices.
 - **Sleek Authentication Pages**: Revamped the `/auth` page with a modern and professional design for sign-in, sign-up, and password reset, enhancing the overall user experience.
 - **Swipeable Chat List Drawers**: Developed a mobile-friendly version of the chat list with swipeable drawers, making it easier for users to navigate and manage their chats on mobile devices.
@@ -19,6 +19,20 @@
 
 ## CHANGELOG
 
+## [v1.3.0] - 2023-06-20
+
+### Added
+
+- **Vercel AI SDK Integration**: Migrated from Langchain to the Vercel AI SDK for a more streamlined and efficient integration with AI models. The Vercel AI SDK provides a simpler and more straightforward approach to interacting with AI models, reducing unnecessary complexity in the codebase.
+
+### Removed
+
+- **Langchain Dependency**: Uninstalled Langchain to simplify the codebase and reduce unnecessary complexity. While Langchain provided useful functionality, it was deemed redundant given the capabilities of the Vercel AI SDK. An example of the previous Langchain integration can still be found in the `exampleWithLangchain.md` file in the package folder for reference.
+
+### Updated
+
+- **Memoized Message Component**: Implemented memoization for the `Message` component using `React.memo`. This optimization helps prevent unnecessary re-renders of the `Message` component by only re-rendering when its props change. Memoization improves performance by reducing the number of re-renders, especially in scenarios with large amounts of messages and frequent updates, such as streaming.
+
 ### [v1.2.0] - 2023-06-15
 
 #### Added
@@ -27,7 +41,7 @@
 
 - **Upgraded Chat Component**: Enriched the chat component with a range of new features and enhancements:
   - Expanded support for multiple AI models, including GPT-3.5, GPT-4, and Claude AI Opus, catering to diverse user preferences.
-  - Implemented a responsive design that dynamically adjusts the chat width and size based on screen size, ensuring a seamless experience across devices.
+  - Implemented a responsive design that dynamically adjusts the chat width and size based on screen size, responsize screensize across devices.
   - Added a convenient "scroll to top" button for effortless navigation within lengthy chat conversations.
   - Improved error handling and introduced user-friendly error messages to guide users and maintain a smooth interaction flow.
   - Enabled copy-to-clipboard functionality for assistant messages, allowing users to easily capture and share AI-generated responses.
@@ -54,7 +68,7 @@
 
 - **Latest AI Package**: Upgraded to the most recent AI package from Vercel, leveraging the latest advancements in artificial intelligence technology.
 - **Langchain Upgrade**: Updated to the newest version of Langchain, enhancing the integration and communication between the application and AI models.
-- **Chat History Feature**: Introduced a user-friendly chat history feature, enabling users to easily access and reference their previous conversations, providing a seamless user experience.
+- **Chat History Feature**: Introduced chat history feature, enabling users to easily access and reference their previous conversations.
 - **Mobile-Friendly Chat**: Implemented a responsive chat interface that dynamically adapts its width and size based on the user's screen size, ensuring optimal usability across various devices.
 - **Modern Authentication Pages**: Revamped the `/auth` page with a sleek and professional design for sign-in, sign-up, and password reset flows, elevating the overall user experience and visual appeal.
 
@@ -77,7 +91,7 @@
 
 - **Robust Authentication**: Utilize Supabase's comprehensive auth capabilities alongside SSR for enhanced security.
 - **Performance**: Leverage server-side rendering for faster load times and improved user experience.
-- **Next.js Integration**: Specifically designed for seamless integration with Next.js 14 projects.
+- **Next.js Integration**: Specifically designed for easy integration with Next.js 14 projects.
 
 ## Getting Started
 
