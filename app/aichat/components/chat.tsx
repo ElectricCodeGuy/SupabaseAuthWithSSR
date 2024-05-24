@@ -4,10 +4,10 @@ import React, {
   useEffect,
   useMemo,
   useState,
-  useRef,
   FC,
   FormEvent,
-  KeyboardEvent
+  KeyboardEvent,
+  useCallback
 } from 'react';
 import { useChat, type Message } from 'ai/react';
 import Box from '@mui/material/Box';
@@ -40,6 +40,11 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import Fab from '@mui/material/Fab';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import Radio from '@mui/material/Radio';
+import RadioGroup from '@mui/material/RadioGroup';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import FormControl from '@mui/material/FormControl';
+import MuiLink from '@mui/material/Link';
 
 const highlightOptionsAI: HighlightOptions = {
   detect: true,
@@ -107,8 +112,6 @@ const ChatComponent: FC<ChatProps> = ({ session, currentChat, chatId }) => {
   const [showScrollToTop, setShowScrollToTop] = useState(false);
   const [chatIdToAppend, setChatIdToAppend] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
-  const [selectedOption, setSelectedOption] =
-    useState<string>('gpt-3.5-turbo-1106');
 
   const handleScrollToTop = () => {
     window.scrollTo({
@@ -161,7 +164,9 @@ const ChatComponent: FC<ChatProps> = ({ session, currentChat, chatId }) => {
     return [];
   }, [currentChat]);
 
-  const modelType = searchParams.get('modelType') || 'openai';
+  const modelType = searchParams.get('modeltype') || 'standart';
+  const selectedOption =
+    searchParams.get('modelselected') || 'gpt-3.5-turbo-1106';
 
   const apiEndpoint = modelType === 'perplex' ? '/api/perplexity' : '/api/chat';
 
@@ -179,14 +184,15 @@ const ChatComponent: FC<ChatProps> = ({ session, currentChat, chatId }) => {
       Authorization: `Bearer ${token}`
     },
     body: {
-      chatId: chatId === '1' ? undefined : chatId,
+      chatId: chatId === '1' ? '' : chatId,
       option: selectedOption
     },
     initialMessages: initialMessages,
     onResponse: (res) => {
       if (res.status === 200) {
         const chatIdHeader = res.headers.get('x-chat-id');
-        if (chatIdHeader) {
+        const isNewChat = res.headers.get('x-new-chat');
+        if (chatIdHeader && isNewChat === 'true') {
           setChatIdToAppend(chatIdHeader);
         }
       } else {
@@ -212,10 +218,25 @@ const ChatComponent: FC<ChatProps> = ({ session, currentChat, chatId }) => {
 
   useEffect(() => {
     if (chatIdToAppend && !isLoading && !chatId) {
-      router.replace(`${pathname}/${chatIdToAppend}`, {
+      const newQueryParams = new URLSearchParams();
+      if (searchParams.has('modeltype')) {
+        newQueryParams.set(
+          'modeltype',
+          searchParams.get('modeltype') ?? 'standart'
+        );
+      }
+      if (searchParams.has('modelselected')) {
+        newQueryParams.set(
+          'modelselected',
+          searchParams.get('modelselected') ?? 'gpt-3.5-turbo-1106'
+        );
+      }
+      const newUrl = `${pathname}/${chatIdToAppend}?${newQueryParams.toString()}`;
+      router.replace(newUrl, {
         scroll: false
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatIdToAppend, isLoading, pathname, router, chatId]);
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -226,20 +247,6 @@ const ChatComponent: FC<ChatProps> = ({ session, currentChat, chatId }) => {
       event.preventDefault();
       handleSubmit(event as unknown as FormEvent<HTMLFormElement>);
     }
-  };
-
-  const formRef = useRef<HTMLFormElement>(null);
-
-  const handleIconClick = () => {
-    const syntheticEvent = new Event('submit', {
-      bubbles: true,
-      cancelable: true
-    }) as unknown as FormEvent<HTMLFormElement>;
-    handleSubmit(syntheticEvent);
-  };
-
-  const handleSubmitWithReload = async (e: FormEvent<HTMLFormElement>) => {
-    handleSubmit(e);
   };
 
   const componentsAI: Partial<Components> = {
@@ -400,15 +407,34 @@ const ChatComponent: FC<ChatProps> = ({ session, currentChat, chatId }) => {
     </ListItem>
   ));
 
-  const modelTypes = ['openai', 'perplex'];
+  const modelTypes = ['standart', 'perplex'];
 
-  const handleModelTypeChange = (
-    event: React.SyntheticEvent,
-    newValue: string | null
-  ) => {
-    const newSearchParams = new URLSearchParams(window.location.search);
-    newSearchParams.set('modelType', newValue || 'openai');
-    router.replace(`${pathname}?${newSearchParams.toString()}`, {
+  const createQueryString = useCallback(
+    (name: string, value: string) => {
+      const params = new URLSearchParams(searchParams);
+      if (value) {
+        params.set(name, value);
+      } else {
+        params.delete(name);
+      }
+      return params.toString();
+    },
+    [searchParams]
+  );
+
+  const handleModelTypeChange = (newValue: string | null) => {
+    const queryString = createQueryString('modeltype', newValue || 'standart');
+    router.replace(`${pathname}?${queryString}`, {
+      scroll: false
+    });
+  };
+
+  const handleOptionChange = (newValue: string | null) => {
+    const queryString = createQueryString(
+      'modelselected',
+      newValue || 'gpt-3.5-turbo-1106'
+    );
+    router.replace(`${pathname}?${queryString}`, {
       scroll: false
     });
   };
@@ -416,43 +442,82 @@ const ChatComponent: FC<ChatProps> = ({ session, currentChat, chatId }) => {
   return (
     <Container
       sx={{
-        minHeight: {
-          xs: '90vh',
-          sm: '95vh',
-          md: '100vh',
-          lg: '100vh',
-          xl: '100vh'
-        },
+        maxHeight: '100vh',
         maxWidth: { lg: 'md', xl: 'lg' },
-        marginBottom: '140px'
+        overflow: 'auto'
       }}
     >
-      <List sx={{ width: '100%' }}>{messageElements}</List>
-
+      {messages.length === 0 ? (
+        <Box
+          display="flex"
+          flexDirection="column"
+          justifyContent="center"
+          alignItems="center"
+          height="90vh"
+          textAlign="center"
+        >
+          <Typography variant="h3" color="textSecondary" paragraph>
+            Chat with our AI Assistant
+          </Typography>
+          <>
+            <Typography variant="body1" color="textSecondary" paragraph>
+              Experience the power of AI-driven conversations with our chat
+              template. Ask questions on any topic and get informative responses
+              instantly.
+            </Typography>
+            <Typography variant="body1" color="textSecondary" paragraph>
+              <strong>
+                Check out{' '}
+                <MuiLink
+                  href="https://www.lovguiden.dk/"
+                  target="_blank"
+                  rel="noopener"
+                  style={{ fontSize: '1.2rem', color: 'blue' }}
+                >
+                  Lovguiden
+                </MuiLink>
+                , a Danish legal AI platform, for a real-world example of AI in
+                action.
+              </strong>
+            </Typography>
+            <Typography variant="h4" color="textSecondary">
+              Start chatting now and enjoy the AI experience!
+            </Typography>
+          </>
+        </Box>
+      ) : (
+        <List
+          sx={{
+            marginBottom: '120px'
+          }}
+        >
+          {messageElements}
+        </List>
+      )}
       <Box
         component="form"
-        onSubmit={handleSubmitWithReload}
-        ref={formRef}
+        onSubmit={handleSubmit}
         sx={{
           position: 'fixed',
           left: {
             xs: '50%',
             sm: '50%',
-            md: 'calc(50% - 150px)',
-            lg: 'calc(50% - 150px)',
-            xl: 'calc(50% - 150px)'
+            md: 'calc(50% - 175px)',
+            lg: 'calc(50% - 175px)',
+            xl: 'calc(50% - 175px)'
           },
           transform: 'translateX(-50%)',
           bottom: 0,
           zIndex: 1100,
           display: 'flex',
           justifyContent: 'center',
-          padding: '16px',
+          padding: '2px',
+          marginBottom: '8px',
           width: {
             xs: '100%',
             sm: '100%',
-            md: '65%',
-            lg: '60%',
+            md: '60%',
+            lg: '55%',
             xl: '100%'
           },
           boxSizing: 'border-box',
@@ -465,8 +530,8 @@ const ChatComponent: FC<ChatProps> = ({ session, currentChat, chatId }) => {
           elevation={4}
           sx={{
             backgroundColor: 'lightgray',
-            pr: 1,
-            pl: 1,
+            pr: 0.5,
+            pl: 0.5,
             paddingBottom: 1,
             maxWidth: 1000,
             borderRadius: '20px',
@@ -487,17 +552,15 @@ const ChatComponent: FC<ChatProps> = ({ session, currentChat, chatId }) => {
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
-                  {
-                    <IconButton
-                      onClick={async () => {
-                        reload();
-                      }}
-                      disabled={isLoading}
-                      color="primary"
-                    >
-                      <RetryIcon />
-                    </IconButton>
-                  }
+                  <IconButton
+                    onClick={async () => {
+                      reload();
+                    }}
+                    disabled={isLoading}
+                    color="primary"
+                  >
+                    <RetryIcon />
+                  </IconButton>
                   {isLoading ? (
                     <IconButton
                       onClick={stop}
@@ -532,9 +595,10 @@ const ChatComponent: FC<ChatProps> = ({ session, currentChat, chatId }) => {
                     </IconButton>
                   ) : (
                     <IconButton
-                      onClick={handleIconClick}
-                      disabled={isLoading}
+                      aria-label="send message"
                       color="primary"
+                      type="submit"
+                      disabled={isLoading}
                     >
                       <SendIcon />
                     </IconButton>
@@ -562,25 +626,27 @@ const ChatComponent: FC<ChatProps> = ({ session, currentChat, chatId }) => {
               }
             }}
           />
-          <Grid container spacing={1} justifyContent="center">
-            {modelType === 'openai' && (
-              <Grid item xs={6} sm={4}>
+          <Grid
+            container
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+            gap={0.5}
+          >
+            {modelType === 'standart' && (
+              <Grid item xs={4.8} sm={4.8} md={5} lg={4} xl={4}>
                 <Autocomplete
                   options={[
                     'gpt-3.5-turbo-1106',
                     'gpt-3.5-turbo-16k',
                     'gpt-4-0125-preview',
                     'gpt-4-1106-preview',
-                    'gpt-4'
+                    'gpt-4',
+                    'claude3-opus'
                   ]}
                   size="small"
                   value={selectedOption}
-                  onChange={(
-                    event: React.SyntheticEvent,
-                    newValue: string | null
-                  ) => {
-                    setSelectedOption(newValue || '');
-                  }}
+                  onChange={(_, newValue) => handleOptionChange(newValue)}
                   renderInput={(params) => (
                     <TextField
                       {...params}
@@ -606,35 +672,26 @@ const ChatComponent: FC<ChatProps> = ({ session, currentChat, chatId }) => {
                 />
               </Grid>
             )}
-            <Grid item xs={6} sm={4}>
-              <Autocomplete
-                options={modelTypes}
-                value={modelType}
-                onChange={handleModelTypeChange}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Model Type"
-                    margin="normal"
-                    variant="outlined"
-                    InputProps={{
-                      ...params.InputProps,
-                      style: { borderRadius: 20, backgroundColor: 'white' }
-                    }}
-                  />
-                )}
-                size="small"
-                sx={{
-                  width: '100%',
-                  '.MuiAutocomplete-root .MuiOutlinedInput-root': {
-                    padding: '8px',
-                    '.MuiInputBase-input': {
-                      padding: '10px 14px'
-                    }
-                  }
-                }}
-                disableClearable
-              />
+            <Grid item xs={7} sm={7} md={6} lg={4} xl={4}>
+              <FormControl component="fieldset" sx={{ width: '100%' }}>
+                <RadioGroup
+                  aria-label="model-type"
+                  name="model-type"
+                  defaultValue={'standart'}
+                  value={modelType}
+                  onChange={(_, newValue) => handleModelTypeChange(newValue)}
+                  row
+                >
+                  {modelTypes.map((model) => (
+                    <FormControlLabel
+                      key={model}
+                      value={model}
+                      control={<Radio />}
+                      label={model}
+                    />
+                  ))}
+                </RadioGroup>
+              </FormControl>
             </Grid>
           </Grid>
         </Paper>

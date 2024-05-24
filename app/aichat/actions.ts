@@ -1,6 +1,6 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { cookies } from 'next/headers';
 import { redis } from '@/lib/server/server';
@@ -37,20 +37,18 @@ export async function autoScrollCookie(formData: FormData) {
   }
 }
 
-const userIdSchema = z.string().min(1, { message: 'UserId cannot be empty' });
-const chatIdSchema = z.string().min(1, { message: 'ChatId cannot be empty' });
+const userIdSchema = z
+  .string()
+  .uuid({ message: 'UUID is Wrong for some reason?????' });
 
 export async function deleteChatData(userId: string, chatId: string) {
   const userResult = userIdSchema.safeParse(userId);
-  const chatResult = chatIdSchema.safeParse(chatId);
 
   // Check for validation failure
   if (!userResult.success) {
     throw new Error(userResult.error.message);
   }
-  if (!chatResult.success) {
-    throw new Error(chatResult.error.message);
-  }
+
   const chatKey = `chat:${chatId}-user:${userId}`;
   const userChatsIndexKey = `userChatsIndex:${userId}`; // Key for the ZSET that indexes chats for the user
 
@@ -70,8 +68,8 @@ export async function deleteChatData(userId: string, chatId: string) {
     // Execute the transaction
     await transaction.exec();
 
-    // Optionally, trigger revalidation if you're using some form of static generation with ISR
-    revalidatePath('/aichat', 'layout');
+    // Rerender the list of chats using the 'datafetch' tag
+    revalidateTag('datafetch');
 
     return { message: 'Chat data and references deleted successfully' };
   } catch (error) {

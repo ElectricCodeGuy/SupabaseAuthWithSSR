@@ -168,6 +168,8 @@ export default async function ChatPage({ params }: { params: { id: string } }) {
     <Box
       sx={{
         display: 'flex',
+        overflow: 'hidden',
+        maxHeight: '100vh',
         pt: {
           xs: 4,
           sm: 4,

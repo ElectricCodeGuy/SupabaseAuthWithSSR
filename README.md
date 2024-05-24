@@ -1,14 +1,62 @@
 # Supabase Auth with SSR 🚀
 
+## Lovguiden.dk
+
+## Lovguiden.ai
+
 ## UPDATES
 
-- **Newest AI Package**: Updated to the latest AI package from Vercel.
-- **Langchain**: Upgraded to the newest version for better integration.
-- **Chat History**: Implemented chat history for a seamless user experience.
-- **Mobile Friendly Chat**: The chat dynamically adjusts the width and size based on screen size for a better mobile experience.
-- **Modern Professional Styles**: The `/auth` page has been updated with new styles for sign-in, sign-up, and reset password, providing a modern and professional look.
+- **Latest AI Package**: Upgraded to the most recent AI package from Vercel, ensuring access to the latest features and improvements.
+- **Langchain Integration**: Integrated the newest version of Langchain for seamless and efficient communication between the application and the AI models.
+- **Seamless Chat History**: Introduced a user-friendly chat history feature, allowing users to easily navigate and reference previous conversations.
+- **Responsive Chat Interface**: Implemented a mobile-friendly chat interface that automatically adapts its width and size to fit various screen sizes, providing an optimal user experience across devices.
+- **Sleek Authentication Pages**: Revamped the `/auth` page with a modern and professional design for sign-in, sign-up, and password reset, enhancing the overall user experience.
+- **Swipeable Chat List Drawers**: Developed a mobile-friendly version of the chat list with swipeable drawers, making it easier for users to navigate and manage their chats on mobile devices.
+- **Claude AI Opus Support**: Expanded the available AI models by integrating Claude AI Opus, offering users more options for their chat interactions.
+- **Abort Signal Handling**: Incorporated abort signal functionality to allow users to cancel ongoing chat requests gracefully.
+- **Robust Partial Chat Save**: Implemented a reliable partial chat save mechanism. If a user aborts the chat mid-stream or if the stream fails for any reason, the application will store the generated content up to that point, ensuring no data loss.
+- **Optimized UseChat Component**: Enhanced the `UseChat` component's performance and responsiveness across different screen sizes, providing a smooth and efficient user experience.
 
-Welcome to the Supabase Auth using SSR package repository! This project demonstrates seamless integration of authentication in Next.js projects utilizing Supabase's server-side rendering (SSR) capabilities.
+## CHANGELOG
+
+### [v1.2.0] - 2023-06-15
+
+#### Added
+
+- **Enhanced Chat List Deletion**: Improved the chat list deletion process with robust checking and validation using Zod. When a chat is deleted, only the associated tag is revalidated, optimizing cache management and avoiding unnecessary clearing of the entire cache for the `aichat` component.
+
+- **Upgraded Chat Component**: Enriched the chat component with a range of new features and enhancements:
+  - Expanded support for multiple AI models, including GPT-3.5, GPT-4, and Claude AI Opus, catering to diverse user preferences.
+  - Implemented a responsive design that dynamically adjusts the chat width and size based on screen size, ensuring a seamless experience across devices.
+  - Added a convenient "scroll to top" button for effortless navigation within lengthy chat conversations.
+  - Improved error handling and introduced user-friendly error messages to guide users and maintain a smooth interaction flow.
+  - Enabled copy-to-clipboard functionality for assistant messages, allowing users to easily capture and share AI-generated responses.
+  - Enhanced code block rendering with syntax highlighting and language detection, providing a visually appealing and readable format for shared code snippets.
+  - Upgraded the chat input area with multiline support, retry and stop buttons, and optimized integration with the selected AI model, enhancing the overall user input experience.
+
+### [v1.1.0] - 2023-05-24
+
+#### Added
+
+- **Swipeable Chat List Drawers**: Introduced swipeable chat list drawers, enhancing the mobile user experience by providing intuitive navigation and management of chats.
+- **Claude AI Opus Integration**: Expanded the available AI models by integrating Claude AI Opus, offering users an additional option for their chat interactions.
+- **Abort Signal Handling**: Implemented abort signal functionality, allowing users to gracefully cancel ongoing chat requests, improving overall application responsiveness.
+- **Partial Chat Save**: Developed a robust partial chat save mechanism. In the event of a user aborting the chat mid-stream or a stream failure, the application now stores the generated content up to that point, minimizing data loss and ensuring a more reliable user experience.
+
+#### Updated
+
+- **Optimized Drawer Rendering**: Enhanced drawer rendering performance for users with numerous chats by leveraging `useMemo` to minimize unnecessary re-renders, resulting in a smoother and more efficient user interface.
+- **Optimized UseChat Component**: Improved the `UseChat` component's responsiveness and performance across various screen sizes, providing a consistent and optimized user experience.
+
+### [v1.0.0] - 2023-04-30
+
+#### Added
+
+- **Latest AI Package**: Upgraded to the most recent AI package from Vercel, leveraging the latest advancements in artificial intelligence technology.
+- **Langchain Upgrade**: Updated to the newest version of Langchain, enhancing the integration and communication between the application and AI models.
+- **Chat History Feature**: Introduced a user-friendly chat history feature, enabling users to easily access and reference their previous conversations, providing a seamless user experience.
+- **Mobile-Friendly Chat**: Implemented a responsive chat interface that dynamically adapts its width and size based on the user's screen size, ensuring optimal usability across various devices.
+- **Modern Authentication Pages**: Revamped the `/auth` page with a sleek and professional design for sign-in, sign-up, and password reset flows, elevating the overall user experience and visual appeal.
 
 ## Table of Contents
 
