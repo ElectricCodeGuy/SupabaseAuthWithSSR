@@ -23,7 +23,7 @@ type ChatPreview = {
   created_at: string;
 };
 
-async function FetchChat(chatKey: string): Promise<{
+async function fetchChat(chatKey: string): Promise<{
   metadata: Omit<MessageFromDB, 'prompt' | 'completion'> | null;
   prompts: string[];
   completions: string[];
@@ -100,11 +100,6 @@ export default async function ChatPage({ params }: { params: { id: string } }) {
   const userId = session?.id || 'unknown-user';
   const chatKey = `chat:${id}-user:${userId}`;
 
-  const [chatPreviews, chatDataResult] = await Promise.all([
-    fetchChatPreviews(userId),
-    chatKey ? FetchChat(chatKey) : Promise.resolve(null)
-  ]);
-
   /*
    * The aichat component requires a rewrite configuration in next.config.js
    * to handle the case when no id is provided in the URL. If there is no id,
@@ -130,6 +125,11 @@ export default async function ChatPage({ params }: { params: { id: string } }) {
    * We check teh chatId for being 1 since this is just a default value,
    * that we do not want to pass down to teh children.
    */
+
+  const [chatPreviews, chatDataResult] = await Promise.all([
+    fetchChatPreviews(userId),
+    chatKey ? fetchChat(chatKey) : Promise.resolve(null)
+  ]);
 
   const chatData =
     id !== '1' && chatDataResult

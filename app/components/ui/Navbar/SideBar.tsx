@@ -15,7 +15,6 @@ import LockOpenIcon from '@mui/icons-material/LockOpen';
 import SignOutButton from './SignOut';
 import type { User } from '@supabase/supabase-js';
 import { useTheme } from '@mui/material/styles';
-import useMediaQuery from '@mui/material/useMediaQuery';
 import Link from 'next/link';
 import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
@@ -27,7 +26,6 @@ interface SidebarProps {
 const Sidebar: FC<SidebarProps> = ({ session }) => {
   const [open, setOpen] = useState(false);
   const theme = useTheme();
-  const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
 
   const handleDrawerToggle = () => {
     setOpen(!open);
@@ -53,7 +51,7 @@ const Sidebar: FC<SidebarProps> = ({ session }) => {
       )}
 
       <Drawer
-        variant={isDesktop ? 'persistent' : 'temporary'}
+        variant={theme.breakpoints.up('md') ? 'permanent' : 'temporary'}
         open={open}
         onClose={handleDrawerToggle}
         anchor="left"
