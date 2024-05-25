@@ -95,39 +95,73 @@ const Sidebar: FC<SidebarProps> = ({ session }) => {
             </Link>
           )}
 
-          <Link href="/protected" passHref>
-            <ListItemButton onClick={handleDrawerToggle} disabled={!session}>
-              <ListItemIcon>
-                <LockOpenIcon />
-              </ListItemIcon>
-              <ListItemText primary="Protected" />
-            </ListItemButton>
-          </Link>
+          {session ? (
+            <>
+              <Link href="/protected" passHref>
+                <ListItemButton onClick={handleDrawerToggle}>
+                  <ListItemIcon>
+                    <LockOpenIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Protected" />
+                </ListItemButton>
+              </Link>
 
-          <Link href="/aichat" passHref>
-            <ListItemButton onClick={handleDrawerToggle} disabled={!session}>
-              <ListItemIcon>
-                <LockOpenIcon />
-              </ListItemIcon>
-              <ListItemText primary="Ai Chat" />
-            </ListItemButton>
-          </Link>
+              <Link href="/aichat" passHref>
+                <ListItemButton onClick={handleDrawerToggle}>
+                  <ListItemIcon>
+                    <LockOpenIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Ai Chat" />
+                </ListItemButton>
+              </Link>
 
-          <Link href="/actionchat" passHref>
-            <ListItemButton onClick={handleDrawerToggle} disabled={!session}>
-              <ListItemIcon>
-                <LockOpenIcon />
-              </ListItemIcon>
-              <ListItemText
-                primary={
-                  <>
-                    Action Chat{' '}
-                    <Chip label="New" color="primary" size="small" />
-                  </>
-                }
-              />
-            </ListItemButton>
-          </Link>
+              <Link href="/actionchat" passHref>
+                <ListItemButton onClick={handleDrawerToggle}>
+                  <ListItemIcon>
+                    <LockOpenIcon />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={
+                      <>
+                        Action Chat{' '}
+                        <Chip label="New" color="primary" size="small" />
+                      </>
+                    }
+                  />
+                </ListItemButton>
+              </Link>
+            </>
+          ) : (
+            <>
+              <ListItemButton disabled>
+                <ListItemIcon>
+                  <LockOpenIcon />
+                </ListItemIcon>
+                <ListItemText primary="Protected" />
+              </ListItemButton>
+
+              <ListItemButton disabled>
+                <ListItemIcon>
+                  <LockOpenIcon />
+                </ListItemIcon>
+                <ListItemText primary="Ai Chat" />
+              </ListItemButton>
+
+              <ListItemButton disabled>
+                <ListItemIcon>
+                  <LockOpenIcon />
+                </ListItemIcon>
+                <ListItemText
+                  primary={
+                    <>
+                      Action Chat{' '}
+                      <Chip label="New" color="primary" size="small" />
+                    </>
+                  }
+                />
+              </ListItemButton>
+            </>
+          )}
 
           {/* Add a divider and sign out button if session exists */}
           {session && (

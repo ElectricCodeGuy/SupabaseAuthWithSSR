@@ -12,14 +12,12 @@
   <img src="public/images/loginpage.png" alt="Sign In Page" style="width: 45%; margin: 10px;">
   <img src="public/images/loginpagepassword.png" alt="Sign In Page Password" style="width: 45%; margin: 10px;">
   <img src="public/images/signuppage.png" alt="Sign Up Page" style="width: 45%; margin: 10px;">
+ <img src="public/images/aichatimage.png" alt="AI Chat Page" style="width: 45%; margin: 10px;">
 </div>
 
 ### Videos
 
-<div style="display: flex; justify-content: center; align-items: center; flex-wrap: wrap;">
-  <video src="public/images/chatmove.mp4" controls style="width: 45%; margin: 10px;"></video>
-  <video src="public/images/movessrchat.mp4" controls style="width: 45%; margin: 10px;"></video>
-</div>
+You can find the videos located inside the public folder!
 
 ## CHANGELOG
 
