@@ -1,23 +1,36 @@
 # Supabase Auth with SSR 🚀
 
-## Lovguiden.dk
+## Project Showcase
 
-## Lovguiden.ai
+### Images
 
-## UPDATES
+<div style="display: flex; justify-content: center; align-items: center; flex-wrap: wrap;">
+  <img src="public/images/frontpage1.png" alt="Front Page 1" style="width: 45%; margin: 10px;">
+  <img src="public/images/frontpage2.png" alt="Front Page 2" style="width: 45%; margin: 10px;">
+  <img src="public/images/frontpage3.png" alt="Front Page 3" style="width: 45%; margin: 10px;">
+  <img src="public/images/protectedpage1.png" alt="Protected Page 1" style="width: 45%; margin: 10px;">
+  <img src="public/images/loginpage.png" alt="Sign In Page" style="width: 45%; margin: 10px;">
+  <img src="public/images/loginpagepassword.png" alt="Sign In Page Password" style="width: 45%; margin: 10px;">
+  <img src="public/images/signuppage.png" alt="Sign Up Page" style="width: 45%; margin: 10px;">
+</div>
 
-- **Latest AI Package**: Upgraded to the most recent AI package from Vercel, ensuring access to the latest features and improvements.
-- **Langchain Integration**: Integrated the newest version of Langchain for efficient communication between the application and the AI models.
-- **Chat History**: Introduced a user-friendly chat history feature, allowing users to easily navigate and reference previous conversations.
-- **Responsive Chat Interface**: Implemented a mobile-friendly chat interface that automatically adapts its width and size to fit various screen sizes, providing an optimal user experience across devices.
-- **Sleek Authentication Pages**: Revamped the `/auth` page with a modern and professional design for sign-in, sign-up, and password reset, enhancing the overall user experience.
-- **Swipeable Chat List Drawers**: Developed a mobile-friendly version of the chat list with swipeable drawers, making it easier for users to navigate and manage their chats on mobile devices.
-- **Claude AI Opus Support**: Expanded the available AI models by integrating Claude AI Opus, offering users more options for their chat interactions.
-- **Abort Signal Handling**: Incorporated abort signal functionality to allow users to cancel ongoing chat requests gracefully.
-- **Robust Partial Chat Save**: Implemented a reliable partial chat save mechanism. If a user aborts the chat mid-stream or if the stream fails for any reason, the application will store the generated content up to that point, ensuring no data loss.
-- **Optimized UseChat Component**: Enhanced the `UseChat` component's performance and responsiveness across different screen sizes, providing a smooth and efficient user experience.
+### Videos
+
+<div style="display: flex; justify-content: center; align-items: center; flex-wrap: wrap;">
+  <video src="public/images/chatmove.mp4" controls style="width: 45%; margin: 10px;"></video>
+  <video src="public/images/movessrchat.mp4" controls style="width: 45%; margin: 10px;"></video>
+</div>
 
 ## CHANGELOG
+
+## [v1.4.0] - 2024-05-25
+
+### Added
+
+- **Vercel AI SDK Example**: Added an example demonstrating the usage of the new Vercel AI SDK with the `use server` directive. This example showcases how to create a Server Action to query a language model and update the frontend UI accordingly.
+- **Chat History**: Implemented a chat history feature that allows users to view and interact with their previous conversations. The chat history is seamlessly integrated into the user interface, enhancing the overall user experience.
+- **Streaming UI Feature**: Introduced a real-time streaming UI feature that enables users to see the AI-generated responses as they are being generated. This feature provides a more engaging and interactive experience, mimicking a natural conversation flow.
+- **useSWR Package Integration**: Implemented the useSWR package to demonstrate how to efficiently handle server actions and data fetching. The useSWR package provides a simple and powerful way to manage server state, ensuring optimal performance and user experience.
 
 ## [v1.3.0] - 2024-05-25
 

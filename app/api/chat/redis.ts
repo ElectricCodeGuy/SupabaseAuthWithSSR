@@ -13,8 +13,10 @@ export const saveChatToRedis = async (
   currentMessageContent: string,
   completion: string
 ): Promise<void> => {
-  if (!chatSessionId) {
-    console.warn('Chat session ID is empty. Skipping saving chat to Redis.');
+  if (!chatSessionId || completion === '') {
+    console.warn(
+      'Chat session ID is empty or Completion was Empty. Skipping saving chat to Redis.'
+    );
     return;
   }
   const chatKey = `chat:${chatSessionId}-user:${userId}`;

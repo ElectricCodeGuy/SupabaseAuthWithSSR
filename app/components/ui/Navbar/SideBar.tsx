@@ -17,6 +17,8 @@ import type { User } from '@supabase/supabase-js';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import Link from 'next/link';
+import Chip from '@mui/material/Chip';
+import Divider from '@mui/material/Divider';
 
 interface SidebarProps {
   session: User | null;
@@ -61,7 +63,7 @@ const Sidebar: FC<SidebarProps> = ({ session }) => {
         PaperProps={{
           elevation: 3,
           style: {
-            width: 250 // Increased width to accommodate the close button
+            width: 250
           }
         }}
       >
@@ -111,8 +113,31 @@ const Sidebar: FC<SidebarProps> = ({ session }) => {
             </ListItemButton>
           </Link>
 
-          {/* Sign out button if session exists */}
-          <ListItem>{session ? <SignOutButton /> : null}</ListItem>
+          <Link href="/actionchat" passHref>
+            <ListItemButton onClick={handleDrawerToggle} disabled={!session}>
+              <ListItemIcon>
+                <LockOpenIcon />
+              </ListItemIcon>
+              <ListItemText
+                primary={
+                  <>
+                    Action Chat{' '}
+                    <Chip label="New" color="primary" size="small" />
+                  </>
+                }
+              />
+            </ListItemButton>
+          </Link>
+
+          {/* Add a divider and sign out button if session exists */}
+          {session && (
+            <>
+              <Divider />
+              <ListItem sx={{ justifyContent: 'center', mt: 'auto' }}>
+                <SignOutButton />
+              </ListItem>
+            </>
+          )}
         </List>
       </Drawer>
     </>

@@ -1,0 +1,189 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+'use client';
+import React, { useState } from 'react';
+import { Box, Typography } from '@mui/material';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeHighlight, { Options as HighlightOptions } from 'rehype-highlight';
+import 'highlight.js/styles/github-dark.css';
+
+import {
+  Android as AndroidIcon,
+  ContentCopy as ContentCopyIcon,
+  CheckCircle as CheckCircleIcon
+} from '@mui/icons-material';
+const highlightOptionsAI: HighlightOptions = {
+  detect: true,
+  prefix: 'hljs-'
+};
+
+const messageStyles = {
+  userMessage: {
+    position: 'relative',
+    background: '#daf8cb',
+    color: '#203728',
+    pt: 2,
+    borderRadius: '16px',
+    margin: '8px 0',
+    alignSelf: 'flex-end',
+    wordBreak: 'break-word',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+  },
+  aiMessage: {
+    position: 'relative',
+    background: '#f0f0f0',
+    color: '#2c3e50',
+    pt: 2,
+    borderRadius: '16px',
+    margin: '8px 0',
+    alignSelf: 'flex-start',
+    wordBreak: 'break-word',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+  }
+};
+
+export function UserMessage({
+  children,
+  full_name
+}: {
+  children: React.ReactNode;
+  full_name: string;
+}) {
+  return (
+    <Box sx={messageStyles.userMessage}>
+      <Box position="relative">
+        <Typography
+          variant="caption"
+          sx={{
+            fontWeight: 'bold',
+            position: 'absolute',
+            top: -15,
+            left: '10px'
+          }}
+        >
+          {full_name}
+        </Typography>
+        <Box mt={1} ml={2} flexGrow={1} overflow="hidden" px={1}>
+          {children}
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+export function BotMessage({
+  children,
+  className
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  const [isCopied, setIsCopied] = useState(false);
+
+  const copyToClipboard = (str: string): void => {
+    void window.navigator.clipboard.writeText(str);
+  };
+
+  const handleCopy = (content: string) => {
+    copyToClipboard(content);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 1000);
+  };
+
+  return (
+    <Box sx={messageStyles.aiMessage} className={className}>
+      <Box
+        sx={{
+          position: 'absolute',
+          top: '10px',
+          left: '10px'
+        }}
+      >
+        <AndroidIcon sx={{ color: '#607d8b' }} />
+      </Box>
+      <Box
+        sx={{
+          position: 'absolute',
+          top: '5px',
+          right: '5px',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: 24,
+          height: 24
+        }}
+        onClick={() => handleCopy(children?.toString() || '')}
+      >
+        {isCopied ? (
+          <CheckCircleIcon fontSize="inherit" />
+        ) : (
+          <ContentCopyIcon fontSize="inherit" />
+        )}
+      </Box>
+      <Box ml={2} flexGrow={1} overflow="hidden" px={1}>
+        <ReactMarkdown
+          components={{
+            code({ className, children, ...props }) {
+              const match = /language-(\w+)/.exec(className || '');
+              const language = match && match[1] ? match[1] : '';
+              const inline = !language;
+              if (inline) {
+                return (
+                  <code className={className} {...props}>
+                    {children}
+                  </code>
+                );
+              }
+              return (
+                <div
+                  style={{
+                    position: 'relative',
+                    borderRadius: '5px',
+                    padding: '20px',
+                    marginTop: '20px',
+                    maxWidth: '100%' // Ensure the container fits its parent
+                  }}
+                >
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: '0',
+                      left: '5px',
+                      fontSize: '0.8em',
+                      textTransform: 'uppercase'
+                    }}
+                  >
+                    {language}
+                  </span>
+                  <div
+                    style={{
+                      overflowX: 'auto', // Enable horizontal scrolling
+                      maxWidth: '650px' // Set a fixed maximum width
+                    }}
+                  >
+                    <pre style={{ margin: '0' }}>
+                      <code className={className} {...props}>
+                        {children}
+                      </code>
+                    </pre>
+                  </div>
+                </div>
+              );
+            }
+          }}
+          remarkPlugins={[remarkGfm, remarkMath]}
+          rehypePlugins={[[rehypeHighlight, highlightOptionsAI]]}
+        >
+          {children?.toString()}
+        </ReactMarkdown>
+      </Box>
+    </Box>
+  );
+}
