@@ -5,7 +5,6 @@ import { saveChatToRedis } from './redis';
 import { authenticateAndInitialize } from './Auth';
 import { Redis } from '@upstash/redis';
 import { Ratelimit } from '@upstash/ratelimit';
-import { revalidateTag } from 'next/cache';
 import { openai } from '@ai-sdk/openai';
 import { anthropic } from '@ai-sdk/anthropic';
 
@@ -63,12 +62,6 @@ export async function POST(req: NextRequest) {
   const signal = abortController.signal;
 
   req.signal.addEventListener('abort', () => {
-    saveChatToRedis(
-      chatSessionId,
-      userId,
-      messages[messages.length - 1]?.content || '',
-      ''
-    );
     abortController.abort();
   });
 
@@ -85,20 +78,18 @@ export async function POST(req: NextRequest) {
         ...messages
       ],
       abortSignal: signal,
-      onFinish: (event) => {
+      onFinish: async (event) => {
         try {
-          saveChatToRedis(
+          await saveChatToRedis(
             chatSessionId,
             userId,
             messages[messages.length - 1]?.content || '',
-            event.text
+            event.text,
+            isNewChat
           );
           console.log('Chat saved to Redis:', chatSessionId);
         } catch (error) {
           console.error('Error saving chat to Redis:', error);
-        }
-        if (isNewChat) {
-          revalidateTag('datafetch');
         }
       }
     });

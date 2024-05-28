@@ -1,4 +1,5 @@
 import { redis } from '@/lib/server/server';
+import { revalidateTag } from 'next/cache';
 
 export type OpenAiLog = {
   id: string;
@@ -11,7 +12,8 @@ export const saveChatToRedis = async (
   chatSessionId: string,
   userId: string | null,
   currentMessageContent: string,
-  completion: string
+  completion: string,
+  isNewChat: boolean
 ): Promise<void> => {
   if (!chatSessionId || completion === '') {
     console.warn(
@@ -59,6 +61,9 @@ export const saveChatToRedis = async (
 
     // Execute the batched operations
     await pipeline.exec();
+    if (isNewChat) {
+      revalidateTag('datafetch');
+    }
   } catch (error) {
     console.error('Error saving chat to Redis:', error);
   }
