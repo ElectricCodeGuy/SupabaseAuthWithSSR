@@ -84,22 +84,14 @@ export async function POST(req: NextRequest) {
         },
         ...messages
       ],
-      abortSignal: signal
-    });
-
-    let partialCompletion = '';
-
-    const aiStream = result.toAIStream({
-      onToken: (token: string) => {
-        partialCompletion += token;
-      },
-      onCompletion: async () => {
+      abortSignal: signal,
+      onFinish: (event) => {
         try {
-          await saveChatToRedis(
+          saveChatToRedis(
             chatSessionId,
             userId,
             messages[messages.length - 1]?.content || '',
-            partialCompletion
+            event.text
           );
           console.log('Chat saved to Redis:', chatSessionId);
         } catch (error) {
@@ -111,7 +103,7 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    return new NextResponse(aiStream, {
+    return result.toAIStreamResponse({
       headers: {
         'x-chat-id': chatSessionId,
         'x-new-chat': isNewChat ? 'true' : 'false',

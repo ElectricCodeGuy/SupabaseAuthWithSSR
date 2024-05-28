@@ -205,8 +205,8 @@ async function submitMessage(
         await saveChatToRedis(
           CurrentChatSessionId,
           session.id,
-          text,
-          fullResponse
+          currentUserMessage,
+          text
         );
 
         aiState.done([

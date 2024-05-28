@@ -10,8 +10,8 @@
     "generate-types": "npx supabase gen types typescript --project-id YOUR_PROJECT_ID --schema public > types_db.ts"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^0.0.15",
-    "@ai-sdk/openai": "^0.0.14",
+    "@ai-sdk/anthropic": "^0.0.16",
+    "@ai-sdk/openai": "^0.0.16",
     "@emotion/cache": "^11.11.0",
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
