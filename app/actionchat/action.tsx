@@ -197,7 +197,36 @@ async function submitMessage(
           content: info.content,
           name: info.name
         }))
-      ]
+      ],
+      onFinish: async (event) => {
+        const { text } = event;
+        //const { promptTokens, completionTokens, totalTokens } = usage;
+
+        await saveChatToRedis(
+          CurrentChatSessionId,
+          session.id,
+          text,
+          fullResponse
+        );
+
+        aiState.done([
+          ...aiState.get(),
+          { role: 'assistant', content: fullResponse, id: uuidv4() }
+        ]);
+        /*  If you want to track the usage of the AI model, you can use the following code:'
+      import { track } from '@vercel/analytics/server';
+        track('ailoven', {
+          systemPromptTemplate,
+          currnetUserMessage,
+          fullResponse: text,
+          promptTokens,
+          completionTokens,
+          totalTokens
+        });
+      }
+      Check out Vercel track functionallity
+          */
+      }
     });
 
     let fullResponse = '';
@@ -207,21 +236,6 @@ async function submitMessage(
     }
 
     uiStream.done();
-    aiState.done([
-      ...aiState.get(),
-      {
-        role: 'assistant',
-        content: fullResponse,
-        id: uuidv4()
-      }
-    ]);
-
-    saveChatToRedis(
-      CurrentChatSessionId,
-      session.id,
-      currentUserMessage,
-      fullResponse
-    );
   })();
   return {
     id: Date.now(),

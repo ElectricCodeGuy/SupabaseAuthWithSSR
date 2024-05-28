@@ -93,9 +93,9 @@ export async function POST(req: NextRequest) {
       onToken: (token: string) => {
         partialCompletion += token;
       },
-      onFinal: () => {
+      onCompletion: async () => {
         try {
-          saveChatToRedis(
+          await saveChatToRedis(
             chatSessionId,
             userId,
             messages[messages.length - 1]?.content || '',
