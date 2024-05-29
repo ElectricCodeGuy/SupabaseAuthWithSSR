@@ -38,7 +38,7 @@ async function submitMessage(
   remaining?: number;
   reset?: number;
   id?: number;
-  display?: React.ReactElement;
+  display?: React.ReactNode;
   chatId?: string;
 }> {
   'use server';

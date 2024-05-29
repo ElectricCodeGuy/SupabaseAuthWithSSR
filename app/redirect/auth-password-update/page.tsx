@@ -1,17 +1,9 @@
 import 'server-only';
 import React from 'react';
 import { Stack } from '@mui/material';
-import { getSession } from '@/lib/client/supabase';
-import { redirect } from 'next/navigation';
 import PasswordUpdateForm from './PasswordUpdateForm';
 
 export default async function PasswordUpdatePage() {
-  const session = await getSession();
-
-  if (!session) {
-    redirect('/auth/signin');
-  }
-
   return (
     <Stack
       direction="column"

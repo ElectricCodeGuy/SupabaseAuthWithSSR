@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { streamText } from 'ai';
+import { streamText, CoreMessage } from 'ai';
 import { v4 as uuidv4 } from 'uuid';
 import { saveChatToRedis } from './redis';
 import { authenticateAndInitialize } from './Auth';
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const messages = body.messages ?? [];
+  const messages: CoreMessage[] = body.messages ?? [];
   const chatSessionId =
     body.chatId && body.chatId.trim() !== '' ? body.chatId : uuidv4();
   const isNewChat = !body.chatId || body.chatId.trim() === '';
@@ -61,29 +61,23 @@ export async function POST(req: NextRequest) {
   const abortController = new AbortController();
   const signal = abortController.signal;
 
-  req.signal.addEventListener('abort', () => {
-    abortController.abort();
-  });
-
   try {
     const model = getModel(selectedModel);
 
     const result = await streamText({
       model,
-      messages: [
-        {
-          role: 'system',
-          content: SYSTEM_TEMPLATE
-        },
-        ...messages
-      ],
+      system: SYSTEM_TEMPLATE,
+      messages: messages,
       abortSignal: signal,
       onFinish: async (event) => {
         try {
+          const lastMessage = messages[messages.length - 1];
+          const lastMessageContent =
+            typeof lastMessage?.content === 'string' ? lastMessage.content : '';
           await saveChatToRedis(
             chatSessionId,
             userId,
-            messages[messages.length - 1]?.content || '',
+            lastMessageContent,
             event.text,
             isNewChat
           );
