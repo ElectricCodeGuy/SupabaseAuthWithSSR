@@ -1,8 +1,8 @@
 'use client';
-import React, { useState, KeyboardEvent, FormEvent, lazy } from 'react';
+import React, { useState, KeyboardEvent, lazy } from 'react';
 import { useUIState, useActions } from 'ai/rsc';
 import { type AI } from './action';
-import { UserMessage } from './component/botmessage';
+import { UserMessage, BotMessage } from './component/botmessage';
 import {
   IconButton,
   InputAdornment,
@@ -25,8 +25,6 @@ import {
   Chat as ChatListIcon
 } from '@mui/icons-material';
 import { ChatScrollAnchor } from './hooks/chat-scroll-anchor';
-import { fetchChatPreviews } from './actionFetch';
-import useSWR from 'swr';
 
 const ChatHistoryDrawer = lazy(() => import('./component/UserChatList'));
 
@@ -46,30 +44,24 @@ export default function ChatComponentPage({
   const [inputValue, setInputValue] = useState('');
   const [messages, setMessages] = useUIState<typeof AI>();
   const [isLoading, setIsLoading] = useState(false);
-  const { submitMessage, ChatHistoryUpdate } = useActions();
+  const { submitMessage, ChatHistoryUpdate } = useActions<typeof AI>();
   const [isUserChatListOpen, setIsUserChatListOpen] = useState(false);
-  const [selectedModel, setSelectedModel] = useState('claude3');
+  const [selectedModel, setSelectedModel] = useState<'claude3' | 'chatgpt4'>(
+    'claude3'
+  );
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Enter' && event.shiftKey) {
       // Allow newline on Shift + Enter
     } else if (event.key === 'Enter') {
       event.preventDefault();
-      handleSubmit(event as unknown as FormEvent<HTMLFormElement>);
+      handleSubmit(event);
     }
   };
 
   const handleClearMessages = () => {
     setMessages([]);
   };
-
-  const { data: chatPreviews = [], isLoading: isChatPreviewsLoading } = useSWR(
-    isUserChatListOpen && userInfo ? userInfo.id : null,
-    async (userId: string) => {
-      const chatPreviews = await fetchChatPreviews(userId);
-      return chatPreviews;
-    }
-  );
 
   const handleLoadChatData = () => {
     setIsUserChatListOpen(true);
@@ -131,7 +123,7 @@ export default function ChatComponentPage({
       ) : (
         // Render messages
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        messages.map((message: any) => (
+        messages.map((message) => (
           <Box
             key={message.id}
             width="100%"
@@ -267,7 +259,6 @@ export default function ChatComponentPage({
         {userInfo && (
           <>
             <ChatHistoryDrawer
-              chatPreviews={chatPreviews}
               userInfo={userInfo}
               isDrawerOpen={isUserChatListOpen}
               setIsDrawerOpen={setIsUserChatListOpen}
@@ -278,7 +269,6 @@ export default function ChatComponentPage({
                   ? messages[messages.length - 1].chatId
                   : null
               }
-              isChatPreviewsLoading={isChatPreviewsLoading}
             />
             <FormControl sx={{ minWidth: 150, marginLeft: '16px' }}>
               <InputLabel id="model-select-label">Model</InputLabel>
@@ -288,7 +278,7 @@ export default function ChatComponentPage({
                 value={selectedModel}
                 label="Model"
                 onChange={(event) =>
-                  setSelectedModel(event.target.value as string)
+                  setSelectedModel(event.target.value as 'claude3' | 'chatgpt4')
                 }
               >
                 <MenuItem value="claude3">Claude</MenuItem>
@@ -320,6 +310,7 @@ export default function ChatComponentPage({
       ...currentMessages,
       {
         id: Date.now(),
+        role: 'user',
         display: (
           <UserMessage full_name={userInfo?.full_name || 'Default_user'}>
             {value}
@@ -332,11 +323,21 @@ export default function ChatComponentPage({
 
     const responseMessage = await submitMessage(
       inputValue,
-      selectedModel, // Pass the selected model instead of docArray
-      currentChatId
+      selectedModel,
+      currentChatId || ''
     );
 
-    setMessages((currentMessages) => [...currentMessages, responseMessage]);
+    setMessages((currentMessages) => [
+      ...currentMessages,
+      {
+        ...responseMessage,
+        role: 'assistant',
+        id: responseMessage.id || Date.now(),
+        display: responseMessage.display || (
+          <BotMessage>{responseMessage.message || 'No response'}</BotMessage>
+        )
+      }
+    ]);
     setInputValue('');
     setIsLoading(false);
   }

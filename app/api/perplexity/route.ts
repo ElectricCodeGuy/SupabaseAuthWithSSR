@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import OpenAI from 'openai';
-import { OpenAIStream, StreamingTextResponse, type Message } from 'ai';
+import { createOpenAI } from '@ai-sdk/openai';
+import { streamText, CoreMessage, Message } from 'ai';
 import { saveChatToRedis } from './redis';
 import { v4 as uuidv4 } from 'uuid';
 import { authenticateAndInitialize } from './AuthAndInit';
 import { Redis } from '@upstash/redis';
 import { Ratelimit } from '@upstash/ratelimit';
 import { revalidateTag } from 'next/cache';
-import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 
-const perplexity = new OpenAI({
-  apiKey: process.env.PERPLEXITY_API_KEY || '',
+const perplexity = createOpenAI({
+  apiKey: process.env.PERPLEXITY_API_KEY ?? '',
   baseURL: 'https://api.perplexity.ai/'
 });
 
@@ -20,7 +19,7 @@ const redis = new Redis({
 });
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+export const maxDuration = 30; // Updated to 30 seconds
 export const revalidate = true;
 
 export async function POST(req: NextRequest) {
@@ -53,11 +52,11 @@ export async function POST(req: NextRequest) {
     body.chatId && body.chatId.trim() !== '' ? body.chatId : uuidv4();
   const isNewChat = !body.chatId || body.chatId.trim() === '';
 
-  const fullMessages: ChatCompletionMessageParam[] = [
+  const fullMessages: CoreMessage[] = [
     {
       role: 'system',
       content: `
-    - You are a helpful assistant that always provides clear and accurate answers! For helpful information use Markdown. Use remark-math formatting for Math Equations\n
+    - You are a helpful assistant that always provides clear and accurate answers! For helpful information use Markdown. Use remark-math formatting for Math Equations
     - References: Reference official documentation and trusted sources where applicable. Link to sources using Markdown.
     `.trim()
     },
@@ -68,20 +67,16 @@ export async function POST(req: NextRequest) {
   ];
 
   try {
-    const response = await perplexity.chat.completions.create({
-      model: 'pplx-70b-online',
-      stream: true,
-      messages: fullMessages
-    });
-
-    // Stream response handling
-    const stream = OpenAIStream(response, {
-      onFinal: (completion) => {
+    const result = await streamText({
+      model: perplexity('llama-3-sonar-large-32k-online'),
+      messages: fullMessages,
+      onFinish: async (event) => {
         saveChatToRedis(
           chatSessionId,
           userId,
           messages[messages.length - 1].content,
-          completion
+          event.text,
+          isNewChat
         );
         if (isNewChat) {
           revalidateTag('datafetch');
@@ -90,13 +85,13 @@ export async function POST(req: NextRequest) {
     });
 
     // Return the streaming response
-    return new StreamingTextResponse(stream, {
+    return result.toAIStreamResponse({
       headers: {
         'x-chat-id': chatSessionId
       }
     });
   } catch (error) {
-    console.error('Error processing OpenAI response:', error);
+    console.error('Error processing Perplexity response:', error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
 }

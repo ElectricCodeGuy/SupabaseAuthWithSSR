@@ -14,7 +14,6 @@ import TerminalIcon from '@mui/icons-material/Terminal';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import SignOutButton from './SignOut';
 import type { User } from '@supabase/supabase-js';
-import { useTheme } from '@mui/material/styles';
 import Link from 'next/link';
 import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
@@ -25,7 +24,6 @@ interface SidebarProps {
 
 const Sidebar: FC<SidebarProps> = ({ session }) => {
   const [open, setOpen] = useState(false);
-  const theme = useTheme();
 
   const handleDrawerToggle = () => {
     setOpen(!open);
@@ -41,9 +39,8 @@ const Sidebar: FC<SidebarProps> = ({ session }) => {
           onClick={handleDrawerToggle}
           sx={{
             position: 'fixed',
-            zIndex: theme.zIndex.drawer + 1,
-            left: theme.spacing(2),
-            top: theme.spacing(2)
+            left: 20,
+            top: 20
           }}
         >
           <MenuOutlinedIcon />
@@ -51,16 +48,21 @@ const Sidebar: FC<SidebarProps> = ({ session }) => {
       )}
 
       <Drawer
-        variant={theme.breakpoints.up('md') ? 'permanent' : 'temporary'}
+        variant={'temporary'}
         open={open}
         onClose={handleDrawerToggle}
         anchor="left"
         ModalProps={{
-          keepMounted: true
+          keepMounted: true,
+          BackdropProps: {
+            style: { backgroundColor: 'transparent' }
+          }
         }}
-        PaperProps={{
-          elevation: 3,
-          style: {
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          '& .MuiDrawer-paper': {
             width: 250
           }
         }}
@@ -74,7 +76,7 @@ const Sidebar: FC<SidebarProps> = ({ session }) => {
           </ListItemButton>
 
           <Link href="/" passHref>
-            <ListItemButton onClick={handleDrawerToggle}>
+            <ListItemButton>
               <ListItemIcon>
                 <HomeOutlinedIcon />
               </ListItemIcon>
@@ -84,7 +86,7 @@ const Sidebar: FC<SidebarProps> = ({ session }) => {
 
           {!session && (
             <Link href="/auth" passHref>
-              <ListItemButton onClick={handleDrawerToggle}>
+              <ListItemButton>
                 <ListItemIcon>
                   <TerminalIcon />
                 </ListItemIcon>
@@ -96,7 +98,7 @@ const Sidebar: FC<SidebarProps> = ({ session }) => {
           {session ? (
             <>
               <Link href="/protected" passHref>
-                <ListItemButton onClick={handleDrawerToggle}>
+                <ListItemButton>
                   <ListItemIcon>
                     <LockOpenIcon />
                   </ListItemIcon>
@@ -105,7 +107,7 @@ const Sidebar: FC<SidebarProps> = ({ session }) => {
               </Link>
 
               <Link href="/aichat" passHref>
-                <ListItemButton onClick={handleDrawerToggle}>
+                <ListItemButton>
                   <ListItemIcon>
                     <LockOpenIcon />
                   </ListItemIcon>
@@ -114,7 +116,7 @@ const Sidebar: FC<SidebarProps> = ({ session }) => {
               </Link>
 
               <Link href="/actionchat" passHref>
-                <ListItemButton onClick={handleDrawerToggle}>
+                <ListItemButton>
                   <ListItemIcon>
                     <LockOpenIcon />
                   </ListItemIcon>

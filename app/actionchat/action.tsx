@@ -1,20 +1,16 @@
 'use server';
 import React from 'react';
 import { createAI, getMutableAIState, createStreamableUI } from 'ai/rsc';
-import { streamText, Message } from 'ai';
+import { streamText } from 'ai';
 import { Box, Typography, CircularProgress } from '@mui/material';
 import { BotMessage, UserMessage } from './component/botmessage';
 import { v4 as uuidv4 } from 'uuid';
-import { Redis } from '@upstash/redis';
 import { format } from 'date-fns';
 import { saveChatToRedis } from './lib/redis';
 import { openai } from '@ai-sdk/openai';
 import { anthropic } from '@ai-sdk/anthropic';
 import { getUserInfo, getSession } from '@/lib/client/supabase';
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!
-});
+import { redis } from '@/lib/server/server';
 
 const SYSTEM_TEMPLATE = `You are a helpful assistant. Answer all questions to the best of your ability. Provide helpful answers in markdown.`;
 
@@ -31,16 +27,7 @@ async function submitMessage(
   currentUserMessage: string,
   model_select: 'claude3' | 'chatgpt4',
   chatId: string
-): Promise<{
-  success?: boolean;
-  message?: string;
-  limit?: number;
-  remaining?: number;
-  reset?: number;
-  id?: number;
-  display?: React.ReactNode;
-  chatId?: string;
-}> {
+): Promise<SubmitMessageResult> {
   'use server';
 
   const CurrentChatSessionId = chatId || uuidv4();
@@ -73,8 +60,7 @@ async function submitMessage(
     ...aiState.get(),
     {
       role: 'user',
-      content: currentUserMessage,
-      id: uuidv4()
+      content: currentUserMessage
     }
   ]);
 
@@ -211,7 +197,7 @@ async function submitMessage(
 
         aiState.done([
           ...aiState.get(),
-          { role: 'assistant', content: fullResponse, id: uuidv4() }
+          { role: 'assistant', content: fullResponse }
         ]);
         /*  If you want to track the usage of the AI model, you can use the following code:'
       import { track } from '@vercel/analytics/server';
@@ -248,6 +234,7 @@ type MessageFromDB = {
   id: string;
   prompt: string;
   completion: string;
+  sources: string;
   user_id: string | null;
   created_at: string;
   updated_at: string;
@@ -257,24 +244,23 @@ async function ChatHistoryUpdate(
   full_name: string,
   chatId: string,
   userId: string
-): Promise<{
-  uiMessages: { id: number | string | null; display: React.ReactNode }[];
-  chatId: string;
-}> {
+): Promise<ChatHistoryUpdateResult> {
   'use server';
 
   async function fetchChatData(chatKey: string): Promise<{
     metadata: Omit<MessageFromDB, 'prompt' | 'completion'> | null;
     prompts: string[];
     completions: string[];
+    sources: string[];
   }> {
     try {
       const pipeline = redis.pipeline();
       pipeline.hgetall(chatKey);
       pipeline.lrange(`${chatKey}:prompts`, 0, -1);
       pipeline.lrange(`${chatKey}:completions`, 0, -1);
+      pipeline.lrange(`${chatKey}:sources`, 0, -1);
 
-      const [metadata, prompts, completions] = await pipeline.exec();
+      const [metadata, prompts, completions, sources] = await pipeline.exec();
 
       return {
         metadata: metadata as Omit<
@@ -282,14 +268,16 @@ async function ChatHistoryUpdate(
           'prompt' | 'completion'
         > | null,
         prompts: prompts as string[],
-        completions: completions as string[]
+        completions: completions as string[],
+        sources: sources as string[]
       };
     } catch (error) {
       console.error('Error fetching chat data from Redis:', error);
       return {
         metadata: null,
         prompts: [],
-        completions: []
+        completions: [],
+        sources: []
       };
     }
   }
@@ -302,6 +290,7 @@ async function ChatHistoryUpdate(
         id: chatId,
         prompt: JSON.stringify(chatDataResult.prompts),
         completion: JSON.stringify(chatDataResult.completions),
+        sources: JSON.stringify(chatDataResult.sources),
         user_id: userId,
         created_at: chatDataResult.metadata?.created_at
           ? format(
@@ -320,6 +309,7 @@ async function ChatHistoryUpdate(
         id: '',
         prompt: '[]',
         completion: '[]',
+        sources: '[]',
         user_id: null,
         created_at: '',
         updated_at: ''
@@ -327,7 +317,11 @@ async function ChatHistoryUpdate(
 
   const userMessages = JSON.parse(chatData.prompt) as string[];
   const assistantMessages = JSON.parse(chatData.completion) as string[];
-  const combinedMessages: Message[] = [];
+  const combinedMessages: {
+    role: 'user' | 'assistant';
+    id: string;
+    content: string;
+  }[] = [];
 
   for (
     let i = 0;
@@ -351,27 +345,28 @@ async function ChatHistoryUpdate(
   }
 
   const aiState = getMutableAIState<typeof AI>();
-  const aiStateMessages = combinedMessages.map((message) => ({
-    role:
-      message.role === 'user' || message.role === 'assistant'
-        ? message.role
-        : ('system' as const),
-    content: message.content,
-    id: message.id
+  const aiStateMessages: ServerMessage[] = combinedMessages.map((message) => ({
+    role: message.role,
+    content: message.content
   }));
   aiState.done(aiStateMessages);
-  const uiMessages = combinedMessages.map((message) => {
+
+  const uiMessages: ClientMessage[] = combinedMessages.map((message) => {
     if (message.role === 'user') {
       return {
         id: message.id,
+        role: 'user',
         display: (
           <UserMessage full_name={full_name}>{message.content}</UserMessage>
-        )
+        ),
+        chatId: chatId
       };
     } else {
       return {
         id: message.id,
-        display: <BotMessage>{message.content}</BotMessage>
+        role: 'assistant',
+        display: <BotMessage>{message.content}</BotMessage>,
+        chatId: chatId
       };
     }
   });
@@ -379,21 +374,51 @@ async function ChatHistoryUpdate(
   return { uiMessages, chatId };
 }
 
-const initialAIState: {
-  role: 'user' | 'assistant' | 'system' | 'function';
+type ServerMessage = {
+  role: 'user' | 'assistant';
   content: string;
-  id?: string;
-  name?: string;
-  chatId?: string | null;
-}[] = [];
+};
 
-const initialUIState: {
-  id: number | string | null;
+export type ClientMessage = {
+  id: string | number | null;
+  role: 'user' | 'assistant';
   display: React.ReactNode;
   chatId?: string | null;
-}[] = [];
+};
 
-export const AI = createAI({
+const initialAIState: ServerMessage[] = [];
+const initialUIState: ClientMessage[] = [];
+
+export type SubmitMessageResult = {
+  success?: boolean;
+  message?: string;
+  limit?: number;
+  remaining?: number;
+  reset?: number;
+  id?: number;
+  display?: React.ReactNode;
+  chatId?: string;
+};
+
+export type ChatHistoryUpdateResult = {
+  uiMessages: ClientMessage[];
+  chatId: string;
+};
+
+type Actions = {
+  submitMessage: (
+    currentUserMessage: string,
+    model_select: 'claude3' | 'chatgpt4',
+    chatId: string
+  ) => Promise<SubmitMessageResult>;
+  ChatHistoryUpdate: (
+    full_name: string,
+    chatId: string,
+    userId: string
+  ) => Promise<ChatHistoryUpdateResult>;
+};
+
+export const AI = createAI<ServerMessage[], ClientMessage[], Actions>({
   actions: {
     submitMessage,
     ChatHistoryUpdate

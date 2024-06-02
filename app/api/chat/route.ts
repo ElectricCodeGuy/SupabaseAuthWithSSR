@@ -3,19 +3,14 @@ import { streamText, CoreMessage } from 'ai';
 import { v4 as uuidv4 } from 'uuid';
 import { saveChatToRedis } from './redis';
 import { authenticateAndInitialize } from './Auth';
-import { Redis } from '@upstash/redis';
 import { Ratelimit } from '@upstash/ratelimit';
 import { openai } from '@ai-sdk/openai';
 import { anthropic } from '@ai-sdk/anthropic';
+import { redis } from '@/lib/server/server';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 export const revalidate = true;
-
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!
-});
 
 const SYSTEM_TEMPLATE = `You are a helpful assistant. Answer all questions to the best of your ability. Helpfull answers in markdown`;
 

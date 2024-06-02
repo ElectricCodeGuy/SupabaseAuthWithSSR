@@ -11,15 +11,9 @@ export default async function Page() {
   if (!session) {
     redirect('/auth');
   }
+
   const userInfo = await getUserInfo(session.id);
+  const userInfoWithId = userInfo ? { id: session.id, ...userInfo } : null;
 
-  if (userInfo) {
-    const userInfoWithId = {
-      id: session.id,
-      ...userInfo
-    };
-    return <ChatComponentPage userInfo={userInfoWithId} />;
-  }
-
-  return <ChatComponentPage userInfo={null} />;
+  return <ChatComponentPage userInfo={userInfoWithId} />;
 }

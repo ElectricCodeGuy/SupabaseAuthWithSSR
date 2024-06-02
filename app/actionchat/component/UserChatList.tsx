@@ -1,5 +1,5 @@
 import React, { type FC, useState, useMemo } from 'react';
-import { deleteChatData } from '../actionFetch';
+import { deleteChatData, fetchChatPreviews } from '../actionFetch';
 import {
   Drawer,
   Box,
@@ -17,11 +17,14 @@ import {
   Skeleton,
   Chip,
   Divider,
-  Typography
+  Typography,
+  CircularProgress
 } from '@mui/material';
 import { Delete as DeleteIcon } from '@mui/icons-material';
 import { format, differenceInDays, isToday, isYesterday } from 'date-fns';
 import { useSWRConfig } from 'swr';
+import { ClientMessage, ChatHistoryUpdateResult } from '../action';
+import useSWRInfinite from 'swr/infinite';
 
 type UserInfo = {
   id: string;
@@ -34,41 +37,53 @@ type ChatPreview = {
   created_at: string;
 };
 
-type CombinedDrawerProps = {
-  chatPreviews: ChatPreview[];
+interface CombinedDrawerProps {
   userInfo: UserInfo;
   isDrawerOpen: boolean;
-  setIsDrawerOpen: (_isOpen: boolean) => void;
+  setIsDrawerOpen: (isOpen: boolean) => void;
   ChatHistoryUpdate: (
-    _full_name: string,
-    _chatId: string,
-    _userId: string
-  ) => Promise<{
-    uiMessages: { id: number | string | null; display: React.ReactNode }[];
-    chatId: string;
-  }>;
-  setMessages: React.Dispatch<
-    React.SetStateAction<
-      { id: number | string | null; display: React.ReactNode }[]
-    >
-  >;
+    full_name: string,
+    chatId: string,
+    userId: string
+  ) => Promise<ChatHistoryUpdateResult>;
+  setMessages: (messages: ClientMessage[]) => void;
   currentChatId: string | null | undefined;
-  isChatPreviewsLoading: boolean;
-};
+}
 
 const CombinedDrawer: FC<CombinedDrawerProps> = ({
-  chatPreviews,
   userInfo,
   isDrawerOpen,
   setIsDrawerOpen,
   ChatHistoryUpdate,
   setMessages,
-  currentChatId,
-  isChatPreviewsLoading
+  currentChatId
 }) => {
   const [hoveredChatId, setHoveredChatId] = useState<string | null>(null);
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
   const [chatToDelete, setChatToDelete] = useState<string | null>(null);
+
+  const {
+    data: chatPreviews,
+    mutate: mutateChatPreviews,
+    isValidating: isLoadingMore,
+    size,
+    setSize
+  } = useSWRInfinite(
+    isDrawerOpen
+      ? (index) => [`userChatsIndex:${userInfo.id}`, index * 30]
+      : () => null,
+    async ([_, offset]: [string, number]) => {
+      const newChatPreviews = await fetchChatPreviews(userInfo.id, offset, 30);
+      return newChatPreviews;
+    }
+  );
+
+  const hasMore =
+    chatPreviews && chatPreviews[chatPreviews.length - 1].length === 30;
+
+  const loadMoreChats = () => {
+    setSize(size + 1);
+  };
 
   const { mutate } = useSWRConfig();
 
@@ -88,15 +103,11 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
       try {
         await deleteChatData(userInfo.id, chatToDelete);
         // Optimistically update the local cache
-        mutate(
-          userInfo.id,
-          (currentChatPreviews: ChatPreview[] = []) => {
-            return currentChatPreviews.filter(
-              (chat) => chat.id !== chatToDelete
-            );
-          },
-          false
-        );
+        mutateChatPreviews((currentChatPreviews: ChatPreview[][] = []) => {
+          return currentChatPreviews.map((chatPreviewPage) =>
+            chatPreviewPage.filter((chat) => chat.id !== chatToDelete)
+          );
+        }, false);
 
         // Check if the deleted chat is the currently selected chat
         if (currentChatId === chatToDelete) {
@@ -131,13 +142,18 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
   };
 
   const categorizedChats = useMemo(() => {
+    const chatPreviewsFlat = chatPreviews ? chatPreviews.flat() : [];
+
+    if (chatPreviewsFlat.length === 0) return {};
+
     const today: ChatPreview[] = [];
     const yesterday: ChatPreview[] = [];
     const last7Days: ChatPreview[] = [];
     const last30Days: ChatPreview[] = [];
+    const last2Months: ChatPreview[] = [];
     const older: ChatPreview[] = [];
 
-    chatPreviews.forEach((chat: ChatPreview) => {
+    chatPreviewsFlat.forEach((chat: ChatPreview) => {
       const chatDate = new Date(chat.created_at);
       if (isToday(chatDate)) {
         today.push(chat);
@@ -147,15 +163,15 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
         last7Days.push(chat);
       } else if (differenceInDays(new Date(), chatDate) <= 30) {
         last30Days.push(chat);
+      } else if (differenceInDays(new Date(), chatDate) <= 60) {
+        last2Months.push(chat);
       } else {
         older.push(chat);
       }
     });
 
-    return { today, yesterday, last7Days, last30Days, older };
+    return { today, yesterday, last7Days, last30Days, last2Months, older };
   }, [chatPreviews]);
-
-  const { today, yesterday, last7Days, last30Days, older } = categorizedChats;
 
   return (
     <Drawer
@@ -173,8 +189,25 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
         }
       }}
       sx={{
-        width: '350px',
-        '& .MuiPaper-root': { boxShadow: 'none', width: '350px' }
+        width: {
+          xs: '300px',
+          sm: '300px',
+          md: '350px',
+          lg: '350px',
+          xl: '350px'
+        },
+        '& .MuiPaper-root': {
+          boxShadow: 'none',
+          width: {
+            xs: '300px',
+            sm: '300px',
+            md: '350px',
+            lg: '350px',
+            xl: '350px'
+          },
+          backgroundColor: 'rgba(240, 247, 255, 0.9)',
+          border: '1px solid rgba(0, 0, 0, 0.1)' // Slim, dark border
+        }
       }}
     >
       <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -189,12 +222,12 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
           }}
         >
           <Typography variant="h3" sx={{ textAlign: 'center' }}>
-            Chat Historic
+            Chat History
           </Typography>
         </Box>
         <Box sx={{ overflow: 'auto', flexGrow: 1 }}>
           <List>
-            {isChatPreviewsLoading ? (
+            {!chatPreviews ? (
               Array.from({ length: 5 }).map((_, index) => (
                 <ListItem key={index} disablePadding>
                   <ListItemButton>
@@ -204,61 +237,105 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
               ))
             ) : (
               <>
-                <RenderChatSection
-                  title="I dag"
-                  chats={today}
-                  currentChatId={currentChatId}
-                  handleChatClick={handleChatClick}
-                  handleDeleteClick={handleDeleteClick}
-                  hoveredChatId={hoveredChatId}
-                  setHoveredChatId={setHoveredChatId}
-                  truncateMessage={truncateMessage}
-                  formatDate={formatDate}
-                />
-                <RenderChatSection
-                  title="I går"
-                  chats={yesterday}
-                  currentChatId={currentChatId}
-                  handleChatClick={handleChatClick}
-                  handleDeleteClick={handleDeleteClick}
-                  hoveredChatId={hoveredChatId}
-                  setHoveredChatId={setHoveredChatId}
-                  truncateMessage={truncateMessage}
-                  formatDate={formatDate}
-                />
-                <RenderChatSection
-                  title="Sidste 7 dage"
-                  chats={last7Days}
-                  currentChatId={currentChatId}
-                  handleChatClick={handleChatClick}
-                  handleDeleteClick={handleDeleteClick}
-                  hoveredChatId={hoveredChatId}
-                  setHoveredChatId={setHoveredChatId}
-                  truncateMessage={truncateMessage}
-                  formatDate={formatDate}
-                />
-                <RenderChatSection
-                  title="Sidste 30 dage"
-                  chats={last30Days}
-                  currentChatId={currentChatId}
-                  handleChatClick={handleChatClick}
-                  handleDeleteClick={handleDeleteClick}
-                  hoveredChatId={hoveredChatId}
-                  setHoveredChatId={setHoveredChatId}
-                  truncateMessage={truncateMessage}
-                  formatDate={formatDate}
-                />
-                <RenderChatSection
-                  title="Ældre"
-                  chats={older}
-                  currentChatId={currentChatId}
-                  handleChatClick={handleChatClick}
-                  handleDeleteClick={handleDeleteClick}
-                  hoveredChatId={hoveredChatId}
-                  setHoveredChatId={setHoveredChatId}
-                  truncateMessage={truncateMessage}
-                  formatDate={formatDate}
-                />
+                {chatPreviews.length === 0 ? (
+                  <Typography variant="body2" align="center" sx={{ mt: 2 }}>
+                    You do not have any chat history yet. Start a new chat to
+                    view your chat history.
+                  </Typography>
+                ) : (
+                  <>
+                    <RenderChatSection
+                      title="Today"
+                      chats={categorizedChats.today || []}
+                      currentChatId={currentChatId}
+                      handleChatClick={handleChatClick}
+                      handleDeleteClick={handleDeleteClick}
+                      hoveredChatId={hoveredChatId}
+                      setHoveredChatId={setHoveredChatId}
+                      truncateMessage={truncateMessage}
+                      formatDate={formatDate}
+                    />
+                    <RenderChatSection
+                      title="Yesterday"
+                      chats={categorizedChats.yesterday || []}
+                      currentChatId={currentChatId}
+                      handleChatClick={handleChatClick}
+                      handleDeleteClick={handleDeleteClick}
+                      hoveredChatId={hoveredChatId}
+                      setHoveredChatId={setHoveredChatId}
+                      truncateMessage={truncateMessage}
+                      formatDate={formatDate}
+                    />
+                    <RenderChatSection
+                      title="Last 7 days"
+                      chats={categorizedChats.last7Days || []}
+                      currentChatId={currentChatId}
+                      handleChatClick={handleChatClick}
+                      handleDeleteClick={handleDeleteClick}
+                      hoveredChatId={hoveredChatId}
+                      setHoveredChatId={setHoveredChatId}
+                      truncateMessage={truncateMessage}
+                      formatDate={formatDate}
+                    />
+                    <RenderChatSection
+                      title="Last 30 days"
+                      chats={categorizedChats.last30Days || []}
+                      currentChatId={currentChatId}
+                      handleChatClick={handleChatClick}
+                      handleDeleteClick={handleDeleteClick}
+                      hoveredChatId={hoveredChatId}
+                      setHoveredChatId={setHoveredChatId}
+                      truncateMessage={truncateMessage}
+                      formatDate={formatDate}
+                    />
+                    <RenderChatSection
+                      title="Last 2 months"
+                      chats={categorizedChats.last2Months || []}
+                      currentChatId={currentChatId}
+                      handleChatClick={handleChatClick}
+                      handleDeleteClick={handleDeleteClick}
+                      hoveredChatId={hoveredChatId}
+                      setHoveredChatId={setHoveredChatId}
+                      truncateMessage={truncateMessage}
+                      formatDate={formatDate}
+                    />
+                    <RenderChatSection
+                      title="Older chats"
+                      chats={categorizedChats.older || []}
+                      currentChatId={currentChatId}
+                      handleChatClick={handleChatClick}
+                      handleDeleteClick={handleDeleteClick}
+                      hoveredChatId={hoveredChatId}
+                      setHoveredChatId={setHoveredChatId}
+                      truncateMessage={truncateMessage}
+                      formatDate={formatDate}
+                    />
+                    {hasMore && (
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          justifyContent: 'center',
+                          mt: 2
+                        }}
+                      >
+                        {isLoadingMore ? (
+                          <CircularProgress size={24} />
+                        ) : (
+                          <Button
+                            onClick={loadMoreChats}
+                            size="small"
+                            variant="outlined"
+                            sx={{
+                              borderRadius: '8px'
+                            }}
+                          >
+                            Load more
+                          </Button>
+                        )}
+                      </Box>
+                    )}
+                  </>
+                )}
               </>
             )}
           </List>
@@ -268,7 +345,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
         open={deleteConfirmationOpen}
         onClose={() => setDeleteConfirmationOpen(false)}
       >
-        <DialogTitle>Bekræft sletning</DialogTitle>
+        <DialogTitle>Confirm Deletion</DialogTitle>
         <DialogContent>
           <DialogContentText>
             Are you sure you want to delete this chat?
@@ -341,14 +418,18 @@ const RenderChatSection: FC<RenderChatSectionProps> = ({
               }}
               onClick={() => handleChatClick(id)}
             >
-              {truncateMessage(firstMessage || `Chat ID: ${id}`, 32)}
+              {truncateMessage(firstMessage, 28)}
               <Chip
                 label={formatDate(created_at)}
                 size="small"
                 sx={{
                   position: 'absolute',
                   top: '8px',
-                  right: '20px',
+                  right: {
+                    xs: '4px',
+                    sm: '4px',
+                    md: '20px'
+                  },
                   fontSize: '0.6rem'
                 }}
               />

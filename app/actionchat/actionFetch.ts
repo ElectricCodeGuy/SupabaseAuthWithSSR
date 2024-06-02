@@ -11,7 +11,9 @@ type ChatPreview = {
 };
 
 export async function fetchChatPreviews(
-  userId: string
+  userId: string,
+  offset: number,
+  limit: number
 ): Promise<ChatPreview[]> {
   let chatPreviews: ChatPreview[] = [];
 
@@ -23,18 +25,18 @@ export async function fetchChatPreviews(
     }
 
     const validUserId = parseResult.data;
+
     const chatSessionIds = await redis.zrange(
       `userChatsIndex:${validUserId}`,
       '+inf',
       0,
-      { byScore: true, rev: true }
+      { byScore: true, rev: true, count: limit, offset: offset }
     );
-
     if (chatSessionIds.length === 0) {
       return chatPreviews;
     }
-
     const pipeline = redis.pipeline();
+
     chatSessionIds.forEach((chatSessionId) => {
       pipeline.hgetall(`chat:${chatSessionId}-user:${userId}`);
       pipeline.lindex(`chat:${chatSessionId}-user:${userId}:prompts`, 0);
@@ -48,6 +50,7 @@ export async function fetchChatPreviews(
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const chatMetadata = result as any;
           const firstMessage = pipelineResults[index + 1] as string;
+
           if (chatMetadata) {
             acc.push({
               id: chatSessionIds[index / 2] as string,
