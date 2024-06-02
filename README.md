@@ -21,6 +21,15 @@ You can find the videos located inside the public folder!
 
 ## CHANGELOG
 
+## [v1.5.0] - 2024-06-02
+
+### Added
+
+- **End-to-End Types**: Implemented types for `ServerMessage`, `ClientMessage`, `SubmitMessageResult`, and `ChatHistoryUpdateResult` to ensure type safety from client to server actions.
+- **Bug Fixes**: Fixed various bugs throughout the application.
+- **Chat History Improvement**: Enhanced the chat history feature in the server action chatbot to load the 30 newest messages initially, with a "load more" button to retrieve the next 30 messages.
+- **Perplexity Provider Integration**: Updated the integration of the Perplexity provider to use the `@ai-sdk/openai` module. This involved changing from the old OpenAI configuration to the new `createOpenAI` function from `@ai-sdk/openai`, ensuring compatibility with the Perplexity API. The updated code allows for seamless streaming of text responses and includes better error handling and rate limiting.
+
 ## [v1.4.0] - 2024-05-25
 
 ### Added
