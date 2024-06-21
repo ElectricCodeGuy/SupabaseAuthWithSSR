@@ -19,7 +19,7 @@ const redis = new Redis({
 });
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 30; // Updated to 30 seconds
+export const maxDuration = 60; // Updated to 30 seconds
 export const revalidate = true;
 
 export async function POST(req: NextRequest) {
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
       model: perplexity('llama-3-sonar-large-32k-online'),
       messages: fullMessages,
       onFinish: async (event) => {
-        saveChatToRedis(
+        await saveChatToRedis(
           chatSessionId,
           userId,
           messages[messages.length - 1].content,

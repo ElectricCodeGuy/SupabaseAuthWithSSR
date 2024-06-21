@@ -270,8 +270,10 @@ export default function ChatComponentPage({
                   : null
               }
             />
-            <FormControl sx={{ minWidth: 150, marginLeft: '16px' }}>
-              <InputLabel id="model-select-label">Model</InputLabel>
+            <FormControl sx={{ minWidth: 100, marginLeft: '8px' }}>
+              <InputLabel id="model-select-label" size="small">
+                Model
+              </InputLabel>
               <Select
                 labelId="model-select-label"
                 id="model-select"
@@ -280,9 +282,15 @@ export default function ChatComponentPage({
                 onChange={(event) =>
                   setSelectedModel(event.target.value as 'claude3' | 'chatgpt4')
                 }
+                size="small"
+                sx={{ fontSize: '0.875rem' }}
               >
-                <MenuItem value="claude3">Claude</MenuItem>
-                <MenuItem value="chatgpt4">ChatGPT-4</MenuItem>
+                <MenuItem value="claude3" sx={{ fontSize: '0.875rem' }}>
+                  Claude
+                </MenuItem>
+                <MenuItem value="chatgpt4" sx={{ fontSize: '0.875rem' }}>
+                  GPT-4
+                </MenuItem>
               </Select>
             </FormControl>
           </>

@@ -1,4 +1,3 @@
-'use server';
 import React from 'react';
 import { createAI, getMutableAIState, createStreamableUI } from 'ai/rsc';
 import { streamText } from 'ai';
@@ -16,7 +15,7 @@ const SYSTEM_TEMPLATE = `You are a helpful assistant. Answer all questions to th
 
 const getModel = (selectedModel: 'claude3' | 'chatgpt4') => {
   if (selectedModel === 'claude3') {
-    return anthropic('claude-3-opus-20240229');
+    return anthropic('claude-3-5-sonnet-20240620');
   } else if (selectedModel === 'chatgpt4') {
     return openai('gpt-4o');
   }
@@ -89,7 +88,7 @@ async function submitMessage(
   );
 
   (async () => {
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000)); // Simulate a delay
 
     uiStream.update(
       <Box
@@ -116,7 +115,7 @@ async function submitMessage(
       </Box>
     );
 
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000)); // Simulate a delay
 
     uiStream.update(
       <Box
@@ -143,7 +142,7 @@ async function submitMessage(
       </Box>
     );
 
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000)); // Simulate a delay
 
     uiStream.update(
       <Box
@@ -177,17 +176,18 @@ async function submitMessage(
       frequencyPenalty: 0.5,
       system: SYSTEM_TEMPLATE,
       messages: [
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ...aiState.get().map((info: any) => ({
+        ...aiState.get().map((info) => ({
           role: info.role,
           content: info.content,
           name: info.name
         }))
       ],
       onFinish: async (event) => {
-        const { text } = event;
-        //const { promptTokens, completionTokens, totalTokens } = usage;
-
+        const { text, usage } = event;
+        const { promptTokens, completionTokens, totalTokens } = usage;
+        console.log('Prompt Tokens:', promptTokens);
+        console.log('Completion Tokens:', completionTokens);
+        console.log('Total Tokens:', totalTokens);
         await saveChatToRedis(
           CurrentChatSessionId,
           session.id,
@@ -234,7 +234,6 @@ type MessageFromDB = {
   id: string;
   prompt: string;
   completion: string;
-  sources: string;
   user_id: string | null;
   created_at: string;
   updated_at: string;
@@ -251,16 +250,14 @@ async function ChatHistoryUpdate(
     metadata: Omit<MessageFromDB, 'prompt' | 'completion'> | null;
     prompts: string[];
     completions: string[];
-    sources: string[];
   }> {
     try {
       const pipeline = redis.pipeline();
       pipeline.hgetall(chatKey);
       pipeline.lrange(`${chatKey}:prompts`, 0, -1);
       pipeline.lrange(`${chatKey}:completions`, 0, -1);
-      pipeline.lrange(`${chatKey}:sources`, 0, -1);
 
-      const [metadata, prompts, completions, sources] = await pipeline.exec();
+      const [metadata, prompts, completions] = await pipeline.exec();
 
       return {
         metadata: metadata as Omit<
@@ -268,16 +265,14 @@ async function ChatHistoryUpdate(
           'prompt' | 'completion'
         > | null,
         prompts: prompts as string[],
-        completions: completions as string[],
-        sources: sources as string[]
+        completions: completions as string[]
       };
     } catch (error) {
       console.error('Error fetching chat data from Redis:', error);
       return {
         metadata: null,
         prompts: [],
-        completions: [],
-        sources: []
+        completions: []
       };
     }
   }
@@ -290,7 +285,6 @@ async function ChatHistoryUpdate(
         id: chatId,
         prompt: JSON.stringify(chatDataResult.prompts),
         completion: JSON.stringify(chatDataResult.completions),
-        sources: JSON.stringify(chatDataResult.sources),
         user_id: userId,
         created_at: chatDataResult.metadata?.created_at
           ? format(
@@ -309,7 +303,6 @@ async function ChatHistoryUpdate(
         id: '',
         prompt: '[]',
         completion: '[]',
-        sources: '[]',
         user_id: null,
         created_at: '',
         updated_at: ''
@@ -377,6 +370,7 @@ async function ChatHistoryUpdate(
 type ServerMessage = {
   role: 'user' | 'assistant';
   content: string;
+  name?: string;
 };
 
 export type ClientMessage = {

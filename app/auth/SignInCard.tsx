@@ -48,8 +48,6 @@ export default function SignInCard() {
 
   const handleSubmit = async (formData: FormData) => {
     if (validateInputs()) {
-      formData.append('email', email);
-      formData.append('password', password);
       await login(formData);
       if (rememberMe) {
         localStorage.setItem('rememberedEmail', email);

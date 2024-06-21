@@ -46,9 +46,6 @@ export default function SignInCard() {
 
   const handleSubmit = async (formData: FormData) => {
     if (validateInputs()) {
-      formData.append('email', email);
-      formData.append('password', password);
-      formData.append('fullName', fullName);
       await signup(formData);
     }
   };

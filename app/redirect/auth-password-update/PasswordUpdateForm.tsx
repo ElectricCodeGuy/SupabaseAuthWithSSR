@@ -40,9 +40,6 @@ const PasswordUpdateForm: FC = () => {
       alert('Passwords must match.');
       return;
     }
-
-    formData.append('newPassword', newPassword);
-
     await resetPassword(formData);
   };
 

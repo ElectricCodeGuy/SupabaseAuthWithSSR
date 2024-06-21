@@ -19,6 +19,12 @@
 
 You can find the videos located inside the public folder!
 
+## For Implementing AI with Internet Search Capabilities
+
+If you are interested in implementing an AI that can search the internet and link to its sources, please contact me at [oh@opkurser.dk](mailto:oh@opkurser.dk). Below is an example image of what such a system might look like.
+
+ <img src="public/images/onlinesearcher.png" alt="AI Online Searcher Example" style="width: 60%; margin: 10px;">
+
 ## CHANGELOG
 
 ## [v1.5.0] - 2024-06-02

@@ -60,7 +60,6 @@ export async function deleteChatData(userId: string, chatId: string) {
     transaction.del(chatKey);
     transaction.del(`${chatKey}:prompts`);
     transaction.del(`${chatKey}:completions`);
-    transaction.del(`${chatKey}:sources`);
 
     // Remove the chat session reference from the user's sorted set
     transaction.zrem(userChatsIndexKey, chatId);

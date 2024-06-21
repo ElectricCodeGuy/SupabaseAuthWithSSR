@@ -27,7 +27,6 @@ export default function ForgotPassword({
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const handleSubmit = async (formData: FormData) => {
-    formData.append('email', email);
     if (email.trim() === '') {
       setError('Email address is required');
       return;
