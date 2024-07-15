@@ -33,13 +33,6 @@
     ],
     "strict": false
   },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    "types/global.d.ts", // Add this line
-    "app/gpt/newcomponents/useSaveMessageToDB.ts"
-  ],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]
 }

@@ -1,33 +1,46 @@
 'use client';
 import { createTheme } from '@mui/material/styles';
 
+const hslToHex = (h: number, s: number, l: number): string => {
+  l /= 100;
+  const a = (s * Math.min(l, 1 - l)) / 100;
+  const f = (n: number): string => {
+    const k = (n + h / 30) % 12;
+    const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+    return Math.round(255 * color)
+      .toString(16)
+      .padStart(2, '0'); // convert to Hex and add leading zero
+  };
+  return `#${f(0)}${f(8)}${f(4)}`;
+};
+
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#003366'
+      main: hslToHex(221.2, 83.2, 53.3) // --primary
     },
     secondary: {
-      main: '#4D4D4D'
+      main: hslToHex(210, 70, 40) // Updated secondary color
     },
     error: {
-      main: '#d32f2f'
+      main: hslToHex(0, 84.2, 60.2) // --destructive
     },
     warning: {
-      main: '#ffa000'
+      main: '#ffa000' // keep as is
     },
     info: {
-      main: '#31708E'
+      main: '#31708E' // keep as is
     },
     success: {
-      main: '#388e3c'
+      main: '#388e3c' // keep as is
     },
     background: {
-      default: '#F4F4F4',
-      paper: '#FFFFFF'
+      default: hslToHex(0, 0, 100), // --background
+      paper: hslToHex(0, 0, 100) // --card
     },
     text: {
-      primary: '#333333',
-      secondary: '#4D4D4D'
+      primary: hslToHex(222.2, 84, 4.9), // --foreground
+      secondary: hslToHex(215.4, 16.3, 46.9) // --muted-foreground
     }
   },
   typography: {
@@ -87,25 +100,16 @@ const theme = createTheme({
     MuiButton: {
       styleOverrides: {
         root: {
-          borderRadius: '4px',
+          borderRadius: 2,
           textTransform: 'none',
-          fontWeight: 500,
-          padding: '6px 16px'
+          fontWeight: 500
         }
       }
     },
-    MuiAppBar: {
+    MuiPaper: {
       styleOverrides: {
         root: {
-          boxShadow: 'none',
-          backgroundColor: '#003366'
-        }
-      }
-    },
-    MuiTextField: {
-      styleOverrides: {
-        root: {
-          margin: '2px 0'
+          borderRadius: 2
         }
       }
     },
@@ -113,7 +117,23 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-          borderRadius: '2px'
+          borderRadius: 2
+        }
+      }
+    },
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          boxShadow: 'none',
+          backgroundColor: hslToHex(221.2, 83.2, 53.3), // --primary
+          borderRadius: 2
+        }
+      }
+    },
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          borderRadius: 2
         }
       }
     },
@@ -121,7 +141,7 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           textDecoration: 'none',
-          color: '#003366',
+          color: hslToHex(221.2, 83.2, 53.3), // --primary
           '&:hover': {
             textDecoration: 'underline'
           }
@@ -133,7 +153,7 @@ const theme = createTheme({
         root: {
           borderCollapse: 'collapse',
           '& th, & td': {
-            borderColor: '#E0E0E0'
+            borderColor: hslToHex(214.3, 31.8, 91.4) // --border
           }
         }
       }
@@ -141,9 +161,10 @@ const theme = createTheme({
     MuiTooltip: {
       styleOverrides: {
         tooltip: {
-          backgroundColor: '#4D4D4D',
+          backgroundColor: hslToHex(217.2, 32.6, 17.5), // --secondary
           color: 'white',
-          fontSize: '0.875rem'
+          fontSize: '0.875rem',
+          borderRadius: 2
         }
       }
     },

@@ -1,7 +1,5 @@
 import React, { ReactNode } from 'react';
-import { ThemeProvider } from '@mui/material/styles';
-import { CssBaseline } from '@mui/material';
-import { GlobalStyles } from '@mui/styled-engine';
+import { CssBaseline, ThemeProvider, GlobalStyles } from '@mui/material';
 import theme from './theme';
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v14-appRouter';
 
@@ -17,7 +15,7 @@ const globalStyles = (
       '@keyframes mui-auto-fill': { from: { display: 'block' } },
       '@keyframes mui-auto-fill-cancel': { from: { display: 'block' } },
       '::-webkit-scrollbar': {
-        width: '8px',
+        width: '10px',
         backgroundColor: 'transparent'
       },
       '::-webkit-scrollbar-thumb': {

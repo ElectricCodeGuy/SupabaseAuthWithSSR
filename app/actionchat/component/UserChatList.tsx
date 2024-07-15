@@ -25,11 +25,9 @@ import { format, differenceInDays, isToday, isYesterday } from 'date-fns';
 import { useSWRConfig } from 'swr';
 import { ClientMessage, ChatHistoryUpdateResult } from '../action';
 import useSWRInfinite from 'swr/infinite';
+import { Tables } from '@/types/database';
 
-type UserInfo = {
-  id: string;
-  full_name: string;
-};
+type UserData = Tables<'users'>;
 
 type ChatPreview = {
   id: string;
@@ -38,7 +36,7 @@ type ChatPreview = {
 };
 
 interface CombinedDrawerProps {
-  userInfo: UserInfo;
+  userInfo: UserData;
   isDrawerOpen: boolean;
   setIsDrawerOpen: (isOpen: boolean) => void;
   ChatHistoryUpdate: (
@@ -127,7 +125,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
   const handleChatClick = async (id: string) => {
     try {
       const { uiMessages, chatId } = await ChatHistoryUpdate(
-        userInfo.full_name,
+        userInfo.full_name || 'Unknown User',
         id,
         userInfo.id
       );

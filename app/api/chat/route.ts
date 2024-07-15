@@ -16,7 +16,7 @@ const SYSTEM_TEMPLATE = `You are a helpful assistant. Answer all questions to th
 
 const getModel = (selectedModel: string) => {
   if (selectedModel === 'claude3-opus') {
-    return anthropic('claude-3-opus-20240229');
+    return anthropic('claude-3-5-sonnet-20240620');
   } else {
     return openai(selectedModel);
   }

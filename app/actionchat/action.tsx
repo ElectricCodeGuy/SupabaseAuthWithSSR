@@ -366,7 +366,45 @@ async function ChatHistoryUpdate(
 
   return { uiMessages, chatId };
 }
+type ResetResult = {
+  success: boolean;
+  message: string;
+};
+async function resetMessages(): Promise<ResetResult> {
+  'use server';
 
+  const session = await getSession();
+  if (!session) {
+    return {
+      success: false,
+      message: 'Error: User not found. Please try again later.'
+    };
+  }
+
+  const aiState = getMutableAIState<typeof AI>();
+
+  try {
+    // Clear all messages from the AI state
+
+    // Clear all messages from the AI state by setting it to an empty array
+    aiState.update([]);
+
+    // Call done to finalize the state update
+    aiState.done([]);
+
+    return {
+      success: true,
+      message: 'Samtalehistorikken er blevet nulstillet.'
+    };
+  } catch (error) {
+    console.error('Error resetting chat messages:', error);
+    return {
+      success: false,
+      message:
+        'Der opstod en fejl under nulstilling af samtalen. Prøv igen senere.'
+    };
+  }
+}
 type ServerMessage = {
   role: 'user' | 'assistant';
   content: string;
@@ -410,12 +448,14 @@ type Actions = {
     chatId: string,
     userId: string
   ) => Promise<ChatHistoryUpdateResult>;
+  resetMessages: () => Promise<ResetResult>;
 };
 
 export const AI = createAI<ServerMessage[], ClientMessage[], Actions>({
   actions: {
     submitMessage,
-    ChatHistoryUpdate
+    ChatHistoryUpdate,
+    resetMessages
   },
   initialUIState,
   initialAIState

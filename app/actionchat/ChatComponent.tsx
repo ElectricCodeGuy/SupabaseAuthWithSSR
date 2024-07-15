@@ -25,17 +25,14 @@ import {
   Chat as ChatListIcon
 } from '@mui/icons-material';
 import { ChatScrollAnchor } from './hooks/chat-scroll-anchor';
+import { Tables } from '@/types/database';
 
 const ChatHistoryDrawer = lazy(() => import('./component/UserChatList'));
 
-type UserInfo = {
-  id: string;
-  full_name: string;
-  email: string;
-};
+type UserData = Tables<'users'>;
 
 interface ChatComponentPageProps {
-  userInfo: UserInfo | null;
+  userInfo: UserData | null;
 }
 
 export default function ChatComponentPage({
@@ -44,7 +41,8 @@ export default function ChatComponentPage({
   const [inputValue, setInputValue] = useState('');
   const [messages, setMessages] = useUIState<typeof AI>();
   const [isLoading, setIsLoading] = useState(false);
-  const { submitMessage, ChatHistoryUpdate } = useActions<typeof AI>();
+  const { submitMessage, ChatHistoryUpdate, resetMessages } =
+    useActions<typeof AI>();
   const [isUserChatListOpen, setIsUserChatListOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState<'claude3' | 'chatgpt4'>(
     'claude3'
@@ -59,8 +57,18 @@ export default function ChatComponentPage({
     }
   };
 
-  const handleClearMessages = () => {
-    setMessages([]);
+  const handleClearMessages = async () => {
+    if (messages.length > 0) {
+      const result = await resetMessages();
+      if (result.success) {
+        setMessages([]);
+        // Optionally, you can show a success message to the user
+        // For example, using a snackbar or alert
+      } else {
+        // Handle the error, maybe show an error message to the user
+        console.error('Failed to reset messages:', result.message);
+      }
+    }
   };
 
   const handleLoadChatData = () => {
@@ -121,8 +129,6 @@ export default function ChatComponentPage({
           </>
         </Box>
       ) : (
-        // Render messages
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         messages.map((message) => (
           <Box
             key={message.id}

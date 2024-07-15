@@ -1,7 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 import React, { useState } from 'react';
-import { Box, Typography } from '@mui/material';
+import {
+  Box,
+  Typography,
+  SxProps,
+  Theme,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow
+} from '@mui/material';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
@@ -18,7 +29,7 @@ const highlightOptionsAI: HighlightOptions = {
   prefix: 'hljs-'
 };
 
-const messageStyles = {
+const messageStyles: { [key: string]: SxProps<Theme> } = {
   userMessage: {
     position: 'relative',
     background: '#daf8cb',
@@ -130,6 +141,63 @@ export function BotMessage({
       <Box ml={2} flexGrow={1} overflow="hidden" px={1}>
         <ReactMarkdown
           components={{
+            table: ({ children }) => (
+              <Box
+                sx={{
+                  display: 'block',
+                  '& table': {
+                    width: '100%',
+                    borderCollapse: 'collapse',
+                    wordBreak: 'normal',
+                    fontSize: '0.85rem'
+                  }
+                }}
+              >
+                <TableContainer>
+                  <Table size="small">{children}</Table>
+                </TableContainer>
+              </Box>
+            ),
+            thead: ({ children }) => <TableHead>{children}</TableHead>,
+            tbody: ({ children }) => <TableBody>{children}</TableBody>,
+            tr: ({ children }) => <TableRow>{children}</TableRow>,
+            th: ({ children }) => (
+              <TableCell
+                component="th"
+                size="small"
+                scope="row"
+                sx={{
+                  border: '1px solid #ddd',
+                  padding: '4px',
+                  textAlign: 'left',
+                  fontSize: '0.9em',
+                  wordBreak: 'normal',
+                  fontWeight: 'normal',
+                  hyphens: 'auto',
+                  overflowWrap: 'normal'
+                }}
+              >
+                {children}
+              </TableCell>
+            ),
+            td: ({ children }) => (
+              <TableCell
+                scope="row"
+                size="small"
+                sx={{
+                  border: '1px solid #ddd',
+                  padding: '4px',
+                  textAlign: 'left',
+                  fontSize: '0.9em',
+                  wordBreak: 'normal',
+                  fontWeight: 'normal',
+                  hyphens: 'auto',
+                  overflowWrap: 'normal'
+                }}
+              >
+                {children}
+              </TableCell>
+            ),
             code({ className, children, ...props }) {
               const match = /language-(\w+)/.exec(className || '');
               const language = match && match[1] ? match[1] : '';

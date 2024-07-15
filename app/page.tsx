@@ -8,7 +8,8 @@ import FeatureCard from './components/landingpage/FeatureCard';
 import { getSession } from '@/lib/client/supabase'; // Import getSession
 
 export default async function LandingPage() {
-  const session = await getSession(); // Get session
+  const session = await getSession();
+
   return (
     <>
       <Box>

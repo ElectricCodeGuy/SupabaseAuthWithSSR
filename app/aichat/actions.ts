@@ -8,7 +8,7 @@ import { redis } from '@/lib/server/server';
 const AutoScrollEnabledSchema = z.object({
   autoScrollEnabled: z.boolean()
 });
-
+//This is not used. But this is how you can store information in the cookies
 export async function autoScrollCookie(formData: FormData) {
   const autoScrollEnabledFormData = formData.get('autoScrollEnabled');
   const autoScrollEnabledBoolean =
