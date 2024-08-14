@@ -82,7 +82,7 @@ export function UserMessage({
           {full_name}
         </Typography>
         <Box mt={1} ml={2} flexGrow={1} overflow="hidden" px={1}>
-          {children}
+          <ReactMarkdown>{children?.toString()}</ReactMarkdown>
         </Box>
       </Box>
     </Box>

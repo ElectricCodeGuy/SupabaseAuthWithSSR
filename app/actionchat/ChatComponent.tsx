@@ -2,7 +2,7 @@
 import React, { useState, KeyboardEvent, lazy } from 'react';
 import { useUIState, useActions } from 'ai/rsc';
 import { type AI } from './action';
-import { UserMessage, BotMessage } from './component/botmessage';
+import { UserMessage } from './component/botmessage';
 import {
   IconButton,
   InputAdornment,
@@ -347,9 +347,7 @@ export default function ChatComponentPage({
         ...responseMessage,
         role: 'assistant',
         id: responseMessage.id || Date.now(),
-        display: responseMessage.display || (
-          <BotMessage>{responseMessage.message || 'No response'}</BotMessage>
-        )
+        display: responseMessage.display
       }
     ]);
     setInputValue('');

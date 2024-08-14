@@ -232,19 +232,21 @@ async function submitMessage(
 
 type MessageFromDB = {
   id: string;
-  prompt: string;
-  completion: string;
+  prompt: string[];
+  completion: string[];
   user_id: string | null;
   created_at: string;
   updated_at: string;
 };
-
 async function ChatHistoryUpdate(
   full_name: string,
-  chatId: string,
-  userId: string
+  chatId: string
 ): Promise<ChatHistoryUpdateResult> {
   'use server';
+  const session = await getSession();
+  if (!session) {
+    return { uiMessages: [], chatId: '' };
+  }
 
   async function fetchChatData(chatKey: string): Promise<{
     metadata: Omit<MessageFromDB, 'prompt' | 'completion'> | null;
@@ -277,15 +279,15 @@ async function ChatHistoryUpdate(
     }
   }
 
-  const chatKey = `chat:${chatId}-user:${userId}`;
+  const chatKey = `chat:${chatId}-user:${session.id}`;
   const chatDataResult = await fetchChatData(chatKey);
 
   const chatData: MessageFromDB = chatDataResult
     ? {
         id: chatId,
-        prompt: JSON.stringify(chatDataResult.prompts),
-        completion: JSON.stringify(chatDataResult.completions),
-        user_id: userId,
+        prompt: chatDataResult.prompts,
+        completion: chatDataResult.completions,
+        user_id: session.id,
         created_at: chatDataResult.metadata?.created_at
           ? format(
               new Date(chatDataResult.metadata.created_at),
@@ -301,15 +303,15 @@ async function ChatHistoryUpdate(
       }
     : {
         id: '',
-        prompt: '[]',
-        completion: '[]',
+        prompt: [],
+        completion: [],
         user_id: null,
         created_at: '',
         updated_at: ''
       };
 
-  const userMessages = JSON.parse(chatData.prompt) as string[];
-  const assistantMessages = JSON.parse(chatData.completion) as string[];
+  const userMessages = chatData.prompt;
+  const assistantMessages = chatData.completion;
   const combinedMessages: {
     role: 'user' | 'assistant';
     id: string;

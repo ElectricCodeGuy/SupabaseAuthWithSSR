@@ -23,7 +23,7 @@ interface SidebarProps {
 }
 
 const Sidebar: FC<SidebarProps> = ({ session }) => {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
 
   const handleDrawerToggle = () => {
     setOpen(!open);
@@ -48,7 +48,7 @@ const Sidebar: FC<SidebarProps> = ({ session }) => {
       )}
 
       <Drawer
-        variant={'temporary'}
+        variant={'persistent'}
         open={open}
         onClose={handleDrawerToggle}
         anchor="left"
