@@ -447,8 +447,7 @@ type Actions = {
   ) => Promise<SubmitMessageResult>;
   ChatHistoryUpdate: (
     full_name: string,
-    chatId: string,
-    userId: string
+    chatId: string
   ) => Promise<ChatHistoryUpdateResult>;
   resetMessages: () => Promise<ResetResult>;
 };

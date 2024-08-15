@@ -41,8 +41,7 @@ interface CombinedDrawerProps {
   setIsDrawerOpen: (isOpen: boolean) => void;
   ChatHistoryUpdate: (
     full_name: string,
-    chatId: string,
-    userId: string
+    chatId: string
   ) => Promise<ChatHistoryUpdateResult>;
   setMessages: (messages: ClientMessage[]) => void;
   currentChatId: string | null | undefined;
@@ -126,8 +125,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
     try {
       const { uiMessages, chatId } = await ChatHistoryUpdate(
         userInfo.full_name || 'Unknown User',
-        id,
-        userInfo.id
+        id
       );
       setMessages(uiMessages.map((message) => ({ ...message, chatId }))); // Set the chatId for each message
     } catch (error) {
