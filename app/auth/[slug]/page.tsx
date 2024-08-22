@@ -26,7 +26,7 @@ import { getSession } from '@/lib/server/supabase';
  * };
  *
  * OBS: This is NOT recommended for production. It is only for demonstration purposes.
- * You would have to create a page.tsx inside the /auth folder that is teh default url for /auth
+ * You would have to create a page.tsx inside the /auth folder that is the default url for /auth
  */
 
 export default async function AuthPage({

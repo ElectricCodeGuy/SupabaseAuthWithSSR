@@ -122,8 +122,8 @@ export default async function ChatPage({ params }: { params: { id: string } }) {
   id = id === '1' ? '' : id;
 
   /*
-   * We check teh chatId for being 1 since this is just a default value,
-   * that we do not want to pass down to teh children.
+   * We check the chatId for being 1 since this is just a default value,
+   * that we do not want to pass down to the children.
    */
 
   const [chatPreviews, chatDataResult] = await Promise.all([
