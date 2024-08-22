@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
       content: `
     - You are a helpful assistant that always provides clear and accurate answers! For helpful information use Markdown. Use remark-math formatting for Math Equations
     - References: Reference official documentation and trusted sources where applicable. Link to sources using Markdown.
-    `.trim()
+    `
     },
     ...messages.map((message) => ({
       role: message.role as 'user' | 'assistant' | 'system',

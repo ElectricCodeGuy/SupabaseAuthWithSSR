@@ -10,10 +10,10 @@ import Grid from '@mui/material/Grid';
 import { usePathname } from 'next/navigation';
 
 export default function Footer() {
-  const pathname = usePathname(); // Use the useRouter hook to access the router object
+  const pathname = usePathname(); // Use the usePathname hook to access the router object
   const currentYear = new Date().getFullYear();
 
-  // If the current pathname is '/aichat', do not render the component
+  // If the current pathname is '/aichat', or '/actionchat' do not render the component
   if (pathname.startsWith('/aichat') || pathname.startsWith('/actionchat')) {
     return null;
   }

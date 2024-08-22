@@ -1,5 +1,5 @@
 import React, { type FC, useState, useMemo } from 'react';
-import { deleteChatData, fetchChatPreviews } from '../actionFetch';
+import { deleteChatData, fetchChatPreviews } from './action';
 import {
   Drawer,
   Box,

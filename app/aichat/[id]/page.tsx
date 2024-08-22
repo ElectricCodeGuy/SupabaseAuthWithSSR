@@ -89,6 +89,7 @@ const fetchChatPreviews = cache(
   ['datafetch'],
   { tags: ['datafetch'], revalidate: 3600 }
 );
+
 export default async function ChatPage({ params }: { params: { id: string } }) {
   const session = await getSession();
 
@@ -124,6 +125,8 @@ export default async function ChatPage({ params }: { params: { id: string } }) {
   /*
    * We check the chatId for being 1 since this is just a default value,
    * that we do not want to pass down to the children.
+   * This is NOT recommended for production. It is only for demonstration purposes.
+   * You would have to create a page.tsx inside the /aichat folder that is the default url for /aichat
    */
 
   const [chatPreviews, chatDataResult] = await Promise.all([
@@ -135,8 +138,8 @@ export default async function ChatPage({ params }: { params: { id: string } }) {
     id !== '1' && chatDataResult
       ? {
           id: id!,
-          prompt: JSON.stringify(chatDataResult.prompts),
-          completion: JSON.stringify(chatDataResult.completions),
+          prompt: chatDataResult.prompts,
+          completion: chatDataResult.completions,
           created_at: chatDataResult.metadata?.created_at
             ? format(
                 new Date(chatDataResult.metadata.created_at),
@@ -152,8 +155,8 @@ export default async function ChatPage({ params }: { params: { id: string } }) {
         }
       : {
           id: '',
-          prompt: '[]',
-          completion: '[]',
+          prompt: [],
+          completion: [],
           created_at: '',
           updated_at: ''
         };

@@ -1,8 +1,8 @@
 'use client';
 import React, { useState, KeyboardEvent, lazy } from 'react';
 import { useUIState, useActions } from 'ai/rsc';
-import { type AI } from './action';
-import { UserMessage } from './component/botmessage';
+import { type AI } from '../action';
+import { UserMessage } from './botmessage';
 import {
   IconButton,
   InputAdornment,
@@ -24,10 +24,10 @@ import {
   DeleteSweep as DeleteSweepIcon,
   Chat as ChatListIcon
 } from '@mui/icons-material';
-import { ChatScrollAnchor } from './hooks/chat-scroll-anchor';
+import { ChatScrollAnchor } from '../hooks/chat-scroll-anchor';
 import { Tables } from '@/types/database';
 
-const ChatHistoryDrawer = lazy(() => import('./component/UserChatList'));
+const ChatHistoryDrawer = lazy(() => import('./UserChatList'));
 
 type UserData = Tables<'users'>;
 

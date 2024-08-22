@@ -53,8 +53,8 @@ const highlightOptionsAI: HighlightOptions = {
 
 type MessageFromDB = {
   id: string;
-  prompt: string;
-  completion: string;
+  prompt: string[];
+  completion: string[];
   created_at: string;
   updated_at: string;
 };
@@ -314,8 +314,8 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
 
   const initialMessages = useMemo(() => {
     if (currentChat) {
-      const userMessages = JSON.parse(currentChat.prompt) as string[];
-      const assistantMessages = JSON.parse(currentChat.completion) as string[];
+      const userMessages = currentChat.prompt;
+      const assistantMessages = currentChat.completion;
       const combinedMessages: Message[] = [];
 
       for (

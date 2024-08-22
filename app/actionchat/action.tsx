@@ -238,6 +238,7 @@ type MessageFromDB = {
   created_at: string;
   updated_at: string;
 };
+
 async function ChatHistoryUpdate(
   full_name: string,
   chatId: string
@@ -248,67 +249,42 @@ async function ChatHistoryUpdate(
     return { uiMessages: [], chatId: '' };
   }
 
-  async function fetchChatData(chatKey: string): Promise<{
-    metadata: Omit<MessageFromDB, 'prompt' | 'completion'> | null;
-    prompts: string[];
-    completions: string[];
-  }> {
-    try {
-      const pipeline = redis.pipeline();
-      pipeline.hgetall(chatKey);
-      pipeline.lrange(`${chatKey}:prompts`, 0, -1);
-      pipeline.lrange(`${chatKey}:completions`, 0, -1);
+  const chatKey = `chat:${chatId}-user:${session.id}`;
+  let metadata: Omit<MessageFromDB, 'prompt' | 'completion'> | null = null;
+  let prompts: string[] = [];
+  let completions: string[] = [];
 
-      const [metadata, prompts, completions] = await pipeline.exec();
+  try {
+    const pipeline = redis.pipeline();
+    pipeline.hgetall(chatKey);
+    pipeline.lrange(`${chatKey}:prompts`, 0, -1);
+    pipeline.lrange(`${chatKey}:completions`, 0, -1);
 
-      return {
-        metadata: metadata as Omit<
-          MessageFromDB,
-          'prompt' | 'completion'
-        > | null,
-        prompts: prompts as string[],
-        completions: completions as string[]
-      };
-    } catch (error) {
-      console.error('Error fetching chat data from Redis:', error);
-      return {
-        metadata: null,
-        prompts: [],
-        completions: []
-      };
-    }
+    const [metadataResult, promptsResult, completionsResult] =
+      await pipeline.exec();
+
+    metadata = metadataResult as Omit<
+      MessageFromDB,
+      'prompt' | 'completion'
+    > | null;
+    prompts = promptsResult as string[];
+    completions = completionsResult as string[];
+  } catch (error) {
+    console.error('Error fetching chat data from Redis:', error);
   }
 
-  const chatKey = `chat:${chatId}-user:${session.id}`;
-  const chatDataResult = await fetchChatData(chatKey);
-
-  const chatData: MessageFromDB = chatDataResult
-    ? {
-        id: chatId,
-        prompt: chatDataResult.prompts,
-        completion: chatDataResult.completions,
-        user_id: session.id,
-        created_at: chatDataResult.metadata?.created_at
-          ? format(
-              new Date(chatDataResult.metadata.created_at),
-              'dd-MM-yyyy HH:mm'
-            )
-          : '',
-        updated_at: chatDataResult.metadata?.updated_at
-          ? format(
-              new Date(chatDataResult.metadata.updated_at),
-              'dd-MM-yyyy HH:mm'
-            )
-          : ''
-      }
-    : {
-        id: '',
-        prompt: [],
-        completion: [],
-        user_id: null,
-        created_at: '',
-        updated_at: ''
-      };
+  const chatData: MessageFromDB = {
+    id: chatId,
+    prompt: prompts,
+    completion: completions,
+    user_id: session.id,
+    created_at: metadata?.created_at
+      ? format(new Date(metadata.created_at), 'dd-MM-yyyy HH:mm')
+      : '',
+    updated_at: metadata?.updated_at
+      ? format(new Date(metadata.updated_at), 'dd-MM-yyyy HH:mm')
+      : ''
+  };
 
   const userMessages = chatData.prompt;
   const assistantMessages = chatData.completion;
@@ -368,6 +344,7 @@ async function ChatHistoryUpdate(
 
   return { uiMessages, chatId };
 }
+
 type ResetResult = {
   success: boolean;
   message: string;
@@ -396,14 +373,14 @@ async function resetMessages(): Promise<ResetResult> {
 
     return {
       success: true,
-      message: 'Samtalehistorikken er blevet nulstillet.'
+      message: 'Conversation reset successfully.'
     };
   } catch (error) {
     console.error('Error resetting chat messages:', error);
     return {
       success: false,
       message:
-        'Der opstod en fejl under nulstilling af samtalen. Prøv igen senere.'
+        'Error resetting chat messages. Please try again later or contact support.'
     };
   }
 }

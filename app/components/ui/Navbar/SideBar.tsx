@@ -1,23 +1,27 @@
 'use client';
 import React, { FC, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import Drawer from '@mui/material/Drawer';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import ListItemButton from '@mui/material/ListItemButton';
-import IconButton from '@mui/material/IconButton';
-import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
-import MenuOutlinedIcon from '@mui/icons-material/MenuOutlined';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import TerminalIcon from '@mui/icons-material/Terminal';
-import LockOpenIcon from '@mui/icons-material/LockOpen';
+import {
+  Box,
+  Chip,
+  Divider,
+  Drawer,
+  IconButton,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText
+} from '@mui/material';
+import {
+  ChevronLeft as ChevronLeftIcon,
+  HomeOutlined as HomeOutlinedIcon,
+  LockOpen as LockOpenIcon,
+  MenuOutlined as MenuOutlinedIcon,
+  Terminal as TerminalIcon
+} from '@mui/icons-material';
 import SignOutButton from './SignOut';
 import Link from 'next/link';
-import Chip from '@mui/material/Chip';
-import Divider from '@mui/material/Divider';
-import Box from '@mui/material/Box';
 
 interface SidebarProps {
   session: boolean | null;

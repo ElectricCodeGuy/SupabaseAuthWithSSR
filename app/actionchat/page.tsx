@@ -1,7 +1,7 @@
 import 'server-only';
 import { getSession, getUserInfo } from '@/lib/server/supabase';
 import { redirect } from 'next/navigation';
-import ChatComponentPage from './ChatComponent';
+import ChatComponentPage from './component/ChatComponent';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
