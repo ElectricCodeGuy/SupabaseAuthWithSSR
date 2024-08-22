@@ -2,10 +2,9 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-import { createClient } from '@/lib/server/action';
+import { createServerSupabaseClient as createClient } from '@/lib/server/server';
 
 const formDataSchemaSignin = z.object({
   email: z.string().email(),
@@ -13,8 +12,7 @@ const formDataSchemaSignin = z.object({
 });
 
 export async function login(formData: FormData) {
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = createClient();
 
   const result = formDataSchemaSignin.safeParse({
     email: formData.get('email'),
@@ -49,8 +47,7 @@ const formDataSchemaSignup = z.object({
 });
 
 export async function signup(formData: FormData) {
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = createClient();
 
   const result = formDataSchemaSignup.safeParse({
     email: formData.get('email') ? String(formData.get('email')) : '',
@@ -92,8 +89,7 @@ const formDataSchemaReset = z.object({
 });
 
 export async function resetPasswordForEmail(formData: FormData) {
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = createClient();
   const email = formData.get('email') ? String(formData.get('email')) : '';
 
   const result = formDataSchemaReset.safeParse({ email: email });
@@ -122,8 +118,7 @@ export async function resetPasswordForEmail(formData: FormData) {
 }
 
 export async function signout() {
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = createClient();
 
   const signOutResult = await supabase.auth.signOut();
 

@@ -5,7 +5,7 @@ import SignInCard from '../SignInCard';
 import SignUpCard from '../SignUpCard';
 import Content from '../Content';
 import { redirect } from 'next/navigation';
-import { getSession } from '@/lib/client/supabase';
+import { getSession } from '@/lib/server/supabase';
 
 /*
  * The AuthPage component requires a rewrite configuration in next.config.js
@@ -24,6 +24,9 @@ import { getSession } from '@/lib/client/supabase';
  *     ];
  *   }
  * };
+ *
+ * OBS: This is NOT recommended for production. It is only for demonstration purposes.
+ * You would have to create a page.tsx inside the /auth folder that is teh default url for /auth
  */
 
 export default async function AuthPage({

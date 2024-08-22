@@ -3,7 +3,7 @@ import { Box } from '@mui/material';
 import ChatComponent from '../components/chat';
 import UserCharListDrawer from '../components/UserCharListDrawer';
 import { redirect } from 'next/navigation';
-import { getSession } from '@/lib/client/supabase';
+import { getSession } from '@/lib/server/supabase';
 import { format } from 'date-fns';
 import { unstable_cache as cache } from 'next/cache';
 import { redis } from '@/lib/server/server';

@@ -1,5 +1,5 @@
 import 'server-only';
-import { getUserInfo, getSession } from '@/lib/client/supabase';
+import { getUserInfo, getSession } from '@/lib/server/supabase';
 import {
   Typography,
   Box,

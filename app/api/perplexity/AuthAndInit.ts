@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server';
-import { getSession } from '@/lib/client/supabase';
+import { getSession } from '@/lib/server/supabase';
 
 export async function authenticateAndInitialize(req: NextRequest) {
   try {

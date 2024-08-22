@@ -1,10 +1,8 @@
 'use server';
 
 import { z } from 'zod';
-
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/server/action';
+import { createServerSupabaseClient as createClient } from '@/lib/server/server';
 
 const passwordValidation = z
   .string()
@@ -18,8 +16,7 @@ const formDataSchemaResetPassword = z.object({
 });
 
 export async function resetPassword(formData: FormData) {
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = createClient();
 
   const result = formDataSchemaResetPassword.safeParse({
     newPassword: formData.get('newPassword')

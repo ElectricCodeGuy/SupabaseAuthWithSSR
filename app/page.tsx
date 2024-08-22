@@ -5,7 +5,7 @@ import Profile from './components/landingpage/Profile';
 import Box from '@mui/material/Box';
 import Divider from '@mui/material/Divider';
 import FeatureCard from './components/landingpage/FeatureCard';
-import { getSession } from '@/lib/client/supabase'; // Import getSession
+import { getSession } from '@/lib/server/supabase'; // Import getSession
 
 export default async function LandingPage() {
   const session = await getSession();

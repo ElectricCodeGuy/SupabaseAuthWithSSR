@@ -2,14 +2,12 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-import { createClient } from '@/lib/server/action';
+import { createServerSupabaseClient as createClient } from '@/lib/server/server';
 
 export async function logFeedback(formData: FormData) {
-  const cookieStore = cookies();
-  const supabase = createClient(cookieStore);
+  const supabase = createClient();
 
   const feedbackSchema = z.object({
     feedback: z.string(),

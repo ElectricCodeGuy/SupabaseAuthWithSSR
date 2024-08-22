@@ -1,5 +1,6 @@
 'use client';
 import React, { FC, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import Drawer from '@mui/material/Drawer';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
@@ -13,21 +14,24 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import SignOutButton from './SignOut';
-import type { User } from '@supabase/supabase-js';
 import Link from 'next/link';
 import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
+import Box from '@mui/material/Box';
 
 interface SidebarProps {
-  session: User | null;
+  session: boolean | null;
 }
 
 const Sidebar: FC<SidebarProps> = ({ session }) => {
   const [open, setOpen] = useState(true);
+  const pathname = usePathname();
 
   const handleDrawerToggle = () => {
     setOpen(!open);
   };
+
+  const isSelected = (path: string) => pathname === path;
 
   return (
     <>
@@ -59,64 +63,95 @@ const Sidebar: FC<SidebarProps> = ({ session }) => {
           }
         }}
         sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
           '& .MuiDrawer-paper': {
-            width: 250
+            width: 250,
+            display: 'flex',
+            flexDirection: 'column'
           }
         }}
       >
-        <List>
-          <ListItemButton onClick={handleDrawerToggle}>
-            <ListItemIcon>
-              <ChevronLeftIcon />
-            </ListItemIcon>
-            <ListItemText primary="Close" />
-          </ListItemButton>
-
-          <Link href="/" passHref>
-            <ListItemButton>
+        <Box sx={{ flexGrow: 1, overflowY: 'auto' }}>
+          <List>
+            <ListItemButton onClick={handleDrawerToggle}>
               <ListItemIcon>
-                <HomeOutlinedIcon />
+                <ChevronLeftIcon />
               </ListItemIcon>
-              <ListItemText primary="Home" />
+              <ListItemText primary="Close" />
             </ListItemButton>
-          </Link>
 
-          {!session && (
-            <Link href="/auth" passHref>
-              <ListItemButton>
+            <Link href="/" passHref>
+              <ListItemButton selected={isSelected('/')}>
                 <ListItemIcon>
-                  <TerminalIcon />
+                  <HomeOutlinedIcon />
                 </ListItemIcon>
-                <ListItemText primary="Sign in" />
+                <ListItemText primary="Home" />
               </ListItemButton>
             </Link>
-          )}
 
-          {session ? (
-            <>
-              <Link href="/protected" passHref>
-                <ListItemButton>
+            {!session && (
+              <Link href="/auth" passHref>
+                <ListItemButton selected={isSelected('/auth')}>
+                  <ListItemIcon>
+                    <TerminalIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Sign in" />
+                </ListItemButton>
+              </Link>
+            )}
+
+            {session ? (
+              <>
+                <Link href="/protected" passHref>
+                  <ListItemButton selected={isSelected('/protected')}>
+                    <ListItemIcon>
+                      <LockOpenIcon />
+                    </ListItemIcon>
+                    <ListItemText primary="Protected" />
+                  </ListItemButton>
+                </Link>
+
+                <Link href="/aichat" passHref>
+                  <ListItemButton selected={isSelected('/aichat')}>
+                    <ListItemIcon>
+                      <LockOpenIcon />
+                    </ListItemIcon>
+                    <ListItemText primary="Ai Chat" />
+                  </ListItemButton>
+                </Link>
+
+                <Link href="/actionchat" passHref>
+                  <ListItemButton selected={isSelected('/actionchat')}>
+                    <ListItemIcon>
+                      <LockOpenIcon />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={
+                        <>
+                          Action Chat{' '}
+                          <Chip label="New" color="primary" size="small" />
+                        </>
+                      }
+                    />
+                  </ListItemButton>
+                </Link>
+              </>
+            ) : (
+              <>
+                <ListItemButton disabled>
                   <ListItemIcon>
                     <LockOpenIcon />
                   </ListItemIcon>
                   <ListItemText primary="Protected" />
                 </ListItemButton>
-              </Link>
 
-              <Link href="/aichat" passHref>
-                <ListItemButton>
+                <ListItemButton disabled>
                   <ListItemIcon>
                     <LockOpenIcon />
                   </ListItemIcon>
                   <ListItemText primary="Ai Chat" />
                 </ListItemButton>
-              </Link>
 
-              <Link href="/actionchat" passHref>
-                <ListItemButton>
+                <ListItemButton disabled>
                   <ListItemIcon>
                     <LockOpenIcon />
                   </ListItemIcon>
@@ -129,50 +164,19 @@ const Sidebar: FC<SidebarProps> = ({ session }) => {
                     }
                   />
                 </ListItemButton>
-              </Link>
-            </>
-          ) : (
-            <>
-              <ListItemButton disabled>
-                <ListItemIcon>
-                  <LockOpenIcon />
-                </ListItemIcon>
-                <ListItemText primary="Protected" />
-              </ListItemButton>
+              </>
+            )}
+          </List>
+        </Box>
 
-              <ListItemButton disabled>
-                <ListItemIcon>
-                  <LockOpenIcon />
-                </ListItemIcon>
-                <ListItemText primary="Ai Chat" />
-              </ListItemButton>
-
-              <ListItemButton disabled>
-                <ListItemIcon>
-                  <LockOpenIcon />
-                </ListItemIcon>
-                <ListItemText
-                  primary={
-                    <>
-                      Action Chat{' '}
-                      <Chip label="New" color="primary" size="small" />
-                    </>
-                  }
-                />
-              </ListItemButton>
-            </>
-          )}
-
-          {/* Add a divider and sign out button if session exists */}
-          {session && (
-            <>
-              <Divider />
-              <ListItem sx={{ justifyContent: 'center', mt: 'auto' }}>
-                <SignOutButton />
-              </ListItem>
-            </>
-          )}
-        </List>
+        <Box sx={{ mt: 'auto' }}>
+          <Divider />
+          <List>
+            <ListItem sx={{ justifyContent: 'center' }}>
+              {session ? <SignOutButton /> : <Box height={48} />}
+            </ListItem>
+          </List>
+        </Box>
       </Drawer>
     </>
   );

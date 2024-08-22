@@ -8,7 +8,7 @@ import { format } from 'date-fns';
 import { saveChatToRedis } from './lib/redis';
 import { openai } from '@ai-sdk/openai';
 import { anthropic } from '@ai-sdk/anthropic';
-import { getUserInfo, getSession } from '@/lib/client/supabase';
+import { getUserInfo, getSession } from '@/lib/server/supabase';
 import { redis } from '@/lib/server/server';
 
 const SYSTEM_TEMPLATE = `You are a helpful assistant. Answer all questions to the best of your ability. Provide helpful answers in markdown.`;

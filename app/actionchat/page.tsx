@@ -1,5 +1,5 @@
 import 'server-only';
-import { getSession, getUserInfo } from '@/lib/client/supabase';
+import { getSession, getUserInfo } from '@/lib/server/supabase';
 import { redirect } from 'next/navigation';
 import ChatComponentPage from './ChatComponent';
 
