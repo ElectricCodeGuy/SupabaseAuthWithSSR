@@ -2,7 +2,6 @@
 'use client';
 import React, { type FC, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import type { User } from '@supabase/supabase-js';
 import { deleteChatData } from '../actions';
 import {
   Box,
@@ -34,17 +33,11 @@ type ChatPreview = {
 };
 
 type CombinedDrawerProps = {
-  session: User | null;
   chatPreviews: ChatPreview[];
-  userId: string;
   chatId?: string;
 };
 
-const CombinedDrawer: FC<CombinedDrawerProps> = ({
-  chatPreviews,
-  userId,
-  chatId
-}) => {
+const CombinedDrawer: FC<CombinedDrawerProps> = ({ chatPreviews, chatId }) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const theme = useTheme();
@@ -70,7 +63,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
   const handleDeleteConfirmation = async () => {
     if (chatToDelete) {
       try {
-        await deleteChatData(userId, chatToDelete);
+        await deleteChatData(chatToDelete);
         if (chatToDelete === chatId) {
           const newHref = '/aichat';
           router.replace(newHref, { scroll: false });

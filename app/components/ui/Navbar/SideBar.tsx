@@ -62,13 +62,6 @@ const Sidebar: FC<SidebarProps> = ({ session }) => {
             style: { backgroundColor: 'transparent' }
           }
         }}
-        sx={{
-          '& .MuiDrawer-paper': {
-            width: 250,
-            display: 'flex',
-            flexDirection: 'column'
-          }
-        }}
       >
         <Box sx={{ flexGrow: 1, overflowY: 'auto' }}>
           <List>

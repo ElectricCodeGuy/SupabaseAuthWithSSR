@@ -171,13 +171,8 @@ export default async function ChatPage({ params }: { params: { id: string } }) {
         }
       }}
     >
-      <ChatComponent session={session} currentChat={chatData} chatId={id} />
-      <UserCharListDrawer
-        session={session}
-        chatPreviews={chatPreviews}
-        userId={userId}
-        chatId={id}
-      />
+      <ChatComponent currentChat={chatData} chatId={id} />
+      <UserCharListDrawer chatPreviews={chatPreviews} chatId={id} />
     </Box>
   );
 }

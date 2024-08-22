@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { streamText, CoreMessage } from 'ai';
 import { v4 as uuidv4 } from 'uuid';
 import { saveChatToRedis } from './redis';
-import { authenticateAndInitialize } from './Auth';
 import { Ratelimit } from '@upstash/ratelimit';
 import { openai } from '@ai-sdk/openai';
 import { anthropic } from '@ai-sdk/anthropic';
 import { redis } from '@/lib/server/server';
+import { getSession } from '@/lib/server/supabase';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -23,16 +23,23 @@ const getModel = (selectedModel: string) => {
 };
 
 export async function POST(req: NextRequest) {
-  const authAndInitResult = await authenticateAndInitialize(req);
-  const userId = authAndInitResult.userid.session.id;
+  const session = await getSession();
 
+  if (!session) {
+    return new NextResponse('Unauthorized', {
+      status: 401,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+  }
   const ratelimit = new Ratelimit({
     redis,
     limiter: Ratelimit.slidingWindow(2, '10s')
   });
 
   const { success, limit, reset, remaining } = await ratelimit.limit(
-    `ratelimit_${userId}`
+    `ratelimit_${session.id}`
   );
   if (!success) {
     return new NextResponse('Rate limit exceeded. Please try again later.', {
@@ -71,7 +78,7 @@ export async function POST(req: NextRequest) {
             typeof lastMessage?.content === 'string' ? lastMessage.content : '';
           await saveChatToRedis(
             chatSessionId,
-            userId,
+            session.id,
             lastMessageContent,
             event.text,
             isNewChat

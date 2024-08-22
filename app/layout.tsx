@@ -1,10 +1,11 @@
 // RootLayout.tsx
 import React, { type ReactNode } from 'react';
 import { Inter } from 'next/font/google';
-import SideBarServer from '@/app/components/ui/Navbar/SideBarServer';
 import Footer from '@/app/components/ui/Footer/Footer';
 import ThemeRegistry from '@/theme/ThemeRegistry';
 import RootErrorBoundary from '@/app/components/errorBoundary/ErrorBoundaryPage';
+import { getSession } from '@/lib/server/supabase';
+import Sidebar from '@/app/components/ui/Navbar/SideBar';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -15,7 +16,13 @@ export const metadata = {
     'An example demonstrating server-side rendering with authentication using Supabase.'
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({
+  children
+}: {
+  children: ReactNode;
+}) {
+  const session = await getSession(); // Get session
+  const isSessionAvailable = session !== null;
   return (
     <html lang="en">
       <ThemeRegistry>
@@ -28,7 +35,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               minHeight: '100vh'
             }}
           >
-            <SideBarServer />
+            <Sidebar session={isSessionAvailable} />
             {children}
             <Footer />
           </body>

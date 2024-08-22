@@ -4,6 +4,7 @@ import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { cookies } from 'next/headers';
 import { redis } from '@/lib/server/server';
+import { getSession } from '@/lib/server/supabase';
 
 const AutoScrollEnabledSchema = z.object({
   autoScrollEnabled: z.boolean()
@@ -37,20 +38,14 @@ export async function autoScrollCookie(formData: FormData) {
   }
 }
 
-const userIdSchema = z
-  .string()
-  .uuid({ message: 'UUID is Wrong for some reason?????' });
-
-export async function deleteChatData(userId: string, chatId: string) {
-  const userResult = userIdSchema.safeParse(userId);
-
+export async function deleteChatData(chatId: string) {
   // Check for validation failure
-  if (!userResult.success) {
-    throw new Error(userResult.error.message);
+  const session = await getSession();
+  if (!session) {
+    throw new Error('User session not found');
   }
-
-  const chatKey = `chat:${chatId}-user:${userId}`;
-  const userChatsIndexKey = `userChatsIndex:${userId}`; // Key for the ZSET that indexes chats for the user
+  const chatKey = `chat:${chatId}-user:${session.id}`;
+  const userChatsIndexKey = `userChatsIndex:${session.id}`; // Key for the ZSET that indexes chats for the user
 
   try {
     // Start a Redis transaction

@@ -19,7 +19,6 @@ import ReactMarkdown, { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeHighlight, { Options as HighlightOptions } from 'rehype-highlight';
-import type { User } from '@supabase/supabase-js';
 import List from '@mui/material/List';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
@@ -96,7 +95,6 @@ const messageStyles = {
 };
 
 interface ChatProps {
-  session: User | null;
   currentChat?: MessageFromDB | null;
   chatId?: string;
 }
@@ -284,9 +282,7 @@ const ChatMessage: FC<ChatMessageProps> = ({ messages }) => {
   );
 };
 
-const ChatComponent: FC<ChatProps> = ({ session, currentChat, chatId }) => {
-  const token = session?.id;
-
+const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -363,9 +359,6 @@ const ChatComponent: FC<ChatProps> = ({ session, currentChat, chatId }) => {
     stop
   } = useChat({
     api: apiEndpoint,
-    headers: {
-      Authorization: `Bearer ${token}`
-    },
     body: {
       chatId: chatId === '1' ? '' : chatId,
       option: selectedOption

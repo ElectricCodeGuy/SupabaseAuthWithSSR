@@ -9,11 +9,12 @@ import { getSession } from '@/lib/server/supabase'; // Import getSession
 
 export default async function LandingPage() {
   const session = await getSession();
-
+  const isSessionAvailable = session !== null;
+  const userEmail = session?.email;
   return (
     <>
       <Box>
-        <BannerComponent session={session} />
+        <BannerComponent session={isSessionAvailable} userEmail={userEmail} />
       </Box>
       <Box>
         <FeatureCard />

@@ -3,10 +3,10 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { streamText, CoreMessage, Message } from 'ai';
 import { saveChatToRedis } from './redis';
 import { v4 as uuidv4 } from 'uuid';
-import { authenticateAndInitialize } from './AuthAndInit';
 import { Redis } from '@upstash/redis';
 import { Ratelimit } from '@upstash/ratelimit';
 import { revalidateTag } from 'next/cache';
+import { getSession } from '@/lib/server/supabase';
 
 const perplexity = createOpenAI({
   apiKey: process.env.PERPLEXITY_API_KEY ?? '',
@@ -23,16 +23,22 @@ export const maxDuration = 60; // Updated to 30 seconds
 export const revalidate = true;
 
 export async function POST(req: NextRequest) {
-  const authAndInitResult = await authenticateAndInitialize(req);
-  const userId = authAndInitResult.userid.session.id;
-
+  const session = await getSession();
+  if (!session) {
+    return new NextResponse('Unauthorized', {
+      status: 401,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+  }
   const ratelimit = new Ratelimit({
     redis,
     limiter: Ratelimit.slidingWindow(30, '10s')
   });
 
   const { success, limit, reset, remaining } = await ratelimit.limit(
-    `ratelimit_${userId}`
+    `ratelimit_${session.id}`
   );
   if (!success) {
     return new NextResponse('Rate limit exceeded. Please try again later.', {
@@ -73,7 +79,7 @@ export async function POST(req: NextRequest) {
       onFinish: async (event) => {
         await saveChatToRedis(
           chatSessionId,
-          userId,
+          session.id,
           messages[messages.length - 1].content,
           event.text,
           isNewChat
