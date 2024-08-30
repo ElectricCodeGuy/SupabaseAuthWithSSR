@@ -4,8 +4,6 @@ import React, { useState } from 'react';
 import {
   Box,
   Typography,
-  SxProps,
-  Theme,
   Table,
   TableBody,
   TableCell,
@@ -29,37 +27,6 @@ const highlightOptionsAI: HighlightOptions = {
   prefix: 'hljs-'
 };
 
-const messageStyles: { [key: string]: SxProps<Theme> } = {
-  userMessage: {
-    position: 'relative',
-    background: '#daf8cb',
-    color: '#203728',
-    pt: 2,
-    borderRadius: '16px',
-    margin: '8px 0',
-    alignSelf: 'flex-end',
-    wordBreak: 'break-word',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-    boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
-  },
-  aiMessage: {
-    position: 'relative',
-    background: '#f0f0f0',
-    color: '#2c3e50',
-    pt: 2,
-    borderRadius: '16px',
-    margin: '8px 0',
-    alignSelf: 'flex-start',
-    wordBreak: 'break-word',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-    boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
-  }
-};
-
 export function UserMessage({
   children,
   full_name
@@ -68,7 +35,22 @@ export function UserMessage({
   full_name: string;
 }) {
   return (
-    <Box sx={messageStyles.userMessage}>
+    <Box
+      sx={{
+        position: 'relative',
+        background: '#daf8cb',
+        color: '#203728',
+        pt: 2,
+        borderRadius: '16px',
+        margin: '8px 0',
+        alignSelf: 'flex-end',
+        wordBreak: 'break-word',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+        boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+      }}
+    >
       <Box
         sx={{
           position: 'relative'
@@ -120,7 +102,23 @@ export function BotMessage({
   };
 
   return (
-    <Box sx={messageStyles.aiMessage} className={className}>
+    <Box
+      sx={{
+        position: 'relative',
+        background: '#f0f0f0',
+        color: '#2c3e50',
+        pt: 2,
+        borderRadius: '16px',
+        margin: '8px 0',
+        alignSelf: 'flex-start',
+        wordBreak: 'break-word',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+        boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+      }}
+      className={className}
+    >
       <Box
         sx={{
           position: 'absolute',

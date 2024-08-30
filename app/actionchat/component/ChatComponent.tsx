@@ -103,9 +103,9 @@ export default function ChatComponentPage({
         >
           <Typography
             variant="h3"
-            paragraph
             sx={{
-              color: 'textSecondary'
+              color: 'textSecondary',
+              mb: 2
             }}
           >
             Chat with our AI Assistant
@@ -113,9 +113,9 @@ export default function ChatComponentPage({
           <>
             <Typography
               variant="body1"
-              paragraph
               sx={{
-                color: 'textSecondary'
+                color: 'textSecondary',
+                mb: 2
               }}
             >
               Experience the power of AI-driven conversations with our chat
@@ -124,9 +124,9 @@ export default function ChatComponentPage({
             </Typography>
             <Typography
               variant="body1"
-              paragraph
               sx={{
-                color: 'textSecondary'
+                color: 'textSecondary',
+                mb: 2
               }}
             >
               <strong>
@@ -174,7 +174,13 @@ export default function ChatComponentPage({
           left: '50%',
           transform: 'translateX(-50%)',
           position: 'fixed',
-          width: '33.334%',
+          width: {
+            xs: '100%',
+            sm: '80%',
+            md: '70%',
+            lg: '60%',
+            xl: '40%'
+          },
           bottom: 5,
           display: 'flex',
           justifyContent: 'center',
@@ -203,6 +209,7 @@ export default function ChatComponentPage({
           maxRows={4}
           disabled={isLoading}
           fullWidth
+          size="small"
           sx={{
             '.MuiOutlinedInput-root': {
               backgroundColor: 'white',
@@ -281,10 +288,7 @@ export default function ChatComponentPage({
                     </>
                   )}
                 </InputAdornment>
-              ),
-              style: {
-                padding: '10px'
-              }
+              )
             }
           }}
         />
