@@ -1,8 +1,8 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 'use client';
 import React, { type FC, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { deleteChatData } from '../actions';
+import useSWRImmutable from 'swr/immutable';
 import {
   Box,
   List,
@@ -21,31 +21,57 @@ import {
   DialogContentText,
   Chip,
   SwipeableDrawer,
-  Drawer
+  Drawer,
+  CircularProgress
 } from '@mui/material';
 import { Delete as DeleteIcon, Menu as MenuIcon } from '@mui/icons-material';
 import { format } from 'date-fns';
-
-type ChatPreview = {
-  id: string;
-  firstMessage: string;
-  created_at: string;
-};
+import { fetchMoreChatPreviews, ChatPreview } from '../actions';
 
 type CombinedDrawerProps = {
   chatPreviews: ChatPreview[];
   chatId?: string;
 };
 
-const CombinedDrawer: FC<CombinedDrawerProps> = ({ chatPreviews, chatId }) => {
+const CombinedDrawer: FC<CombinedDrawerProps> = ({
+  chatPreviews: initialChatPreviews,
+  chatId
+}) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const theme = useTheme();
 
-  const [hoveredChatId, setHoveredChatId] = useState<string | null>(null);
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
   const [chatToDelete, setChatToDelete] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [offset, setOffset] = useState(60);
+  const [allChatPreviews, setAllChatPreviews] =
+    useState<ChatPreview[]>(initialChatPreviews);
+  // Fetches more chat previews when the offset changes
+  const {
+    data: moreChatPreviews,
+    isValidating,
+    mutate
+  } = useSWRImmutable(
+    offset > 30 ? [offset] : null,
+    ([offset]) => fetchMoreChatPreviews(offset),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false
+    }
+  );
+  // Handles loading more chat previews
+  const handleLoadMore = async () => {
+    const newOffset = offset + 30;
+    setOffset(newOffset);
+    await mutate();
+    if (moreChatPreviews) {
+      setAllChatPreviews((prevPreviews) => [
+        ...prevPreviews,
+        ...moreChatPreviews
+      ]);
+    }
+  };
 
   const truncateMessage = (message: string, length: number) => {
     return message.length > length
@@ -81,89 +107,90 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({ chatPreviews, chatId }) => {
   const selectedOption =
     searchParams.get('modelselected') || 'gpt-3.5-turbo-1106';
 
-  const chatListItems = chatPreviews.map(({ id, firstMessage, created_at }) => {
-    const tooltipTitle = firstMessage || 'No messages yet';
-    const truncatedMessage = truncateMessage(
-      firstMessage || `Chat ID: ${id}`,
-      24
-    );
-    const formattedDate = format(new Date(created_at), 'yyyy-MM-dd');
+  // Renders the list of chat previews
+  const chatListItems = allChatPreviews.map(
+    ({ id, firstMessage, created_at }) => {
+      const tooltipTitle = firstMessage || 'No messages yet';
+      const truncatedMessage = truncateMessage(
+        firstMessage || `Chat ID: ${id}`,
+        24
+      );
+      const formattedDate = format(new Date(created_at), 'yyyy-MM-dd');
 
-    const selectedStyle = isSelected(id)
-      ? {
-          backgroundColor: theme.palette.action.selected,
-          borderLeft: `4px solid ${theme.palette.primary.main}`,
-          borderRadius: '0 4px 4px 0'
-        }
-      : {};
+      const selectedStyle = isSelected(id)
+        ? {
+            backgroundColor: theme.palette.action.selected,
+            borderLeft: `4px solid ${theme.palette.primary.main}`,
+            borderRadius: '0 4px 4px 0'
+          }
+        : {};
 
-    return (
-      <React.Fragment key={id}>
-        <Tooltip title={tooltipTitle} placement="left" arrow>
-          <ListItem disablePadding>
-            <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
-              <MuiLink
-                underline="none"
-                sx={{ flexGrow: 1 }}
-                onClick={() => {
-                  const newPathname = `/aichat/${id}`;
-                  const newQueryParams = new URLSearchParams({
-                    modeltype: modelType,
-                    modelselected: selectedOption
-                  });
-                  router.replace(
-                    `${newPathname}?${newQueryParams.toString()}`,
-                    { scroll: false }
-                  );
-                }}
-              >
-                <ListItemButton
-                  sx={{
-                    fontSize: '0.9rem',
-                    ...selectedStyle,
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    position: 'relative'
+      return (
+        <React.Fragment key={id}>
+          <Tooltip title={tooltipTitle} placement="left" arrow>
+            <ListItem disablePadding>
+              <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
+                <MuiLink
+                  underline="none"
+                  sx={{ flexGrow: 1 }}
+                  onClick={() => {
+                    const newPathname = `/aichat/${id}`;
+                    const newQueryParams = new URLSearchParams({
+                      modeltype: modelType,
+                      modelselected: selectedOption
+                    });
+                    router.replace(
+                      `${newPathname}?${newQueryParams.toString()}`,
+                      { scroll: false }
+                    );
                   }}
-                  onMouseEnter={() => setHoveredChatId(id)}
-                  onMouseLeave={() => setHoveredChatId(null)}
                 >
-                  {truncatedMessage}
-                  <Chip
-                    label={formattedDate}
-                    size="small"
+                  <ListItemButton
                     sx={{
-                      fontSize: '0.7rem'
+                      fontSize: '0.9rem',
+                      ...selectedStyle,
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      position: 'relative'
                     }}
-                  />
-                  {hoveredChatId === id && (
-                    <IconButton
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteClick(id);
-                      }}
+                  >
+                    {truncatedMessage}
+                    <Chip
+                      label={formattedDate}
                       size="small"
                       sx={{
-                        padding: '2px',
-                        position: 'absolute',
-                        right: 0,
-                        top: '50%',
-                        transform: 'translateY(-50%)'
+                        fontSize: '0.7rem'
                       }}
-                    >
-                      <DeleteIcon fontSize="inherit" />
-                    </IconButton>
-                  )}
-                </ListItemButton>
-              </MuiLink>
-            </Box>
-          </ListItem>
-        </Tooltip>
-        <Divider />
-      </React.Fragment>
-    );
-  });
+                    />
+                    {isSelected(id) && (
+                      <IconButton
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteClick(id);
+                        }}
+                        size="small"
+                        sx={{
+                          padding: '2px',
+                          position: 'absolute',
+                          right: 0,
+                          top: '50%',
+                          transform: 'translateY(-50%)'
+                        }}
+                      >
+                        <DeleteIcon fontSize="inherit" />
+                      </IconButton>
+                    )}
+                  </ListItemButton>
+                </MuiLink>
+              </Box>
+            </ListItem>
+          </Tooltip>
+          <Divider />
+        </React.Fragment>
+      );
+    }
+  );
 
   return (
     <>
@@ -204,6 +231,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({ chatPreviews, chatId }) => {
           anchor="right"
           sx={{
             width: drawerWidth,
+            overflowx: 'hidden',
             flexShrink: 0,
             '& .MuiDrawer-paper': {
               width: drawerWidth,
@@ -246,6 +274,17 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({ chatPreviews, chatId }) => {
               </ListItem>
               <Divider />
               <List>{chatListItems}</List>
+              {allChatPreviews.length % 30 === 0 && (
+                <ListItem component={'form'} action={handleLoadMore}>
+                  <Button type="submit" fullWidth disabled={isValidating}>
+                    {isValidating ? (
+                      <CircularProgress size={24} />
+                    ) : (
+                      'Load More'
+                    )}
+                  </Button>
+                </ListItem>
+              )}
             </Box>
             <Box>
               <Divider />

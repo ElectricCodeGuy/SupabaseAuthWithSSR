@@ -44,14 +44,20 @@ export default async function AuthPage({
   return (
     <Stack
       direction="column"
-      justifyContent="space-between"
-      sx={{ pt: 4, height: { xs: 'auto', md: '100vh' } }}
+      sx={{
+        justifyContent: 'space-between',
+        pt: 4,
+        height: { xs: 'auto', md: '100vh' }
+      }}
     >
       <Stack
         direction={{ xs: 'column-reverse', md: 'row' }}
-        justifyContent="center"
-        gap={{ xs: 6, sm: 6 }}
-        sx={{ height: { xs: '100%', md: '100vh' }, p: 1 }}
+        sx={{
+          justifyContent: 'center',
+          gap: { xs: 6, sm: 6 },
+          height: { xs: '100%', md: '100vh' },
+          p: 1
+        }}
       >
         <Content />
         {authState === 'signin' ? (

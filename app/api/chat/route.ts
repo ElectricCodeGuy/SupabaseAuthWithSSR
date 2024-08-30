@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    return result.toAIStreamResponse({
+    return result.toDataStreamResponse({
       headers: {
         'x-chat-id': chatSessionId,
         'x-new-chat': isNewChat ? 'true' : 'false',

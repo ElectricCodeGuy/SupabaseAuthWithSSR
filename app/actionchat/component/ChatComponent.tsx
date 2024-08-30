@@ -91,24 +91,44 @@ export default function ChatComponentPage({
     >
       {messages.length === 0 ? (
         <Box
-          display="flex"
-          flexDirection="column"
-          justifyContent="center"
-          alignItems="center"
-          height="100%"
-          textAlign="center"
-          p={4}
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100%',
+            textAlign: 'center',
+            p: 4
+          }}
         >
-          <Typography variant="h3" color="textSecondary" paragraph>
+          <Typography
+            variant="h3"
+            paragraph
+            sx={{
+              color: 'textSecondary'
+            }}
+          >
             Chat with our AI Assistant
           </Typography>
           <>
-            <Typography variant="body1" color="textSecondary" paragraph>
+            <Typography
+              variant="body1"
+              paragraph
+              sx={{
+                color: 'textSecondary'
+              }}
+            >
               Experience the power of AI-driven conversations with our chat
               template. Ask questions on any topic and get informative responses
               instantly.
             </Typography>
-            <Typography variant="body1" color="textSecondary" paragraph>
+            <Typography
+              variant="body1"
+              paragraph
+              sx={{
+                color: 'textSecondary'
+              }}
+            >
               <strong>
                 Check out{' '}
                 <MuiLink
@@ -123,7 +143,12 @@ export default function ChatComponentPage({
                 action.
               </strong>
             </Typography>
-            <Typography variant="h4" color="textSecondary">
+            <Typography
+              variant="h4"
+              sx={{
+                color: 'textSecondary'
+              }}
+            >
               Start chatting now and enjoy the AI experience!
             </Typography>
           </>
@@ -132,8 +157,8 @@ export default function ChatComponentPage({
         messages.map((message) => (
           <Box
             key={message.id}
-            width="100%"
             sx={{
+              width: '100%',
               padding: '2px'
             }}
           >
@@ -178,69 +203,6 @@ export default function ChatComponentPage({
           maxRows={4}
           disabled={isLoading}
           fullWidth
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                {isLoading ? (
-                  <IconButton
-                    onClick={stop}
-                    color="primary"
-                    sx={{
-                      '&:hover .MuiCircularProgress-root': {
-                        display: 'none'
-                      },
-                      '&:hover .stop-icon': {
-                        display: 'inline-flex'
-                      }
-                    }}
-                  >
-                    <CircularProgress
-                      size={24}
-                      sx={{
-                        display: 'inline-flex',
-                        '&:hover': {
-                          display: 'none'
-                        }
-                      }}
-                    />
-                    <StopIcon
-                      className="stop-icon"
-                      sx={{
-                        display: 'none',
-                        '&:hover': {
-                          display: 'inline-flex'
-                        }
-                      }}
-                    />
-                  </IconButton>
-                ) : (
-                  <>
-                    <IconButton
-                      aria-label="send message"
-                      color="primary"
-                      onClick={handleSubmit}
-                    >
-                      <SendIcon />
-                    </IconButton>
-                    {messages.length > 0 && (
-                      <Tooltip title="Ryd alle beskeder">
-                        <IconButton
-                          aria-label="clear messages"
-                          color="primary"
-                          onClick={handleClearMessages}
-                        >
-                          <DeleteSweepIcon />
-                        </IconButton>
-                      </Tooltip>
-                    )}
-                  </>
-                )}
-              </InputAdornment>
-            ),
-            style: {
-              padding: '10px'
-            }
-          }}
           sx={{
             '.MuiOutlinedInput-root': {
               backgroundColor: 'white',
@@ -258,6 +220,71 @@ export default function ChatComponentPage({
               md: '100%',
               lg: '100%',
               xl: '90%'
+            }
+          }}
+          slotProps={{
+            input: {
+              endAdornment: (
+                <InputAdornment position="end">
+                  {isLoading ? (
+                    <IconButton
+                      onClick={stop}
+                      color="primary"
+                      sx={{
+                        '&:hover .MuiCircularProgress-root': {
+                          display: 'none'
+                        },
+                        '&:hover .stop-icon': {
+                          display: 'inline-flex'
+                        }
+                      }}
+                    >
+                      <CircularProgress
+                        size={24}
+                        sx={{
+                          display: 'inline-flex',
+                          '&:hover': {
+                            display: 'none'
+                          }
+                        }}
+                      />
+                      <StopIcon
+                        className="stop-icon"
+                        sx={{
+                          display: 'none',
+                          '&:hover': {
+                            display: 'inline-flex'
+                          }
+                        }}
+                      />
+                    </IconButton>
+                  ) : (
+                    <>
+                      <IconButton
+                        aria-label="send message"
+                        color="primary"
+                        onClick={handleSubmit}
+                      >
+                        <SendIcon />
+                      </IconButton>
+                      {messages.length > 0 && (
+                        <Tooltip title="Ryd alle beskeder">
+                          <IconButton
+                            aria-label="clear messages"
+                            color="primary"
+                            onClick={handleClearMessages}
+                          >
+                            <DeleteSweepIcon />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                    </>
+                  )}
+                </InputAdornment>
+              ),
+              style: {
+                padding: '10px'
+              }
             }
           }}
         />

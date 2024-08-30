@@ -71,3 +71,55 @@ export async function deleteChatData(chatId: string) {
     throw error; // Re-throw the error to be handled by the caller
   }
 }
+
+export type ChatPreview = {
+  id: string;
+  firstMessage: string;
+  created_at: string;
+};
+
+export async function fetchMoreChatPreviews(offset: number) {
+  const session = await getSession();
+  if (!session) {
+    throw new Error('User not authenticated');
+  }
+
+  const userId = session.id;
+  const limit = 30;
+
+  const chatSessionIds = await redis.zrange(
+    `userChatsIndex:${userId}`,
+    '+inf',
+    '-inf',
+    {
+      byScore: true,
+      rev: true,
+      offset: offset,
+      count: limit
+    }
+  );
+
+  const previewsPromises = chatSessionIds.map(async (chatSessionId) => {
+    const chatMetadata = await redis.hgetall(
+      `chat:${chatSessionId}-user:${userId}`
+    );
+    if (!chatMetadata) {
+      return null;
+    }
+    const firstMessage = await redis.lindex(
+      `chat:${chatSessionId}-user:${userId}:prompts`,
+      0
+    );
+    return {
+      id: chatSessionId,
+      firstMessage: firstMessage || 'No messages yet',
+      created_at: chatMetadata.created_at || new Date(0).toISOString()
+    };
+  });
+
+  const chatPreviews = (await Promise.all(previewsPromises)).filter(
+    (preview): preview is ChatPreview => preview !== null
+  );
+
+  return chatPreviews;
+}

@@ -28,7 +28,14 @@ export default async function ProtectedPage() {
   if (!userInfo) {
     return (
       <Container>
-        <Typography variant="h6" color="error" align="center" sx={{ my: 4 }}>
+        <Typography
+          variant="h6"
+          align="center"
+          sx={{
+            color: 'error',
+            my: 4
+          }}
+        >
           Error fetching user information.
         </Typography>
       </Container>

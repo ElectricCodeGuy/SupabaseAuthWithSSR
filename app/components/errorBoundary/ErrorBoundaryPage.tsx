@@ -1,15 +1,18 @@
 'use client';
 import React from 'react';
-import Button from '@mui/material/Button';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import TextareaAutosize from '@mui/material/TextareaAutosize';
-import Collapse from '@mui/material/Collapse';
-import Select, { SelectChangeEvent } from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
-import ErrorIcon from '@mui/icons-material/Error';
-import Paper from '@mui/material/Paper';
-import styled from '@mui/material/styles/styled';
+import {
+  Button,
+  Box,
+  Typography,
+  TextareaAutosize,
+  Collapse,
+  Select,
+  MenuItem,
+  Paper,
+  styled
+} from '@mui/material';
+import { Error as ErrorIcon } from '@mui/icons-material';
+import { SelectChangeEvent } from '@mui/material/Select';
 import { logFeedback } from './action';
 
 interface ErrorBoundaryProps {
@@ -111,7 +114,11 @@ class GeneralErrorBoundary extends React.Component<
           </Typography>
         </Collapse>
         <form action={logFeedback}>
-          <Box my={2}>
+          <Box
+            sx={{
+              my: 2
+            }}
+          >
             <Select
               value={feedbackCategory}
               onChange={this.handleFeedbackCategoryChange}
@@ -122,7 +129,11 @@ class GeneralErrorBoundary extends React.Component<
               <MenuItem value="performance">Performance Issue</MenuItem>
             </Select>
           </Box>
-          <Box my={2}>
+          <Box
+            sx={{
+              my: 2
+            }}
+          >
             <TextareaAutosize
               value={feedback}
               onChange={this.handleFeedbackChange}
@@ -134,7 +145,11 @@ class GeneralErrorBoundary extends React.Component<
             Submit Feedback
           </Button>
         </form>
-        <Box mt={2}>
+        <Box
+          sx={{
+            mt: 2
+          }}
+        >
           <Button
             variant="contained"
             color="secondary"

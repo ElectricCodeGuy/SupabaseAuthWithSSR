@@ -19,7 +19,7 @@ const getModel = (selectedModel: 'claude3' | 'chatgpt4') => {
   } else if (selectedModel === 'chatgpt4') {
     return openai('gpt-4o');
   }
-  throw new Error('Invalid model selected');
+  return anthropic('claude-3-5-sonnet-20240620');
 };
 
 async function submitMessage(
@@ -65,23 +65,30 @@ async function submitMessage(
 
   const uiStream = createStreamableUI(
     <Box
-      display="flex"
-      justifyContent="center"
-      alignItems="center"
-      mb={2}
-      p={2}
-      borderRadius={4}
-      bgcolor="grey.100"
       sx={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        mb: 2,
+        p: 2,
+        borderRadius: 4,
+        bgcolor: 'grey.100',
         backgroundImage: 'linear-gradient(45deg, #e0eaFC #cfdef3)',
         boxShadow: '0 3px 5px 2px rgba(0, 0, 0, .1)',
         transition: 'background-color 0.3s ease',
+
         ':hover': {
           bgcolor: 'grey.200'
         }
       }}
     >
-      <Typography variant="body1" color="textSecondary" fontStyle="italic">
+      <Typography
+        variant="body1"
+        sx={{
+          color: 'textSecondary',
+          fontStyle: 'italic'
+        }}
+      >
         Searching...
       </Typography>
     </Box>
@@ -92,23 +99,30 @@ async function submitMessage(
 
     uiStream.update(
       <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        mb={2}
-        p={2}
-        borderRadius={4}
-        bgcolor="grey.100"
         sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          mb: 2,
+          p: 2,
+          borderRadius: 4,
+          bgcolor: 'grey.100',
           backgroundImage: 'linear-gradient(45deg, #e0eaFC #cfdef3)',
           boxShadow: '0 3px 5px 2px rgba(0, 0, 0, .1)',
           transition: 'background-color 0.3s ease',
+
           ':hover': {
             bgcolor: 'grey.200'
           }
         }}
       >
-        <Typography variant="body1" color="textSecondary" fontStyle="italic">
+        <Typography
+          variant="body1"
+          sx={{
+            color: 'textSecondary',
+            fontStyle: 'italic'
+          }}
+        >
           Found relevant website. Scraping data...
         </Typography>
         <CircularProgress size={20} sx={{ marginLeft: 2 }} />
@@ -119,23 +133,30 @@ async function submitMessage(
 
     uiStream.update(
       <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        mb={2}
-        p={2}
-        borderRadius={4}
-        bgcolor="grey.100"
         sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          mb: 2,
+          p: 2,
+          borderRadius: 4,
+          bgcolor: 'grey.100',
           backgroundImage: 'linear-gradient(45deg, #e0eaFC #cfdef3)',
           boxShadow: '0 3px 5px 2px rgba(0, 0, 0, .1)',
           transition: 'background-color 0.3s ease',
+
           ':hover': {
             bgcolor: 'grey.200'
           }
         }}
       >
-        <Typography variant="body1" color="textSecondary" fontStyle="italic">
+        <Typography
+          variant="body1"
+          sx={{
+            color: 'textSecondary',
+            fontStyle: 'italic'
+          }}
+        >
           Analyzing scraped data...
         </Typography>
         <CircularProgress size={20} sx={{ marginLeft: 2 }} />
@@ -146,23 +167,30 @@ async function submitMessage(
 
     uiStream.update(
       <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        mb={2}
-        p={2}
-        borderRadius={4}
-        bgcolor="grey.100"
         sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          mb: 2,
+          p: 2,
+          borderRadius: 4,
+          bgcolor: 'grey.100',
           backgroundImage: 'linear-gradient(45deg, #e0eaFC #cfdef3)',
           boxShadow: '0 3px 5px 2px rgba(0, 0, 0, .1)',
           transition: 'background-color 0.3s ease',
+
           ':hover': {
             bgcolor: 'grey.200'
           }
         }}
       >
-        <Typography variant="body1" color="textSecondary" fontStyle="italic">
+        <Typography
+          variant="body1"
+          sx={{
+            color: 'textSecondary',
+            fontStyle: 'italic'
+          }}
+        >
           Generating response...
         </Typography>
         <CircularProgress size={20} sx={{ marginLeft: 2 }} />

@@ -1,16 +1,13 @@
 import React from 'react';
 import Image from 'next/image';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Link from '@mui/material/Link';
-import Typography from '@mui/material/Typography';
-import Grid from '@mui/material/Grid';
+import { Box, Typography, Button, Grid2, SvgIconProps } from '@mui/material';
+import Link from 'next/link';
 import SecurityIcon from '@mui/icons-material/Security';
 import SpeedIcon from '@mui/icons-material/Speed';
 import CodeIcon from '@mui/icons-material/Code';
-import { SvgIconProps } from '@mui/material/SvgIcon'; // Import type for icon props
-import CloudIcon from '@mui/icons-material/Cloud'; // New icon for cloud capabilities
-import IntegrationInstructionsIcon from '@mui/icons-material/IntegrationInstructions'; // New icon for easy integration
+
+import CloudIcon from '@mui/icons-material/Cloud';
+import IntegrationInstructionsIcon from '@mui/icons-material/IntegrationInstructions';
 
 interface BannerProps {
   session: boolean | null;
@@ -42,9 +39,20 @@ const BannerComponent: React.FC<BannerProps> = ({ session, userEmail }) => {
         backgroundColor: '#f5f5f5' // Background color for contrast
       }}
     >
-      <Grid container spacing={2} alignItems="center">
+      <Grid2
+        container
+        spacing={2}
+        sx={{
+          alignItems: 'center'
+        }}
+      >
         {/* Image Grid */}
-        <Grid item xs={12} md={8}>
+        <Grid2
+          size={{
+            xs: 12,
+            md: 8
+          }}
+        >
           <Box
             sx={{
               width: '80%',
@@ -61,9 +69,14 @@ const BannerComponent: React.FC<BannerProps> = ({ session, userEmail }) => {
               style={{ objectFit: 'cover', objectPosition: 'center' }}
             />
           </Box>
-        </Grid>
+        </Grid2>
 
-        <Grid item xs={12} md={4}>
+        <Grid2
+          size={{
+            xs: 12,
+            md: 4
+          }}
+        >
           <Typography variant="h4" sx={{ mb: 1, color: 'primary.main' }}>
             {session
               ? `Welcome back, ${userEmail || 'User'}!`
@@ -103,13 +116,16 @@ const BannerComponent: React.FC<BannerProps> = ({ session, userEmail }) => {
             />
           </Box>
 
-          <Link href={session ? '/dashboard' : '#get-started'} underline="none">
+          <Link
+            href={session ? '/dashboard' : '#get-started'}
+            style={{ textDecoration: 'none' }}
+          >
             <Button variant="contained" color="primary" sx={{ mt: 2 }}>
               {session ? 'Explore Dashboard' : 'Get Started Now'}
             </Button>
           </Link>
-        </Grid>
-      </Grid>
+        </Grid2>
+      </Grid2>
     </Box>
   );
 };

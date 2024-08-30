@@ -69,7 +69,11 @@ export function UserMessage({
 }) {
   return (
     <Box sx={messageStyles.userMessage}>
-      <Box position="relative">
+      <Box
+        sx={{
+          position: 'relative'
+        }}
+      >
         <Typography
           variant="caption"
           sx={{
@@ -81,7 +85,15 @@ export function UserMessage({
         >
           {full_name}
         </Typography>
-        <Box mt={1} ml={2} flexGrow={1} overflow="hidden" px={1}>
+        <Box
+          sx={{
+            mt: 1,
+            ml: 2,
+            flexGrow: 1,
+            overflow: 'hidden',
+            px: 1
+          }}
+        >
           <ReactMarkdown>{children?.toString()}</ReactMarkdown>
         </Box>
       </Box>
@@ -138,7 +150,14 @@ export function BotMessage({
           <ContentCopyIcon fontSize="inherit" />
         )}
       </Box>
-      <Box ml={2} flexGrow={1} overflow="hidden" px={1}>
+      <Box
+        sx={{
+          ml: 2,
+          flexGrow: 1,
+          overflow: 'hidden',
+          px: 1
+        }}
+      >
         <ReactMarkdown
           components={{
             table: ({ children }) => (

@@ -46,9 +46,9 @@ const PasswordUpdateForm: FC = () => {
   return (
     <Stack
       direction="column"
-      justifyContent="center"
-      alignItems="center"
       sx={{
+        justifyContent: 'center',
+        alignItems: 'center',
         minHeight: '90vh'
       }}
     >
@@ -101,8 +101,10 @@ const PasswordUpdateForm: FC = () => {
               variant="outlined"
               margin="normal"
               fullWidth
-              InputProps={{
-                startAdornment: <LockOutlinedIcon />
+              slotProps={{
+                input: {
+                  startAdornment: <LockOutlinedIcon />
+                }
               }}
             />
 
@@ -116,8 +118,10 @@ const PasswordUpdateForm: FC = () => {
               variant="outlined"
               margin="normal"
               fullWidth
-              InputProps={{
-                startAdornment: <LockOutlinedIcon />
+              slotProps={{
+                input: {
+                  startAdornment: <LockOutlinedIcon />
+                }
               }}
             />
             <Message />

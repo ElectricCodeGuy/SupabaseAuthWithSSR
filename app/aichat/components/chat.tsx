@@ -11,40 +11,44 @@ import React, {
   useCallback
 } from 'react';
 import { useChat, type Message } from 'ai/react';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import ListItem from '@mui/material/ListItem';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import ReactMarkdown, { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeHighlight, { Options as HighlightOptions } from 'rehype-highlight';
-import List from '@mui/material/List';
-import Snackbar from '@mui/material/Snackbar';
-import Alert from '@mui/material/Alert';
-import PersonIcon from '@mui/icons-material/Person';
-import AndroidIcon from '@mui/icons-material/Android';
 import 'highlight.js/styles/github-dark.css';
-import TextField from '@mui/material/TextField';
-import Autocomplete from '@mui/material/Autocomplete';
-import IconButton from '@mui/material/IconButton';
-import SendIcon from '@mui/icons-material/Send';
-import RetryIcon from '@mui/icons-material/Replay';
-import Paper from '@mui/material/Paper';
-import Container from '@mui/material/Container';
-import CircularProgress from '@mui/material/CircularProgress';
-import StopIcon from '@mui/icons-material/Stop';
-import Grid from '@mui/material/Grid';
-import InputAdornment from '@mui/material/InputAdornment';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import Fab from '@mui/material/Fab';
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
-import Radio from '@mui/material/Radio';
-import RadioGroup from '@mui/material/RadioGroup';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import FormControl from '@mui/material/FormControl';
-import MuiLink from '@mui/material/Link';
+import {
+  Box,
+  Typography,
+  ListItem,
+  List,
+  Snackbar,
+  Alert,
+  TextField,
+  Autocomplete,
+  IconButton,
+  Paper,
+  Container,
+  CircularProgress,
+  Grid2,
+  InputAdornment,
+  Fab,
+  Radio,
+  RadioGroup,
+  FormControlLabel,
+  FormControl,
+  Link as MuiLink
+} from '@mui/material';
+import {
+  Person as PersonIcon,
+  Android as AndroidIcon,
+  Send as SendIcon,
+  Replay as RetryIcon,
+  Stop as StopIcon,
+  ContentCopy as ContentCopyIcon,
+  CheckCircle as CheckCircleIcon,
+  KeyboardArrowUp as KeyboardArrowUpIcon
+} from '@mui/icons-material';
 
 const highlightOptionsAI: HighlightOptions = {
   detect: true,
@@ -467,12 +471,14 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
     >
       {messages.length === 0 ? (
         <Box
-          display="flex"
-          flexDirection="column"
-          justifyContent="center"
-          alignItems="center"
-          height="90vh"
-          textAlign="center"
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '90vh',
+            textAlign: 'center'
+          }}
         >
           <Typography variant="h3" color="textSecondary" paragraph>
             Chat with our AI Assistant
@@ -567,66 +573,6 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
             disabled={isLoading}
             fullWidth
             autoFocus
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    onClick={async () => {
-                      reload();
-                    }}
-                    disabled={isLoading}
-                    color="primary"
-                  >
-                    <RetryIcon />
-                  </IconButton>
-                  {isLoading ? (
-                    <IconButton
-                      onClick={stop}
-                      color="primary"
-                      sx={{
-                        '&:hover .MuiCircularProgress-root': {
-                          display: 'none'
-                        },
-                        '&:hover .stop-icon': {
-                          display: 'inline-flex'
-                        }
-                      }}
-                    >
-                      <CircularProgress
-                        size={24}
-                        sx={{
-                          display: 'inline-flex',
-                          '&:hover': {
-                            display: 'none'
-                          }
-                        }}
-                      />
-                      <StopIcon
-                        className="stop-icon"
-                        sx={{
-                          display: 'none',
-                          '&:hover': {
-                            display: 'inline-flex'
-                          }
-                        }}
-                      />
-                    </IconButton>
-                  ) : (
-                    <IconButton
-                      aria-label="send message"
-                      color="primary"
-                      type="submit"
-                      disabled={isLoading}
-                    >
-                      <SendIcon />
-                    </IconButton>
-                  )}
-                </InputAdornment>
-              ),
-              style: {
-                padding: '10px'
-              }
-            }}
             sx={{
               '.MuiOutlinedInput-root': {
                 backgroundColor: 'white',
@@ -643,16 +589,88 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
                 left: -4
               }
             }}
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={async () => {
+                        reload();
+                      }}
+                      disabled={isLoading}
+                      color="primary"
+                    >
+                      <RetryIcon />
+                    </IconButton>
+                    {isLoading ? (
+                      <IconButton
+                        onClick={stop}
+                        color="primary"
+                        sx={{
+                          '&:hover .MuiCircularProgress-root': {
+                            display: 'none'
+                          },
+                          '&:hover .stop-icon': {
+                            display: 'inline-flex'
+                          }
+                        }}
+                      >
+                        <CircularProgress
+                          size={24}
+                          sx={{
+                            display: 'inline-flex',
+                            '&:hover': {
+                              display: 'none'
+                            }
+                          }}
+                        />
+                        <StopIcon
+                          className="stop-icon"
+                          sx={{
+                            display: 'none',
+                            '&:hover': {
+                              display: 'inline-flex'
+                            }
+                          }}
+                        />
+                      </IconButton>
+                    ) : (
+                      <IconButton
+                        aria-label="send message"
+                        color="primary"
+                        type="submit"
+                        disabled={isLoading}
+                      >
+                        <SendIcon />
+                      </IconButton>
+                    )}
+                  </InputAdornment>
+                ),
+                style: {
+                  padding: '10px'
+                }
+              }
+            }}
           />
-          <Grid
+          <Grid2
             container
             direction="row"
-            justifyContent="space-between"
-            alignItems="center"
-            gap={0.5}
+            sx={{
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: 0.5
+            }}
           >
             {modelType === 'standart' && (
-              <Grid item xs={4.8} sm={4.8} md={5} lg={4} xl={4}>
+              <Grid2
+                size={{
+                  xs: 4.8,
+                  sm: 4.8,
+                  md: 5,
+                  lg: 4,
+                  xl: 4
+                }}
+              >
                 <Autocomplete
                   options={[
                     'gpt-3.5-turbo-1106',
@@ -671,9 +689,11 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
                       label="AI Model"
                       margin="normal"
                       variant="outlined"
-                      InputProps={{
-                        ...params.InputProps,
-                        style: { borderRadius: 20, backgroundColor: 'white' }
+                      slotProps={{
+                        input: {
+                          ...params.InputProps,
+                          style: { borderRadius: 20, backgroundColor: 'white' }
+                        }
                       }}
                     />
                   )}
@@ -688,9 +708,17 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
                   }}
                   disableClearable
                 />
-              </Grid>
+              </Grid2>
             )}
-            <Grid item xs={7} sm={7} md={6} lg={4} xl={4}>
+            <Grid2
+              size={{
+                xs: 7,
+                sm: 7,
+                md: 6,
+                lg: 4,
+                xl: 4
+              }}
+            >
               <FormControl component="fieldset" sx={{ width: '100%' }}>
                 <RadioGroup
                   aria-label="model-type"
@@ -710,8 +738,8 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
                   ))}
                 </RadioGroup>
               </FormControl>
-            </Grid>
-          </Grid>
+            </Grid2>
+          </Grid2>
         </Paper>
       </Box>
       <Snackbar

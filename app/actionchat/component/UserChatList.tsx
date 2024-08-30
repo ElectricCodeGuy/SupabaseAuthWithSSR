@@ -388,7 +388,12 @@ const RenderChatSection: FC<RenderChatSectionProps> = ({
   return (
     <>
       <Divider>
-        <Typography variant="caption" color="textSecondary">
+        <Typography
+          variant="caption"
+          sx={{
+            color: 'textSecondary'
+          }}
+        >
           {title}
         </Typography>
       </Divider>

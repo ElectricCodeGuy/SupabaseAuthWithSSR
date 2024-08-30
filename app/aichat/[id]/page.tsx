@@ -52,14 +52,23 @@ async function fetchChat(chatKey: string): Promise<{
 }
 
 const fetchChatPreviews = cache(
-  async function fetchData(userId: string): Promise<ChatPreview[]> {
+  async function fetchData(
+    userId: string,
+    limit: number = 30,
+    offset: number = 0
+  ): Promise<ChatPreview[]> {
     let chatPreviews: ChatPreview[] = [];
     try {
       const chatSessionIds = await redis.zrange(
         `userChatsIndex:${userId}`,
         '+inf',
-        0,
-        { byScore: true, rev: true }
+        '-inf',
+        {
+          byScore: true,
+          rev: true,
+          offset: offset,
+          count: limit
+        }
       );
       const previewsPromises = chatSessionIds.map(async (chatSessionId) => {
         const chatMetadata = await redis.hgetall(
@@ -130,7 +139,7 @@ export default async function ChatPage({ params }: { params: { id: string } }) {
    */
 
   const [chatPreviews, chatDataResult] = await Promise.all([
-    fetchChatPreviews(userId),
+    fetchChatPreviews(userId, 30, 0),
     chatKey ? fetchChat(chatKey) : Promise.resolve(null)
   ]);
 

@@ -1,9 +1,6 @@
 // pages/404.tsx
 import React from 'react';
-import Container from '@mui/material/Container';
-import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
+import { Container, Typography, Button, Box } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import Link from 'next/link';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';

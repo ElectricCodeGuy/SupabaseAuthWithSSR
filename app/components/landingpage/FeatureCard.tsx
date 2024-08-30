@@ -1,12 +1,13 @@
 import React from 'react';
-import Box from '@mui/material/Box';
-import Container from '@mui/material/Container';
-import Grid from '@mui/material/Grid';
-import Typography from '@mui/material/Typography';
-import Paper from '@mui/material/Paper';
-import Divider from '@mui/material/Divider';
-import Link from '@mui/material/Link';
-
+import {
+  Box,
+  Container,
+  Grid2,
+  Typography,
+  Paper,
+  Divider
+} from '@mui/material';
+import Link from 'next/link';
 type Feature = {
   title: string;
   description: string | React.ReactElement;
@@ -50,7 +51,12 @@ const features = [
       <>
         Stay informed about financial regulations, provisions, and insights.
         Learn more at{' '}
-        <Link href="#models" target="_blank" rel="noopener noreferrer">
+        <Link
+          href="#models"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ textDecoration: 'none' }}
+        >
           Financial Info
         </Link>
         .
@@ -78,11 +84,25 @@ const FeatureCard: React.FC<Feature> = ({ title, description, Icon }) => {
       }}
     >
       <Box sx={{ p: 3, fontSize: 50, opacity: 0.9 }}>{Icon}</Box>
-      <Typography variant="h6" fontWeight="bold" color="primary" gutterBottom>
+      <Typography
+        variant="h6"
+        color="primary"
+        gutterBottom
+        sx={{
+          fontWeight: 'bold'
+        }}
+      >
         {title}
       </Typography>
       <Divider variant="middle" />
-      <Typography variant="body2" color="text.secondary" mt={3} component="div">
+      <Typography
+        variant="body2"
+        component="div"
+        sx={{
+          color: 'text.secondary',
+          mt: 3
+        }}
+      >
         {description}
       </Typography>
     </Paper>
@@ -96,11 +116,16 @@ export default function Component() {
       sx={{ width: '100%', pt: [1, 2, 3, 6], pb: [4, 6, 8, 12] }}
     >
       <Container maxWidth="xl">
-        <Box textAlign="center" mb={10}>
+        <Box
+          sx={{
+            textAlign: 'center',
+            mb: 10
+          }}
+        >
           <Typography
             variant="h2"
-            fontWeight="bold"
             sx={{
+              fontWeight: 'bold',
               fontFamily: 'Monospace',
               letterSpacing: '0.1em',
               backgroundClip: 'text',
@@ -112,8 +137,8 @@ export default function Component() {
           </Typography>
           <Typography
             variant="h3"
-            fontWeight="bold"
             sx={{
+              fontWeight: 'bold',
               maxWidth: 800,
               mx: 'auto',
               fontFamily: 'Monospace',
@@ -123,24 +148,25 @@ export default function Component() {
             Harnessing Advanced AI for Better Insights and Efficient Operations
           </Typography>
         </Box>
-        <Grid container spacing={10}>
+        <Grid2 container spacing={10}>
           {features.map((feature, index) => (
-            <Grid
+            <Grid2
               key={index}
-              item
-              xs={12}
-              sm={6}
-              md={4}
               style={{ display: 'flex' }}
+              size={{
+                xs: 12,
+                sm: 6,
+                md: 4
+              }}
             >
               <FeatureCard
                 title={feature.title}
                 description={feature.description}
                 Icon={feature.Icon}
               />
-            </Grid>
+            </Grid2>
           ))}
-        </Grid>
+        </Grid2>
       </Container>
     </Box>
   );

@@ -68,7 +68,13 @@ export default function ForgotPassword({
           sx={{ mb: 2 }}
         />
         {error && (
-          <Typography variant="body2" color="error" sx={{ mb: 2 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: 'error',
+              mb: 2
+            }}
+          >
             {error}
           </Typography>
         )}

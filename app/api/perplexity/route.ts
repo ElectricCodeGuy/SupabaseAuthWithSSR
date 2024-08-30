@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Return the streaming response
-    return result.toAIStreamResponse({
+    return result.toDataStreamResponse({
       headers: {
         'x-chat-id': chatSessionId
       }

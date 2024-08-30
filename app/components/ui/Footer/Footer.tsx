@@ -1,13 +1,10 @@
 /* eslint-disable jsx-a11y/anchor-is-valid */
 'use client';
 import React from 'react';
-import Container from '@mui/material/Container';
-import Typography from '@mui/material/Typography';
-import Link from '@mui/material/Link';
 import Image from 'next/image';
-import Box from '@mui/material/Box';
-import Grid from '@mui/material/Grid';
 import { usePathname } from 'next/navigation';
+import { Container, Typography, Box, Grid2 } from '@mui/material';
+import Link from 'next/link';
 
 export default function Footer() {
   const pathname = usePathname(); // Use the usePathname hook to access the router object
@@ -30,60 +27,94 @@ export default function Footer() {
       }}
     >
       <Container maxWidth="lg">
-        <Grid container spacing={5} justifyContent="space-between">
-          <Grid item xs={12} sm={6} md={4}>
+        <Grid2
+          container
+          spacing={5}
+          sx={{
+            justifyContent: 'space-between'
+          }}
+        >
+          <Grid2
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 4
+            }}
+          >
             <Box
-              display="flex"
-              flexDirection="column"
-              alignItems="start"
-              gap={1}
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'start',
+                gap: 1
+              }}
             >
               <Typography variant="h6" color="primary" gutterBottom>
                 Supabase SSR Authentication 🛡️
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary'
+                }}
+              >
                 Integrate server-side rendering with Supabase authentication.
                 Enhance security and user experience with SSR and Supabase. 🚀
               </Typography>
             </Box>
-          </Grid>
+          </Grid2>
 
-          <Grid item xs={12} sm={6} md={4}>
-            <Box display="flex" flexDirection="column" gap={1}>
+          <Grid2
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 4
+            }}
+          >
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 1
+              }}
+            >
               <Typography variant="h6" color="primary" gutterBottom>
                 Useful Links 🌐
               </Typography>
               {/* Updated links for better accessibility */}
-              <Link
-                href="#"
-                target="_blank"
-                color="secondary"
-                underline="hover"
-              >
+              <Link href="#" target="_blank" color="secondary">
                 Documentation
               </Link>
-              <Link
-                href="#"
-                target="_blank"
-                color="secondary"
-                underline="hover"
-              >
+              <Link href="#" target="_blank" color="secondary">
                 Support
               </Link>
-              <Link
-                href="#"
-                target="_blank"
-                color="secondary"
-                underline="hover"
-              >
+              <Link href="#" target="_blank" color="secondary">
                 Contact
               </Link>
             </Box>
-          </Grid>
+          </Grid2>
 
-          <Grid item xs={12} md={4}>
-            <Box display="flex" flexDirection="column" alignItems="end" gap={2}>
-              <Box display="flex" alignItems="center" gap={2}>
+          <Grid2
+            size={{
+              xs: 12,
+              md: 4
+            }}
+          >
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'end',
+                gap: 2
+              }}
+            >
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2
+                }}
+              >
                 <Image
                   src="/assets/next-js-icon.svg"
                   alt="Next.js Logo"
@@ -91,15 +122,17 @@ export default function Footer() {
                   height={24}
                   priority // Use priority prop for faster loading of critical images
                 />
-                <Link
-                  href="https://nextjs.org"
-                  target="_blank"
-                  underline="hover"
-                >
+                <Link href="https://nextjs.org" target="_blank">
                   Next.js
                 </Link>
               </Box>
-              <Box display="flex" alignItems="center" gap={2}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2
+                }}
+              >
                 <Image
                   src="/assets/supabase.svg"
                   alt="Supabase Logo"
@@ -107,22 +140,28 @@ export default function Footer() {
                   height={24}
                   priority // Important for critical images
                 />
-                <Link
-                  href="https://supabase.io"
-                  target="_blank"
-                  underline="hover"
-                >
+                <Link href="https://supabase.io" target="_blank">
                   Supabase
                 </Link>
               </Box>
             </Box>
-          </Grid>
-        </Grid>
+          </Grid2>
+        </Grid2>
 
-        <Box textAlign="center">
-          <Typography variant="body2" color="text.secondary" gutterBottom>
+        <Box
+          sx={{
+            textAlign: 'center'
+          }}
+        >
+          <Typography
+            variant="body2"
+            gutterBottom
+            sx={{
+              color: 'text.secondary'
+            }}
+          >
             Copyright ©{' '}
-            <Link color="inherit" href="#" target="_blank" underline="hover">
+            <Link color="inherit" href="#" target="_blank">
               Your Company
             </Link>{' '}
             {currentYear}.
