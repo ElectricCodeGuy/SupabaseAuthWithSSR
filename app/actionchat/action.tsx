@@ -1,15 +1,14 @@
 import React from 'react';
 import { createAI, getMutableAIState, createStreamableUI } from 'ai/rsc';
-import { streamText } from 'ai';
+import { streamText, generateId } from 'ai';
 import { Box, Typography, CircularProgress } from '@mui/material';
 import { BotMessage, UserMessage } from './component/botmessage';
 import { v4 as uuidv4 } from 'uuid';
-import { format } from 'date-fns';
-import { saveChatToRedis } from './lib/redis';
+import { saveChatToSupbabase } from './lib/redis';
 import { openai } from '@ai-sdk/openai';
 import { anthropic } from '@ai-sdk/anthropic';
 import { getUserInfo, getSession } from '@/lib/server/supabase';
-import { redis } from '@/lib/server/server';
+import { createServerSupabaseClient } from '@/lib/server/server';
 
 const SYSTEM_TEMPLATE = `You are a helpful assistant. Answer all questions to the best of your ability. Provide helpful answers in markdown.`;
 
@@ -216,7 +215,7 @@ async function submitMessage(
         console.log('Prompt Tokens:', promptTokens);
         console.log('Completion Tokens:', completionTokens);
         console.log('Total Tokens:', totalTokens);
-        await saveChatToRedis(
+        await saveChatToSupbabase(
           CurrentChatSessionId,
           session.id,
           currentUserMessage,
@@ -252,19 +251,23 @@ async function submitMessage(
     uiStream.done();
   })();
   return {
-    id: Date.now(),
+    id: generateId(),
     display: uiStream.value,
     chatId: CurrentChatSessionId
   };
 }
 
-type MessageFromDB = {
+type ChatSessionWithMessages = {
   id: string;
-  prompt: string[];
-  completion: string[];
-  user_id: string | null;
+  user_id: string;
   created_at: string;
   updated_at: string;
+  chat_messages: {
+    id: string;
+    is_user_message: boolean;
+    content: string | null;
+    created_at: string;
+  }[];
 };
 
 async function ChatHistoryUpdate(
@@ -277,100 +280,85 @@ async function ChatHistoryUpdate(
     return { uiMessages: [], chatId: '' };
   }
 
-  const chatKey = `chat:${chatId}-user:${session.id}`;
-  let metadata: Omit<MessageFromDB, 'prompt' | 'completion'> | null = null;
-  let prompts: string[] = [];
-  let completions: string[] = [];
+  const supabase = createServerSupabaseClient();
 
   try {
-    const pipeline = redis.pipeline();
-    pipeline.hgetall(chatKey);
-    pipeline.lrange(`${chatKey}:prompts`, 0, -1);
-    pipeline.lrange(`${chatKey}:completions`, 0, -1);
+    const { data: chatData, error } = await supabase
+      .from('chat_sessions')
+      .select(
+        `
+        id,
+        user_id,
+        created_at,
+        updated_at,
+        chat_messages (
+          id,
+          is_user_message,
+          content,
+          created_at
+        )
+      `
+      )
+      .eq('id', chatId)
+      .eq('user_id', session.id)
+      .order('created_at', {
+        ascending: true,
+        referencedTable: 'chat_messages'
+      })
+      .single();
 
-    const [metadataResult, promptsResult, completionsResult] =
-      await pipeline.exec();
+    if (error) throw error;
 
-    metadata = metadataResult as Omit<
-      MessageFromDB,
-      'prompt' | 'completion'
-    > | null;
-    prompts = promptsResult as string[];
-    completions = completionsResult as string[];
+    if (!chatData) {
+      return { uiMessages: [], chatId: '' };
+    }
+
+    const typedChatData = chatData as ChatSessionWithMessages;
+
+    const combinedMessages: {
+      role: 'user' | 'assistant';
+      id: string;
+      content: string;
+    }[] = typedChatData.chat_messages.map((message) => ({
+      role: message.is_user_message ? 'user' : 'assistant',
+      id: message.id,
+      content: message.content || ''
+    }));
+
+    const aiState = getMutableAIState<typeof AI>();
+    const aiStateMessages: ServerMessage[] = combinedMessages.map(
+      (message) => ({
+        role: message.role,
+        content: message.content
+      })
+    );
+    aiState.done(aiStateMessages);
+
+    const uiMessages: ClientMessage[] = combinedMessages.map((message) => {
+      if (message.role === 'user') {
+        return {
+          id: message.id,
+          role: 'user',
+          display: (
+            <UserMessage full_name={full_name}>{message.content}</UserMessage>
+          ),
+          chatId: chatId
+        };
+      } else {
+        return {
+          id: message.id,
+          role: 'assistant',
+          display: <BotMessage>{message.content}</BotMessage>,
+          chatId: chatId
+        };
+      }
+    });
+
+    return { uiMessages, chatId };
   } catch (error) {
-    console.error('Error fetching chat data from Redis:', error);
+    console.error('Error fetching chat data from Supabase:', error);
+    return { uiMessages: [], chatId: '' };
   }
-
-  const chatData: MessageFromDB = {
-    id: chatId,
-    prompt: prompts,
-    completion: completions,
-    user_id: session.id,
-    created_at: metadata?.created_at
-      ? format(new Date(metadata.created_at), 'dd-MM-yyyy HH:mm')
-      : '',
-    updated_at: metadata?.updated_at
-      ? format(new Date(metadata.updated_at), 'dd-MM-yyyy HH:mm')
-      : ''
-  };
-
-  const userMessages = chatData.prompt;
-  const assistantMessages = chatData.completion;
-  const combinedMessages: {
-    role: 'user' | 'assistant';
-    id: string;
-    content: string;
-  }[] = [];
-
-  for (
-    let i = 0;
-    i < Math.max(userMessages.length, assistantMessages.length);
-    i++
-  ) {
-    if (userMessages[i]) {
-      combinedMessages.push({
-        role: 'user',
-        id: `user-${i}`,
-        content: userMessages[i]
-      });
-    }
-    if (assistantMessages[i]) {
-      combinedMessages.push({
-        role: 'assistant',
-        id: `assistant-${i}`,
-        content: assistantMessages[i]
-      });
-    }
-  }
-
-  const aiState = getMutableAIState<typeof AI>();
-  const aiStateMessages: ServerMessage[] = combinedMessages.map((message) => ({
-    role: message.role,
-    content: message.content
-  }));
-  aiState.done(aiStateMessages);
-
-  const uiMessages: ClientMessage[] = combinedMessages.map((message) => {
-    if (message.role === 'user') {
-      return {
-        id: message.id,
-        role: 'user',
-        display: (
-          <UserMessage full_name={full_name}>{message.content}</UserMessage>
-        ),
-        chatId: chatId
-      };
-    } else {
-      return {
-        id: message.id,
-        role: 'assistant',
-        display: <BotMessage>{message.content}</BotMessage>,
-        chatId: chatId
-      };
-    }
-  });
-
-  return { uiMessages, chatId };
 }
 
 type ResetResult = {
@@ -434,7 +422,7 @@ export type SubmitMessageResult = {
   limit?: number;
   remaining?: number;
   reset?: number;
-  id?: number;
+  id?: string;
   display?: React.ReactNode;
   chatId?: string;
 };

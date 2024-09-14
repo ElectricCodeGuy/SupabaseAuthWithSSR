@@ -27,6 +27,50 @@ If you are interested in implementing an AI that can search the internet and lin
 
 ## CHANGELOG
 
+## [v1.6.0] - 2024-06-10
+
+### Added
+
+- **Supabase Integration for Chat Storage**: Replaced Upstash/redis storage of chat messages with Supabase. The AI/RSC part of the application now stores data directly in Supabase tables. This was done to keep everything in one place.
+
+### Changed
+
+- **Database Schema**: Implemented new schemas in Supabase for chat storage. The new schemas are as follows:
+
+  ```sql
+  -- Chat Sessions Table
+  create table public.chat_sessions (
+    id text not null,
+    user_id uuid not null,
+    created_at timestamp with time zone not null default now(),
+    updated_at timestamp with time zone not null default now(),
+    constraint chat_sessions_pkey primary key (id),
+    constraint chat_sessions_user_id_fkey foreign key (user_id) references users (id) on delete cascade
+  ) tablespace pg_default;
+
+  create index idx_chat_sessions_user_id on public.chat_sessions using btree (user_id);
+  create index idx_chat_sessions_created_at on public.chat_sessions using btree (created_at desc);
+  create index idx_chat_sessions_user_id_created_at on public.chat_sessions using btree (user_id, created_at desc);
+
+  -- Chat Messages Table
+  create table public.chat_messages (
+    id uuid not null default extensions.uuid_generate_v4(),
+    chat_session_id text not null,
+    is_user_message boolean not null,
+    content text null,
+    sources jsonb null,
+    created_at timestamp with time zone not null default now(),
+    constraint chat_messages_pkey primary key (id),
+    constraint chat_messages_chat_session_id_fkey foreign key (chat_session_id) references chat_sessions (id) on delete cascade
+  ) tablespace pg_default;
+
+  create index idx_chat_messages_chat_session_id on public.chat_messages using btree (chat_session_id);
+  create index idx_chat_messages_is_user_message on public.chat_messages using btree (is_user_message);
+  create index idx_chat_messages_created_at on public.chat_messages using btree (created_at);
+  create index idx_chat_messages_chat_session_id_is_user_message on public.chat_messages using btree (chat_session_id, is_user_message);
+  create index idx_chat_messages_chat_session_id_created_at on public.chat_messages using btree (chat_session_id, created_at);
+  ```
+
 ## [v1.5.0] - 2024-06-02
 
 ### Added

@@ -18,21 +18,40 @@ import {
   Chip,
   Divider,
   Typography,
-  CircularProgress
+  CircularProgress,
+  styled,
+  tooltipClasses,
+  TooltipProps
 } from '@mui/material';
 import { Delete as DeleteIcon } from '@mui/icons-material';
 import { format, differenceInDays, isToday, isYesterday } from 'date-fns';
-import { useSWRConfig } from 'swr';
 import { ClientMessage, ChatHistoryUpdateResult } from '../action';
 import useSWRInfinite from 'swr/infinite';
 import { Tables } from '@/types/database';
 
 type UserData = Tables<'users'>;
 
+const HtmlTooltip = styled(({ className, ...props }: TooltipProps) => (
+  <Tooltip {...props} classes={{ popper: className }} />
+))(({ theme }) => ({
+  [`& .${tooltipClasses.tooltip}`]: {
+    backgroundColor: '#f5f5f9',
+    color: 'rgba(0, 0, 0, 0.87)',
+    maxWidth: 360,
+    maxHeight: 360,
+    overflowY: 'auto',
+    overflowX: 'hidden',
+    fontSize: theme.typography.pxToRem(16),
+    border: '1px solid #dadde9'
+  }
+}));
+
 type ChatPreview = {
-  id: string;
-  firstMessage: string;
-  created_at: string;
+  id: Tables<'chat_sessions'>['id'];
+  created_at: Tables<'chat_sessions'>['created_at'];
+  chat_messages: {
+    content: Tables<'chat_messages'>['content'];
+  }[];
 };
 
 interface CombinedDrawerProps {
@@ -66,11 +85,10 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
     size,
     setSize
   } = useSWRInfinite(
-    isDrawerOpen
-      ? (index) => [`userChatsIndex:${userInfo.id}`, index * 30]
-      : () => null,
-    async ([_, offset]: [string, number]) => {
-      const newChatPreviews = await fetchChatPreviews(userInfo.id, offset, 30);
+    isDrawerOpen ? (index) => [index, 30] : () => null,
+    async ([index, limit]: [number, number]) => {
+      const offset = index * limit;
+      const newChatPreviews = await fetchChatPreviews(offset, limit);
       return newChatPreviews;
     }
   );
@@ -82,14 +100,6 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
     setSize(size + 1);
   };
 
-  const { mutate } = useSWRConfig();
-
-  const truncateMessage = (message: string, length: number) => {
-    return message.length > length
-      ? `${message.substring(0, length)}...`
-      : message;
-  };
-
   const handleDeleteClick = (id: string) => {
     setChatToDelete(id);
     setDeleteConfirmationOpen(true);
@@ -98,7 +108,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
   const handleDeleteConfirmation = async () => {
     if (chatToDelete) {
       try {
-        await deleteChatData(userInfo.id, chatToDelete);
+        await deleteChatData(chatToDelete);
         // Optimistically update the local cache
         mutateChatPreviews((currentChatPreviews: ChatPreview[][] = []) => {
           return currentChatPreviews.map((chatPreviewPage) =>
@@ -106,13 +116,9 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
           );
         }, false);
 
-        // Check if the deleted chat is the currently selected chat
         if (currentChatId === chatToDelete) {
-          setMessages([]); // Update the setMessages state to an empty array
+          setMessages([]);
         }
-
-        // Revalidate the cache
-        mutate(userInfo.id);
       } catch (error) {
         console.error('Failed to delete the chat:', error);
       }
@@ -248,7 +254,6 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
                       handleDeleteClick={handleDeleteClick}
                       hoveredChatId={hoveredChatId}
                       setHoveredChatId={setHoveredChatId}
-                      truncateMessage={truncateMessage}
                       formatDate={formatDate}
                     />
                     <RenderChatSection
@@ -259,7 +264,6 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
                       handleDeleteClick={handleDeleteClick}
                       hoveredChatId={hoveredChatId}
                       setHoveredChatId={setHoveredChatId}
-                      truncateMessage={truncateMessage}
                       formatDate={formatDate}
                     />
                     <RenderChatSection
@@ -270,7 +274,6 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
                       handleDeleteClick={handleDeleteClick}
                       hoveredChatId={hoveredChatId}
                       setHoveredChatId={setHoveredChatId}
-                      truncateMessage={truncateMessage}
                       formatDate={formatDate}
                     />
                     <RenderChatSection
@@ -281,7 +284,6 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
                       handleDeleteClick={handleDeleteClick}
                       hoveredChatId={hoveredChatId}
                       setHoveredChatId={setHoveredChatId}
-                      truncateMessage={truncateMessage}
                       formatDate={formatDate}
                     />
                     <RenderChatSection
@@ -292,7 +294,6 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
                       handleDeleteClick={handleDeleteClick}
                       hoveredChatId={hoveredChatId}
                       setHoveredChatId={setHoveredChatId}
-                      truncateMessage={truncateMessage}
                       formatDate={formatDate}
                     />
                     <RenderChatSection
@@ -303,7 +304,6 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
                       handleDeleteClick={handleDeleteClick}
                       hoveredChatId={hoveredChatId}
                       setHoveredChatId={setHoveredChatId}
-                      truncateMessage={truncateMessage}
                       formatDate={formatDate}
                     />
                     {hasMore && (
@@ -368,7 +368,6 @@ type RenderChatSectionProps = {
   handleDeleteClick: (_id: string) => void;
   hoveredChatId: string | null;
   setHoveredChatId: React.Dispatch<React.SetStateAction<string | null>>;
-  truncateMessage: (_message: string, _length: number) => string;
   formatDate: (_dateString: string) => string;
 };
 
@@ -380,7 +379,6 @@ const RenderChatSection: FC<RenderChatSectionProps> = ({
   handleDeleteClick,
   hoveredChatId,
   setHoveredChatId,
-  truncateMessage,
   formatDate
 }) => {
   if (chats.length === 0) return null;
@@ -397,29 +395,39 @@ const RenderChatSection: FC<RenderChatSectionProps> = ({
           {title}
         </Typography>
       </Divider>
-      {chats.map(({ id, firstMessage, created_at }) => (
-        <Tooltip
-          key={id}
-          title={firstMessage || 'No messages yet'}
-          placement="right"
-          arrow
-        >
-          <ListItem
-            disablePadding
-            onMouseEnter={() => setHoveredChatId(id)}
-            onMouseLeave={() => setHoveredChatId(null)}
-            sx={{ position: 'relative' }}
-          >
-            <ListItemButton
-              sx={{
-                fontSize: '0.9rem',
-                backgroundColor:
-                  currentChatId === id ? 'rgba(0, 0, 0, 0.1)' : 'inherit',
-                paddingRight: '30px'
-              }}
-              onClick={() => handleChatClick(id)}
+      {chats.map(({ id, chat_messages, created_at }) => {
+        const firstMessage = chat_messages[0]?.content || 'No messages yet';
+        return (
+          <HtmlTooltip key={id} title={firstMessage} placement="right" arrow>
+            <ListItem
+              disablePadding
+              onMouseEnter={() => setHoveredChatId(id)}
+              onMouseLeave={() => setHoveredChatId(null)}
+              sx={{ position: 'relative' }}
             >
-              {truncateMessage(firstMessage, 28)}
+              <ListItemButton
+                sx={{
+                  fontSize: '0.95rem',
+                  backgroundColor:
+                    currentChatId === id ? 'rgba(0, 0, 0, 0.1)' : 'inherit',
+                  paddingRight: '30px',
+                  '&::after': {
+                    content: 'attr(data-truncated-message)',
+                    display: 'block',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    '@media (max-width: 600px)': {
+                      maxWidth: 'calc(100% - 50px)'
+                    },
+                    '@media (min-width: 601px)': {
+                      maxWidth: 'calc(100% - 70px)'
+                    }
+                  }
+                }}
+                onClick={() => handleChatClick(id)}
+                data-truncated-message={firstMessage}
+              />
               <Chip
                 label={formatDate(created_at)}
                 size="small"
@@ -434,23 +442,23 @@ const RenderChatSection: FC<RenderChatSectionProps> = ({
                   fontSize: '0.6rem'
                 }}
               />
-            </ListItemButton>
-            {hoveredChatId === id && (
-              <IconButton
-                onClick={() => handleDeleteClick(id)}
-                size="small"
-                sx={{
-                  padding: '2px',
-                  position: 'absolute',
-                  right: 0
-                }}
-              >
-                <DeleteIcon fontSize="inherit" />
-              </IconButton>
-            )}
-          </ListItem>
-        </Tooltip>
-      ))}
+              {hoveredChatId === id && (
+                <IconButton
+                  onClick={() => handleDeleteClick(id)}
+                  size="small"
+                  sx={{
+                    padding: '2px',
+                    position: 'absolute',
+                    right: 0
+                  }}
+                >
+                  <DeleteIcon fontSize="inherit" />
+                </IconButton>
+              )}
+            </ListItem>
+          </HtmlTooltip>
+        );
+      })}
     </>
   );
 };

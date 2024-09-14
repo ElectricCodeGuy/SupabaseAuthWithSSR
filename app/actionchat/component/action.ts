@@ -1,107 +1,66 @@
 'use server';
-import { redis } from '@/lib/server/server';
-import { z } from 'zod';
 
-const userIdSchemaChat = z.string().uuid();
+import { getSession } from '@/lib/server/supabase';
+import { createServerSupabaseClient } from '@/lib/server/server';
 
-type ChatPreview = {
-  id: string;
-  firstMessage: string;
-  created_at: string;
-};
-
-export async function fetchChatPreviews(
-  userId: string,
-  offset: number,
-  limit: number
-): Promise<ChatPreview[]> {
-  let chatPreviews: ChatPreview[] = [];
+export async function fetchChatPreviews(offset: number, limit: number) {
+  const session = await getSession();
+  if (!session) {
+    return [];
+  }
+  const supabase = createServerSupabaseClient();
 
   try {
-    const parseResult = userIdSchemaChat.safeParse(userId);
-    if (!parseResult.success) {
-      console.error('Invalid userId:', parseResult.error);
-      return chatPreviews;
-    }
+    const query = supabase
+      .from('chat_sessions')
+      .select(
+        `
+        id,
+        created_at,
+        chat_messages (
+          content
+        )
+      `
+      )
+      .eq('user_id', session.id)
+      .eq('chat_messages.is_user_message', true)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
+      .order('created_at', {
+        referencedTable: 'chat_messages',
+        ascending: true
+      })
+      .limit(1, { foreignTable: 'chat_messages' });
 
-    const validUserId = parseResult.data;
+    const { data, error } = await query;
 
-    const chatSessionIds = await redis.zrange(
-      `userChatsIndex:${validUserId}`,
-      '+inf',
-      0,
-      { byScore: true, rev: true, count: limit, offset: offset }
-    );
-    if (chatSessionIds.length === 0) {
-      return chatPreviews;
-    }
-    const pipeline = redis.pipeline();
+    if (error) throw error;
 
-    chatSessionIds.forEach((chatSessionId) => {
-      pipeline.hgetall(`chat:${chatSessionId}-user:${userId}`);
-      pipeline.lindex(`chat:${chatSessionId}-user:${userId}:prompts`, 0);
-    });
-
-    const pipelineResults = await pipeline.exec();
-
-    chatPreviews = pipelineResults.reduce(
-      (acc: ChatPreview[], result, index) => {
-        if (index % 2 === 0) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const chatMetadata = result as any;
-          const firstMessage = pipelineResults[index + 1] as string;
-
-          if (chatMetadata) {
-            acc.push({
-              id: chatSessionIds[index / 2] as string,
-              firstMessage: firstMessage || 'No messages yet',
-              created_at: chatMetadata.created_at || new Date(0).toISOString()
-            });
-          }
-        }
-        return acc;
-      },
-      []
-    );
+    return data;
   } catch (error) {
     console.error('Error fetching chat previews:', error);
+    return [];
   }
-
-  return chatPreviews;
 }
-const userIdSchema = z
-  .string()
-  .uuid({ message: 'UUID is Wrong for some reason?????' });
-
-export async function deleteChatData(userId: string, chatId: string) {
-  const userResult = userIdSchema.safeParse(userId);
-
-  // Check for validation failure
-  if (!userResult.success) {
-    throw new Error(userResult.error.message);
+export async function deleteChatData(chatId: string) {
+  const session = await getSession();
+  if (!session) {
+    return { message: 'User not authenticated' };
   }
-
-  const chatKey = `chat:${chatId}-user:${userId}`;
-  const userChatsIndexKey = `userChatsIndex:${userId}`; // Key for the ZSET that indexes chats for the user
-
+  const supabase = createServerSupabaseClient();
   try {
-    // Start a Redis transaction
-    const transaction = redis.multi();
+    // Delete chat session
+    const { error: sessionError } = await supabase
+      .from('chat_sessions')
+      .delete()
+      .eq('id', chatId)
+      .eq('user_id', session.id);
 
-    // Delete chat-related keys from Redis
-    transaction.del(chatKey);
-    transaction.del(`${chatKey}:prompts`);
-    transaction.del(`${chatKey}:completions`);
-
-    // Remove the chat session reference from the user's sorted set
-    transaction.zrem(userChatsIndexKey, chatId);
-
-    // Execute the transaction
-    await transaction.exec();
+    if (sessionError) throw sessionError;
 
     return { message: 'Chat data and references deleted successfully' };
   } catch (error) {
     console.error('Error during deletion:', error);
-    throw error; // Re-throw the error to be handled by the caller
+    return { message: 'Error deleting chat data' };
   }
 }

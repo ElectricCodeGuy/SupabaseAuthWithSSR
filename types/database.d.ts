@@ -9,6 +9,70 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      chat_messages: {
+        Row: {
+          chat_session_id: string;
+          content: string | null;
+          created_at: string;
+          id: string;
+          is_user_message: boolean;
+          sources: Json | null;
+        };
+        Insert: {
+          chat_session_id: string;
+          content?: string | null;
+          created_at?: string;
+          id?: string;
+          is_user_message: boolean;
+          sources?: Json | null;
+        };
+        Update: {
+          chat_session_id?: string;
+          content?: string | null;
+          created_at?: string;
+          id?: string;
+          is_user_message?: boolean;
+          sources?: Json | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'chat_messages_chat_session_id_fkey';
+            columns: ['chat_session_id'];
+            isOneToOne: false;
+            referencedRelation: 'chat_sessions';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
+      chat_sessions: {
+        Row: {
+          created_at: string;
+          id: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'chat_sessions_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
       error_feedback: {
         Row: {
           category: string | null;

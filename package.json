@@ -10,8 +10,8 @@
     "generate-types": "npx supabase gen types typescript --project-id YOUR_PROJECT_ID --schema public > types_db.ts"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^0.0.48",
-    "@ai-sdk/openai": "^0.0.54",
+    "@ai-sdk/anthropic": "^0.0.50",
+    "@ai-sdk/openai": "^0.0.60",
     "@emotion/cache": "^11.13.1",
     "@emotion/react": "^11.13.3",
     "@emotion/styled": "^11.13.0",
@@ -29,8 +29,9 @@
     "openai": "^4.57.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-intersection-observer": "^9.13.0",
+    "react-intersection-observer": "^9.13.1",
     "react-markdown": "^9.0.1",
+    "react-syntax-highlighter": "^15.5.0",
     "rehype-highlight": "^7.0.0",
     "remark-gfm": "^4.0.0",
     "remark-math": "^6.0.0",
