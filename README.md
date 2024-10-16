@@ -432,16 +432,6 @@ To integrate the chat features:
 
 🔖 Licensed under the MIT License. See LICENSE.md for details.
 
-## 🙏 Acknowledgements
-
-- 🎉 A special thank you to the **Supabase team** for developing such a versatile and user-friendly tool. Their commitment to making database interaction seamless and efficient has greatly enhanced this project.
-- 🛠 Appreciation goes to **TypeScript** for its powerful type system that makes JavaScript code safer and easier to understand. This project leverages TypeScript to ensure code reliability and maintainability.
-- 🌐 Thanks to **Vercel** for their innovative platform and tools like `@vercel/ai`, which simplify the deployment process and enhance the integration of AI features into web applications.
-- 🤖 Gratitude to **Langchain** for their toolkit that makes it easier to build language AI applications, enabling this project to integrate complex AI functionalities with ease.
-- 💡 This project also benefits from the innovative `@supabase/ssr` package, which seamlessly integrates Supabase authentication with Next.js server-side rendering, providing a robust foundation for secure and efficient user authentication.
-
-Each of these contributions has been invaluable in creating a comprehensive, secure, and user-friendly application. Thank you for your tools, services, and the community support that makes projects like this possible.
-
 ## 📦 Packages Used
 
 - 🧰 Material-UI (`@mui/material`, `@mui/icons-material`): Provides a comprehensive suite of UI tools for React applications.
