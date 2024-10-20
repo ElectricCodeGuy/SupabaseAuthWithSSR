@@ -49,19 +49,29 @@ import {
   CheckCircle as CheckCircleIcon,
   KeyboardArrowUp as KeyboardArrowUpIcon
 } from '@mui/icons-material';
+import { Tables } from '@/types/database';
 
 const highlightOptionsAI: HighlightOptions = {
   detect: true,
   prefix: 'hljs-'
 };
 
-type MessageFromDB = {
-  id: string;
-  prompt: string[];
-  completion: string[];
-  created_at: string;
-  updated_at: string;
+type MessageFromDB = Pick<
+  Tables<'chat_messages'>,
+  'id' | 'content' | 'is_user_message' | 'created_at'
+>;
+
+type ChatSessionWithMessages = Pick<
+  Tables<'chat_sessions'>,
+  'id' | 'user_id' | 'created_at' | 'updated_at'
+> & {
+  chat_messages: MessageFromDB[];
 };
+
+interface ChatProps {
+  currentChat?: ChatSessionWithMessages | null;
+  chatId?: string;
+}
 
 const messageStyles = {
   userMessage: {
@@ -98,10 +108,6 @@ const messageStyles = {
   }
 };
 
-interface ChatProps {
-  currentChat?: MessageFromDB | null;
-  chatId?: string;
-}
 interface ChatMessageProps {
   messages: Message[];
 }
@@ -317,32 +323,14 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
   }, []);
 
   const initialMessages = useMemo(() => {
-    if (currentChat) {
-      const userMessages = currentChat.prompt;
-      const assistantMessages = currentChat.completion;
-      const combinedMessages: Message[] = [];
-
-      for (
-        let i = 0;
-        i < Math.max(userMessages.length, assistantMessages.length);
-        i++
-      ) {
-        if (userMessages[i]) {
-          combinedMessages.push({
-            role: 'user',
-            id: `user-${i}`,
-            content: userMessages[i]
-          });
-        }
-        if (assistantMessages[i]) {
-          combinedMessages.push({
-            role: 'assistant',
-            id: `assistant-${i}`,
-            content: assistantMessages[i]
-          });
-        }
-      }
-      return combinedMessages;
+    if (currentChat && currentChat.chat_messages) {
+      return currentChat.chat_messages.map(
+        (message): Message => ({
+          role: message.is_user_message ? 'user' : 'assistant',
+          id: message.id,
+          content: message.content || '' // Handle null content
+        })
+      );
     }
     return [];
   }, [currentChat]);
@@ -565,6 +553,7 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
         >
           <TextField
             value={input}
+            size="small"
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             variant="outlined"
@@ -645,10 +634,7 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
                       </IconButton>
                     )}
                   </InputAdornment>
-                ),
-                style: {
-                  padding: '10px'
-                }
+                )
               }
             }}
           />

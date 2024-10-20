@@ -4,100 +4,83 @@ import ChatComponent from '../components/chat';
 import UserCharListDrawer from '../components/UserCharListDrawer';
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/server/supabase';
+import { createServerSupabaseClient } from '@/lib/server/server';
 import { format } from 'date-fns';
-import { unstable_cache as cache } from 'next/cache';
-import { redis } from '@/lib/server/server';
+import { SupabaseClient } from '@supabase/supabase-js';
+import { Database } from '@/types/database';
 
-type MessageFromDB = {
-  id: string;
-  prompt: string;
-  completion: string;
-  user_id: string | null;
-  created_at: string;
-  updated_at: string;
-};
-
-type ChatPreview = {
-  id: string;
-  firstMessage: string;
-  created_at: string;
-};
-
-async function fetchChat(chatKey: string): Promise<{
-  metadata: Omit<MessageFromDB, 'prompt' | 'completion'> | null;
-  prompts: string[];
-  completions: string[];
-}> {
+async function fetchChat(
+  supabase: SupabaseClient<Database>,
+  chatId: string,
+  userId: string
+) {
   try {
-    const pipeline = redis.pipeline(); // Use a pipeline to batch Redis operations
-    pipeline.hgetall(chatKey);
-    pipeline.lrange(`${chatKey}:prompts`, 0, -1);
-    pipeline.lrange(`${chatKey}:completions`, 0, -1);
+    const { data, error } = await supabase
+      .from('chat_sessions')
+      .select(
+        `
+        id,
+        user_id,
+        created_at,
+        updated_at,
+        chat_messages (
+          id,
+          is_user_message,
+          content,
+          created_at
+        )
+      `
+      )
+      .eq('id', chatId)
+      .eq('user_id', userId)
+      .order('created_at', {
+        ascending: true,
+        referencedTable: 'chat_messages'
+      })
+      .single();
 
-    const [metadata, prompts, completions] = await pipeline.exec();
-
-    return {
-      metadata: metadata as Omit<MessageFromDB, 'prompt' | 'completion'> | null,
-      prompts: prompts as string[],
-      completions: completions as string[]
-    };
+    if (error) throw error;
+    return data;
   } catch (error) {
-    console.error('Error fetching chat data from Redis:', error);
-    return {
-      metadata: null,
-      prompts: [],
-      completions: []
-    };
+    console.error('Error fetching chat data from Supabase:', error);
+    return null;
   }
 }
 
-const fetchChatPreviews = cache(
-  async function fetchData(
-    userId: string,
-    limit: number = 30,
-    offset: number = 0
-  ): Promise<ChatPreview[]> {
-    let chatPreviews: ChatPreview[] = [];
-    try {
-      const chatSessionIds = await redis.zrange(
-        `userChatsIndex:${userId}`,
-        '+inf',
-        '-inf',
-        {
-          byScore: true,
-          rev: true,
-          offset: offset,
-          count: limit
-        }
-      );
-      const previewsPromises = chatSessionIds.map(async (chatSessionId) => {
-        const chatMetadata = await redis.hgetall(
-          `chat:${chatSessionId}-user:${userId}`
-        );
-        if (!chatMetadata) {
-          return null;
-        }
-        const firstMessage = await redis.lindex(
-          `chat:${chatSessionId}-user:${userId}:prompts`,
-          0
-        );
-        return {
-          id: chatSessionId,
-          firstMessage: firstMessage || 'No messages yet',
-          created_at: chatMetadata.created_at || new Date(0).toISOString()
-        };
-      });
-      chatPreviews = (await Promise.all(previewsPromises)).filter(
-        (preview): preview is ChatPreview => preview !== null
-      );
-    } catch (error) {
-      console.error('Error fetching chat previews:', error);
-    }
-    return chatPreviews;
-  },
-  ['datafetch'],
-  { tags: ['datafetch'], revalidate: 3600 }
-);
+async function fetchData(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  limit: number = 30,
+  offset: number = 0
+) {
+  try {
+    const { data, error } = await supabase
+      .from('chat_sessions')
+      .select(
+        `
+          id,
+          created_at,
+          chat_messages (
+            content
+          )
+        `
+      )
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) throw error;
+
+    return data.map((session) => ({
+      id: session.id,
+      firstMessage: session.chat_messages[0]?.content || 'No messages yet',
+      created_at: session.created_at
+    }));
+  } catch (error) {
+    console.error('Error fetching chat previews:', error);
+    return [];
+  }
+}
 
 export default async function ChatPage({ params }: { params: { id: string } }) {
   const session = await getSession();
@@ -108,67 +91,30 @@ export default async function ChatPage({ params }: { params: { id: string } }) {
   let { id } = params;
 
   const userId = session?.id || 'unknown-user';
-  const chatKey = `chat:${id}-user:${userId}`;
-
-  /*
-   * The aichat component requires a rewrite configuration in next.config.js
-   * to handle the case when no id is provided in the URL. If there is no id,
-   * the rewrite rule will redirect to the default '/aichat/1' route.
-   *
-   * Add the following rewrite configuration in next.config.js:
-   *
-   * module.exports = {
-   *   async rewrites() {
-   *     return [
-   *       {
-   *         source: '/aichat',
-   *         destination: '/aichat/1'
-   *       }
-   *     ];
-   *   }
-   * };
-   */
+  const supabase = createServerSupabaseClient();
 
   id = id === '1' ? '' : id;
 
-  /*
-   * We check the chatId for being 1 since this is just a default value,
-   * that we do not want to pass down to the children.
-   * This is NOT recommended for production. It is only for demonstration purposes.
-   * You would have to create a page.tsx inside the /aichat folder that is the default url for /aichat
-   */
-
-  const [chatPreviews, chatDataResult] = await Promise.all([
-    fetchChatPreviews(userId, 30, 0),
-    chatKey ? fetchChat(chatKey) : Promise.resolve(null)
+  const [chatPreviews, chatData] = await Promise.all([
+    fetchData(supabase, userId, 30, 0),
+    id ? fetchChat(supabase, id, userId) : Promise.resolve(null)
   ]);
 
-  const chatData =
-    id !== '1' && chatDataResult
-      ? {
-          id: id!,
-          prompt: chatDataResult.prompts,
-          completion: chatDataResult.completions,
-          created_at: chatDataResult.metadata?.created_at
-            ? format(
-                new Date(chatDataResult.metadata.created_at),
-                'dd-MM-yyyy HH:mm'
-              )
-            : '',
-          updated_at: chatDataResult.metadata?.updated_at
-            ? format(
-                new Date(chatDataResult.metadata.updated_at),
-                'dd-MM-yyyy HH:mm'
-              )
-            : ''
-        }
-      : {
-          id: '',
-          prompt: [],
-          completion: [],
-          created_at: '',
-          updated_at: ''
-        };
+  const formattedChatData = chatData
+    ? {
+        id: chatData.id,
+        user_id: chatData.user_id, // Add this line
+        prompt: chatData.chat_messages
+          .filter((m) => m.is_user_message)
+          .map((m) => m.content),
+        completion: chatData.chat_messages
+          .filter((m) => !m.is_user_message)
+          .map((m) => m.content),
+        created_at: format(new Date(chatData.created_at), 'dd-MM-yyyy HH:mm'),
+        updated_at: format(new Date(chatData.updated_at), 'dd-MM-yyyy HH:mm'),
+        chat_messages: chatData.chat_messages // Add this line
+      }
+    : null; // Change this to null instead of an empty object
 
   return (
     <Box
@@ -183,7 +129,7 @@ export default async function ChatPage({ params }: { params: { id: string } }) {
         }
       }}
     >
-      <ChatComponent currentChat={chatData} chatId={id} />
+      <ChatComponent currentChat={formattedChatData} chatId={id} />
       <UserCharListDrawer chatPreviews={chatPreviews} chatId={id} />
     </Box>
   );

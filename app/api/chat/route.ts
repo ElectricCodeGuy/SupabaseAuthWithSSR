@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { streamText, CoreMessage } from 'ai';
 import { v4 as uuidv4 } from 'uuid';
-import { saveChatToRedis } from './redis';
+import { saveChatToSupbabase } from './SaveToDb';
 import { Ratelimit } from '@upstash/ratelimit';
 import { openai } from '@ai-sdk/openai';
 import { anthropic } from '@ai-sdk/anthropic';
 import { redis } from '@/lib/server/server';
 import { getSession } from '@/lib/server/supabase';
+import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -76,14 +77,16 @@ export async function POST(req: NextRequest) {
           const lastMessage = messages[messages.length - 1];
           const lastMessageContent =
             typeof lastMessage?.content === 'string' ? lastMessage.content : '';
-          await saveChatToRedis(
+          await saveChatToSupbabase(
             chatSessionId,
             session.id,
             lastMessageContent,
-            event.text,
-            isNewChat
+            event.text
           );
-          console.log('Chat saved to Redis:', chatSessionId);
+          if (isNewChat) {
+            revalidatePath('/aichat[id]', 'page');
+          }
+          console.log('Chat saved to Supabase:', chatSessionId);
         } catch (error) {
           console.error('Error saving chat to Redis:', error);
         }

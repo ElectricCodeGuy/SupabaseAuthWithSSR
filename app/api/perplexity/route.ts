@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createOpenAI } from '@ai-sdk/openai';
 import { streamText, CoreMessage, Message } from 'ai';
-import { saveChatToRedis } from './redis';
+import { saveChatToSupbabase } from './SaveToDb';
 import { v4 as uuidv4 } from 'uuid';
 import { Redis } from '@upstash/redis';
 import { Ratelimit } from '@upstash/ratelimit';
-import { revalidateTag } from 'next/cache';
+import { revalidatePath } from 'next/cache';
+
 import { getSession } from '@/lib/server/supabase';
 
 const perplexity = createOpenAI({
@@ -77,15 +78,14 @@ export async function POST(req: NextRequest) {
       model: perplexity('llama-3-sonar-large-32k-online'),
       messages: fullMessages,
       onFinish: async (event) => {
-        await saveChatToRedis(
+        await saveChatToSupbabase(
           chatSessionId,
           session.id,
           messages[messages.length - 1].content,
-          event.text,
-          isNewChat
+          event.text
         );
         if (isNewChat) {
-          revalidateTag('datafetch');
+          revalidatePath('/aichat[id]', 'page');
         }
       }
     });

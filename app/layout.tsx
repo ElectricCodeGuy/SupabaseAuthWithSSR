@@ -5,7 +5,7 @@ import Footer from '@/app/components/ui/Footer/Footer';
 import ThemeRegistry from '@/theme/ThemeRegistry';
 import RootErrorBoundary from '@/app/components/errorBoundary/ErrorBoundaryPage';
 import { getSession } from '@/lib/server/supabase';
-import Sidebar from '@/app/components/ui/Navbar/SideBar';
+import Sidebar from '@/app/components/ui/Navbar/TopBar';
 
 const inter = Inter({ subsets: ['latin'] });
 

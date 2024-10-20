@@ -10,7 +10,6 @@ import {
   ListItemButton,
   Tooltip,
   Divider,
-  Link as MuiLink,
   Button,
   useTheme,
   IconButton,
@@ -27,6 +26,7 @@ import {
 import { Delete as DeleteIcon, Menu as MenuIcon } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { fetchMoreChatPreviews, ChatPreview } from '../actions';
+import Link from 'next/link';
 
 type CombinedDrawerProps = {
   chatPreviews: ChatPreview[];
@@ -129,61 +129,52 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
         <React.Fragment key={id}>
           <Tooltip title={tooltipTitle} placement="left" arrow>
             <ListItem disablePadding>
-              <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
-                <MuiLink
-                  underline="none"
-                  sx={{ flexGrow: 1 }}
-                  onClick={() => {
-                    const newPathname = `/aichat/${id}`;
-                    const newQueryParams = new URLSearchParams({
-                      modeltype: modelType,
-                      modelselected: selectedOption
-                    });
-                    router.replace(
-                      `${newPathname}?${newQueryParams.toString()}`,
-                      { scroll: false }
-                    );
+              <ListItemButton
+                component={Link}
+                href={`/aichat/${id}?modeltype=${modelType}&modelselected=${selectedOption}`}
+                prefetch={false}
+                onMouseEnter={() => {
+                  router.prefetch(
+                    `/aichat/${id}?modeltype=${modelType}&modelselected=${selectedOption}`
+                  );
+                }}
+                sx={{
+                  fontSize: '0.9rem',
+                  ...selectedStyle,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  position: 'relative'
+                }}
+              >
+                {truncatedMessage}
+                <Chip
+                  label={formattedDate}
+                  size="small"
+                  sx={{
+                    fontSize: '0.7rem'
                   }}
-                >
-                  <ListItemButton
+                />
+                {isSelected(id) && (
+                  <IconButton
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleDeleteClick(id);
+                    }}
+                    size="small"
                     sx={{
-                      fontSize: '0.9rem',
-                      ...selectedStyle,
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      position: 'relative'
+                      padding: '2px',
+                      position: 'absolute',
+                      right: 0,
+                      top: '50%',
+                      transform: 'translateY(-50%)'
                     }}
                   >
-                    {truncatedMessage}
-                    <Chip
-                      label={formattedDate}
-                      size="small"
-                      sx={{
-                        fontSize: '0.7rem'
-                      }}
-                    />
-                    {isSelected(id) && (
-                      <IconButton
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteClick(id);
-                        }}
-                        size="small"
-                        sx={{
-                          padding: '2px',
-                          position: 'absolute',
-                          right: 0,
-                          top: '50%',
-                          transform: 'translateY(-50%)'
-                        }}
-                      >
-                        <DeleteIcon fontSize="inherit" />
-                      </IconButton>
-                    )}
-                  </ListItemButton>
-                </MuiLink>
-              </Box>
+                    <DeleteIcon fontSize="inherit" />
+                  </IconButton>
+                )}
+              </ListItemButton>
             </ListItem>
           </Tooltip>
           <Divider />
@@ -248,29 +239,23 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
           >
             <Box sx={{ overflow: 'auto', flexGrow: 1 }}>
               <ListItem
+                component={Link}
+                href={`/aichat?modeltype=${searchParams.get('modeltype') ?? 'standart'}&modelselected=${searchParams.get('modelselected') ?? 'gpt-3.5-turbo-1106'}`}
+                prefetch={false}
                 key="newChat"
+                aria-label="New Chat"
                 disablePadding
-                sx={{ width: '100%', padding: '8px 16px' }}
+                sx={{ padding: 0.2 }}
               >
-                <MuiLink
-                  underline="none"
-                  sx={{ width: '100%', display: 'block' }}
-                  onClick={() => {
-                    const newQueryParams = new URLSearchParams({
-                      modeltype: searchParams.get('modeltype') ?? 'standart',
-                      modelselected:
-                        searchParams.get('modelselected') ??
-                        'gpt-3.5-turbo-1106'
-                    });
-                    router.replace(`/aichat?${newQueryParams.toString()}`, {
-                      scroll: false
-                    });
+                <ListItemButton
+                  sx={{
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    textAlign: 'center'
                   }}
                 >
-                  <Button variant="outlined" fullWidth>
-                    New Chat
-                  </Button>
-                </MuiLink>
+                  New Chat
+                </ListItemButton>
               </ListItem>
               <Divider />
               <List>{chatListItems}</List>
@@ -295,9 +280,15 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
                 ].map((item, index) => (
                   <React.Fragment key={index}>
                     <ListItem disablePadding>
-                      <MuiLink href={item.href}>
+                      <Link
+                        href={item.href}
+                        prefetch={false}
+                        onMouseEnter={() => {
+                          router.prefetch(item.href);
+                        }}
+                      >
                         <ListItemButton>{item.label}</ListItemButton>
-                      </MuiLink>
+                      </Link>
                     </ListItem>
                     <Divider />
                   </React.Fragment>
@@ -341,50 +332,34 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
           >
             <Box sx={{ overflow: 'auto', flexGrow: 1 }}>
               <ListItem
+                component={Link}
+                href={`/aichat?modeltype=${searchParams.get('modeltype') ?? 'standart'}&modelselected=${searchParams.get('modelselected') ?? 'gpt-3.5-turbo-1106'}`}
+                prefetch={false}
                 key="newChat"
                 disablePadding
-                sx={{ width: '100%', padding: '8px 16px' }}
+                sx={{ padding: 1, alignContent: 'center' }}
               >
-                <MuiLink
-                  underline="none"
-                  sx={{ width: '100%', display: 'block' }}
-                  onClick={() => {
-                    const newQueryParams = new URLSearchParams({
-                      modeltype: searchParams.get('modeltype') ?? 'standart',
-                      modelselected:
-                        searchParams.get('modelselected') ??
-                        'gpt-3.5-turbo-1106'
-                    });
-                    router.replace(`/aichat?${newQueryParams.toString()}`, {
-                      scroll: false
-                    });
+                <ListItemButton
+                  sx={{
+                    alignContent: 'center'
                   }}
                 >
-                  <Button variant="outlined" fullWidth>
-                    New Chat
-                  </Button>
-                </MuiLink>
+                  New Chat
+                </ListItemButton>
               </ListItem>
               <Divider />
               <List>{chatListItems}</List>
-            </Box>
-            <Box>
-              <Divider />
-              <List>
-                {[
-                  { href: '/', label: 'Home' },
-                  { href: '/protected', label: 'Account' }
-                ].map((item, index) => (
-                  <React.Fragment key={index}>
-                    <ListItem disablePadding>
-                      <MuiLink href={item.href}>
-                        <ListItemButton>{item.label}</ListItemButton>
-                      </MuiLink>
-                    </ListItem>
-                    <Divider />
-                  </React.Fragment>
-                ))}
-              </List>
+              {allChatPreviews.length % 30 === 0 && (
+                <ListItem component={'form'} action={handleLoadMore}>
+                  <Button type="submit" fullWidth disabled={isValidating}>
+                    {isValidating ? (
+                      <CircularProgress size={24} />
+                    ) : (
+                      'Load More'
+                    )}
+                  </Button>
+                </ListItem>
+              )}
             </Box>
           </Box>
         </SwipeableDrawer>

@@ -4,7 +4,7 @@ import { streamText, generateId } from 'ai';
 import { Box, Typography, CircularProgress } from '@mui/material';
 import { BotMessage, UserMessage } from './component/botmessage';
 import { v4 as uuidv4 } from 'uuid';
-import { saveChatToSupbabase } from './lib/redis';
+import { saveChatToSupbabase } from './lib/SaveToDb';
 import { openai } from '@ai-sdk/openai';
 import { anthropic } from '@ai-sdk/anthropic';
 import { getUserInfo, getSession } from '@/lib/server/supabase';

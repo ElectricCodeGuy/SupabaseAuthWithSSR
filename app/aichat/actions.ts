@@ -3,8 +3,9 @@
 import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { cookies } from 'next/headers';
-import { redis } from '@/lib/server/server';
+
 import { getSession } from '@/lib/server/supabase';
+import { createServerSupabaseClient } from '@/lib/server/server';
 
 const AutoScrollEnabledSchema = z.object({
   autoScrollEnabled: z.boolean()
@@ -39,36 +40,28 @@ export async function autoScrollCookie(formData: FormData) {
 }
 
 export async function deleteChatData(chatId: string) {
-  // Check for validation failure
   const session = await getSession();
   if (!session) {
-    throw new Error('User session not found');
+    return { message: 'User not authenticated' };
   }
-  const chatKey = `chat:${chatId}-user:${session.id}`;
-  const userChatsIndexKey = `userChatsIndex:${session.id}`; // Key for the ZSET that indexes chats for the user
-
+  const supabase = createServerSupabaseClient();
   try {
-    // Start a Redis transaction
-    const transaction = redis.multi();
+    // Delete chat session and associated messages
+    const { error: sessionError } = await supabase
+      .from('chat_sessions')
+      .delete()
+      .eq('id', chatId)
+      .eq('user_id', session.id);
 
-    // Delete chat-related keys from Redis
-    transaction.del(chatKey);
-    transaction.del(`${chatKey}:prompts`);
-    transaction.del(`${chatKey}:completions`);
+    if (sessionError) throw sessionError;
 
-    // Remove the chat session reference from the user's sorted set
-    transaction.zrem(userChatsIndexKey, chatId);
-
-    // Execute the transaction
-    await transaction.exec();
-
-    // Rerender the list of chats using the 'datafetch' tag
+    // Revalidate the 'datafetch' tag to update the UI
     revalidateTag('datafetch');
 
     return { message: 'Chat data and references deleted successfully' };
   } catch (error) {
     console.error('Error during deletion:', error);
-    throw error; // Re-throw the error to be handled by the caller
+    return { message: 'Error deleting chat data' };
   }
 }
 
@@ -84,42 +77,36 @@ export async function fetchMoreChatPreviews(offset: number) {
     throw new Error('User not authenticated');
   }
 
-  const userId = session.id;
+  const supabase = createServerSupabaseClient();
   const limit = 30;
 
-  const chatSessionIds = await redis.zrange(
-    `userChatsIndex:${userId}`,
-    '+inf',
-    '-inf',
-    {
-      byScore: true,
-      rev: true,
-      offset: offset,
-      count: limit
-    }
-  );
+  try {
+    const { data, error } = await supabase
+      .from('chat_sessions')
+      .select(
+        `
+        id,
+        created_at,
+        chat_messages (
+          content
+        )
+      `
+      )
+      .eq('user_id', session.id)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
 
-  const previewsPromises = chatSessionIds.map(async (chatSessionId) => {
-    const chatMetadata = await redis.hgetall(
-      `chat:${chatSessionId}-user:${userId}`
-    );
-    if (!chatMetadata) {
-      return null;
-    }
-    const firstMessage = await redis.lindex(
-      `chat:${chatSessionId}-user:${userId}:prompts`,
-      0
-    );
-    return {
-      id: chatSessionId,
-      firstMessage: firstMessage || 'No messages yet',
-      created_at: chatMetadata.created_at || new Date(0).toISOString()
-    };
-  });
+    if (error) throw error;
 
-  const chatPreviews = (await Promise.all(previewsPromises)).filter(
-    (preview): preview is ChatPreview => preview !== null
-  );
+    const chatPreviews: ChatPreview[] = data.map((session) => ({
+      id: session.id,
+      firstMessage: session.chat_messages[0]?.content || 'No messages yet',
+      created_at: session.created_at
+    }));
 
-  return chatPreviews;
+    return chatPreviews;
+  } catch (error) {
+    console.error('Error fetching chat previews:', error);
+    return [];
+  }
 }
