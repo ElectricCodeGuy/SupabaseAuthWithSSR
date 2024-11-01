@@ -7,6 +7,7 @@ import {
   GitHub as GitHubIcon
 } from '@mui/icons-material';
 import Link from 'next/link';
+import ChikenImage from '@/public/images/chiken image.jpg';
 
 const UserProfileComponent = () => {
   return (
@@ -40,12 +41,7 @@ const UserProfileComponent = () => {
               md: 4
             }}
           >
-            <Image
-              src="https://source.unsplash.com/random"
-              alt="Support"
-              height={140}
-              width={140}
-            />
+            <Image src={ChikenImage} alt="Support" height={140} width={140} />
 
             <Typography
               variant="h4"

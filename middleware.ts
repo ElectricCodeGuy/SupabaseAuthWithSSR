@@ -30,16 +30,27 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  const { data: session } = await supabase.auth.getUser();
+  // Get user session
+  const {
+    data: { user: session }
+  } = await supabase.auth.getUser();
 
-  if (!session && request.nextUrl.pathname.startsWith('/protected')) {
-    return NextResponse.redirect(new URL('/auth/signin', request.url));
+  // Handle route-specific redirects
+  const currentRoute = request.nextUrl.pathname;
+  if (currentRoute.startsWith('/protected') && !session) {
+    const redirectUrl = new URL(request.url);
+    redirectUrl.pathname = '/auth/signin';
+    return NextResponse.redirect(redirectUrl);
   }
-  if (!session && request.nextUrl.pathname.startsWith('/actionchat')) {
-    return NextResponse.redirect(new URL('/auth/signin', request.url));
+  if (currentRoute.startsWith('/actionchat') && !session) {
+    const redirectUrl = new URL(request.url);
+    redirectUrl.pathname = '/auth/signin';
+    return NextResponse.redirect(redirectUrl);
   }
-  if (!session && request.nextUrl.pathname.startsWith('/aichat')) {
-    return NextResponse.redirect(new URL('/auth/signin', request.url));
+  if (currentRoute.startsWith('/aichat') && !session) {
+    const redirectUrl = new URL(request.url);
+    redirectUrl.pathname = '/auth/signin';
+    return NextResponse.redirect(redirectUrl);
   }
 
   return response;

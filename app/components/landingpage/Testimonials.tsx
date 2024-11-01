@@ -1,5 +1,13 @@
 import React from 'react';
-import { Box, Container, Grid, Typography, Paper, Avatar } from '@mui/material';
+import {
+  Box,
+  Container,
+  Grid2,
+  Typography,
+  Paper,
+  Avatar
+} from '@mui/material';
+import ChikenImage from '@/public/images/chiken image.jpg';
 
 interface Testimonial {
   name: string;
@@ -12,42 +20,42 @@ const testimonials: Testimonial[] = [
   {
     name: 'Sarah Johnson',
     role: 'HR Manager',
-    avatar: '/avatars/sarah.jpg',
+    avatar: ChikenImage.src,
     content:
       "The AI integration has revolutionized our HR processes. We're now able to handle employee queries more efficiently than ever before."
   },
   {
     name: 'Michael Chen',
     role: 'Financial Analyst',
-    avatar: '/avatars/michael.jpg',
+    avatar: ChikenImage.src,
     content:
       "The real-time updates feature has been a game-changer for our financial forecasting. We're always working with the most current data."
   },
   {
     name: 'Emily Rodriguez',
     role: 'Operations Director',
-    avatar: '/avatars/emily.jpg',
+    avatar: ChikenImage.src,
     content:
       "The deep insights provided by this platform have helped us identify and resolve operational bottlenecks we didn't even know existed."
   },
   {
     name: 'David Kim',
     role: 'Compliance Officer',
-    avatar: '/avatars/david.jpg',
+    avatar: ChikenImage.src,
     content:
       "Having all our guidelines and protocols in one place has significantly improved our compliance rates. It's user-friendly and always up-to-date."
   },
   {
     name: 'Lisa Patel',
     role: 'Team Lead',
-    avatar: '/avatars/lisa.jpg',
+    avatar: ChikenImage.src,
     content:
       "The absence management features have streamlined our leave approval process. It's made my job as a team lead much easier."
   },
   {
     name: 'Robert Taylor',
     role: 'CFO',
-    avatar: '/avatars/robert.jpg',
+    avatar: ChikenImage.src,
     content:
       "The financial information section is comprehensive and well-organized. It's become an indispensable tool for our finance department."
   }
@@ -135,20 +143,21 @@ const Testimonials: React.FC = () => {
             Real Experiences from Satisfied Customers
           </Typography>
         </Box>
-        <Grid container spacing={4}>
+        <Grid2 container spacing={4}>
           {testimonials.map((testimonial, index) => (
-            <Grid
-              item
-              xs={12}
-              sm={6}
-              md={4}
+            <Grid2
+              size={{
+                xs: 12,
+                sm: 6,
+                md: 4
+              }}
               key={index}
               sx={{ display: 'flex' }}
             >
               <TestimonialCard {...testimonial} />
-            </Grid>
+            </Grid2>
           ))}
-        </Grid>
+        </Grid2>
       </Container>
     </Box>
   );

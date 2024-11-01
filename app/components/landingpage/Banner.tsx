@@ -8,6 +8,7 @@ import CodeIcon from '@mui/icons-material/Code';
 
 import CloudIcon from '@mui/icons-material/Cloud';
 import IntegrationInstructionsIcon from '@mui/icons-material/IntegrationInstructions';
+import FrontPageImage from '@/public/images/imageauth.jpg';
 
 interface BannerProps {
   session: boolean | null;
@@ -55,15 +56,15 @@ const BannerComponent: React.FC<BannerProps> = ({ session, userEmail }) => {
         >
           <Box
             sx={{
-              width: '80%',
-              height: '800px', // Fixed height, you can adjust as needed
+              width: '60%',
+              height: '600px', // Fixed height, you can adjust as needed
               position: 'relative',
               borderRadius: '12px',
               overflow: 'hidden'
             }}
           >
             <Image
-              src="https://source.unsplash.com/random?wallpapers"
+              src={FrontPageImage}
               fill
               alt="Background"
               style={{ objectFit: 'cover', objectPosition: 'center' }}
