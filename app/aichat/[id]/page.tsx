@@ -2,18 +2,12 @@ import 'server-only';
 import { Box } from '@mui/material';
 import ChatComponent from '../components/chat';
 import UserCharListDrawer from '../components/UserCharListDrawer';
-import { redirect } from 'next/navigation';
-import { getSession } from '@/lib/server/supabase';
 import { createServerSupabaseClient } from '@/lib/server/server';
 import { format } from 'date-fns';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '@/types/database';
 
-async function fetchChat(
-  supabase: SupabaseClient<Database>,
-  chatId: string,
-  userId: string
-) {
+async function fetchChat(supabase: SupabaseClient<Database>, chatId: string) {
   try {
     const { data, error } = await supabase
       .from('chat_sessions')
@@ -32,7 +26,6 @@ async function fetchChat(
       `
       )
       .eq('id', chatId)
-      .eq('user_id', userId)
       .order('created_at', {
         ascending: true,
         referencedTable: 'chat_messages'
@@ -49,7 +42,6 @@ async function fetchChat(
 
 async function fetchData(
   supabase: SupabaseClient<Database>,
-  userId: string,
   limit: number = 30,
   offset: number = 0
 ) {
@@ -65,7 +57,6 @@ async function fetchData(
           )
         `
       )
-      .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -82,22 +73,20 @@ async function fetchData(
   }
 }
 
-export default async function ChatPage({ params }: { params: { id: string } }) {
-  const session = await getSession();
+export default async function ChatPage(props: {
+  params: Promise<{ id: string }>;
+}) {
+  const params = await props.params;
 
-  if (!session) {
-    redirect('/auth');
-  }
   let { id } = params;
 
-  const userId = session?.id || 'unknown-user';
-  const supabase = createServerSupabaseClient();
+  const supabase = await createServerSupabaseClient();
 
   id = id === '1' ? '' : id;
 
   const [chatPreviews, chatData] = await Promise.all([
-    fetchData(supabase, userId, 30, 0),
-    id ? fetchChat(supabase, id, userId) : Promise.resolve(null)
+    fetchData(supabase, 30, 0),
+    id ? fetchChat(supabase, id) : Promise.resolve(null)
   ]);
 
   const formattedChatData = chatData

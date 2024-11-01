@@ -1,5 +1,5 @@
 import 'server-only';
-import { getUserInfo, getSession } from '@/lib/server/supabase';
+import { getUserInfo } from '@/lib/server/supabase';
 import {
   Typography,
   Box,
@@ -17,14 +17,10 @@ import PersonIcon from '@mui/icons-material/Person';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import InfoIcon from '@mui/icons-material/Info';
-import { redirect } from 'next/navigation';
 import { format } from 'date-fns';
 
 export default async function ProtectedPage() {
-  const session = await getSession();
-  if (!session) return redirect('/login');
-
-  const userInfo = await getUserInfo(session.id);
+  const userInfo = await getUserInfo();
   if (!userInfo) {
     return (
       <Container>

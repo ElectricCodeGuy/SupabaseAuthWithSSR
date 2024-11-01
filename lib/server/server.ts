@@ -6,8 +6,8 @@ import { Redis } from '@upstash/redis';
 // Define a function to create a Supabase client for server-side operations
 // The function takes a cookie store created with next/headers cookies as an argument
 // More information can be found on: https://supabase.com/docs/guides/auth/server-side/nextjs?queryGroups=router&router=app
-export const createServerSupabaseClient = () => {
-  const cookieStore = cookies();
+export const createServerSupabaseClient = async () => {
+  const cookieStore = await cookies();
 
   return createServerClient<Database>(
     // Pass Supabase URL and anonymous key from the environment to the client

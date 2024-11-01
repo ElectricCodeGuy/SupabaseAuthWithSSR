@@ -12,7 +12,7 @@ const formDataSchemaSignin = z.object({
 });
 
 export async function login(formData: FormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const result = formDataSchemaSignin.safeParse({
     email: formData.get('email'),
@@ -47,7 +47,7 @@ const formDataSchemaSignup = z.object({
 });
 
 export async function signup(formData: FormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const result = formDataSchemaSignup.safeParse({
     email: formData.get('email') ? String(formData.get('email')) : '',
@@ -89,7 +89,7 @@ const formDataSchemaReset = z.object({
 });
 
 export async function resetPasswordForEmail(formData: FormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const email = formData.get('email') ? String(formData.get('email')) : '';
 
   const result = formDataSchemaReset.safeParse({ email: email });
@@ -118,7 +118,7 @@ export async function resetPasswordForEmail(formData: FormData) {
 }
 
 export async function signout() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const signOutResult = await supabase.auth.signOut();
 

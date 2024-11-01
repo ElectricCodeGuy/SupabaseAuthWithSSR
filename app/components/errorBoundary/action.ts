@@ -7,7 +7,7 @@ import { redirect } from 'next/navigation';
 import { createServerSupabaseClient as createClient } from '@/lib/server/server';
 
 export async function logFeedback(formData: FormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const feedbackSchema = z.object({
     feedback: z.string(),

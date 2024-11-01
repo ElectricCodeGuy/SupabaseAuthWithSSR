@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   const token_hash = code || token_hash_searchParam;
 
   if (token_hash && type) {
-    const supabase = createClient();
+    const supabase = await createClient();
 
     const { data } = await supabase.auth.verifyOtp({
       type,

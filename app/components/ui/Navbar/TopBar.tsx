@@ -145,7 +145,7 @@ const AppBarComponent: React.FC<AppBarProps> = ({ session }) => {
     { href: '/aichat', text: 'AI Chat' },
     { href: '/actionchat', text: 'Action Chat' },
     {
-      href: session ? '/profile' : '/signin',
+      href: session ? '/profile' : '/auth/signin',
       text: session ? 'Profile' : 'Sign in'
     }
   ];
@@ -331,7 +331,7 @@ const AppBarComponent: React.FC<AppBarProps> = ({ session }) => {
           <Button
             component={Link}
             prefetch={true}
-            href="/signin"
+            href="/auth/signin"
             color="primary"
             variant="contained"
             size="small"

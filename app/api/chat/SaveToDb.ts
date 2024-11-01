@@ -18,7 +18,7 @@ export const saveChatToSupbabase = async (
     console.warn('Chat session ID is empty. Skipping saving chat to Supabase.');
     return;
   }
-  const supabase = createServerSupabaseClient();
+  const supabase = await createServerSupabaseClient();
   try {
     // Upsert the chat session
     const { error: sessionError } = await supabase.from('chat_sessions').upsert(

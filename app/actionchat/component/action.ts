@@ -8,7 +8,7 @@ export async function fetchChatPreviews(offset: number, limit: number) {
   if (!session) {
     return [];
   }
-  const supabase = createServerSupabaseClient();
+  const supabase = await createServerSupabaseClient();
 
   try {
     const query = supabase
@@ -22,7 +22,6 @@ export async function fetchChatPreviews(offset: number, limit: number) {
         )
       `
       )
-      .eq('user_id', session.id)
       .eq('chat_messages.is_user_message', true)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
@@ -47,14 +46,13 @@ export async function deleteChatData(chatId: string) {
   if (!session) {
     return { message: 'User not authenticated' };
   }
-  const supabase = createServerSupabaseClient();
+  const supabase = await createServerSupabaseClient();
   try {
     // Delete chat session
     const { error: sessionError } = await supabase
       .from('chat_sessions')
       .delete()
-      .eq('id', chatId)
-      .eq('user_id', session.id);
+      .eq('id', chatId);
 
     if (sessionError) throw sessionError;
 

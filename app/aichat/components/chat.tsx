@@ -4,7 +4,6 @@ import React, {
   useEffect,
   useMemo,
   useState,
-  memo,
   FC,
   FormEvent,
   KeyboardEvent,
@@ -111,14 +110,11 @@ const messageStyles = {
 interface ChatMessageProps {
   messages: Message[];
 }
-// Memoizing the Message component with React.memo
-// This optimization helps prevent unnecessary re-renders of the Message component.
-// React.memo will only re-render the component if its props change.
-// In this case, the Message component will only re-render when the 'message' prop changes.
-// This can improve performance by reducing the number of unnecessary re-renders.
-const MemoizedMessage = memo(({ message }: { message: Message }) => {
+
+const MessageComponent = ({ message }: { message: Message }) => {
   const [isCopied, setIsCopied] = useState(false);
   const router = useRouter();
+
   const componentsAI: Partial<Components> = {
     a: ({ href, children }) => (
       <a
@@ -198,6 +194,7 @@ const MemoizedMessage = memo(({ message }: { message: Message }) => {
       </a>
     )
   };
+
   const copyToClipboard = (str: string): void => {
     void window.navigator.clipboard.writeText(str);
   };
@@ -278,20 +275,19 @@ const MemoizedMessage = memo(({ message }: { message: Message }) => {
       </Box>
     </ListItem>
   );
-});
-
-MemoizedMessage.displayName = 'MemoizedMessage';
+};
 
 const ChatMessage: FC<ChatMessageProps> = ({ messages }) => {
   return (
     <>
       {messages.map((message, index) => (
-        <MemoizedMessage key={`${message.id}-${index}`} message={message} />
+        <MessageComponent key={`${message.id}-${index}`} message={message} />
       ))}
     </>
   );
 };
 
+// The rest of the ChatComponent remains unchanged.
 const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -355,6 +351,7 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
       chatId: chatId === '1' ? '' : chatId,
       option: selectedOption
     },
+    experimental_throttle: 50,
     initialMessages: initialMessages,
     onResponse: (res) => {
       if (res.status === 200) {

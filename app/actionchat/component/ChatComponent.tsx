@@ -29,7 +29,7 @@ import { Tables } from '@/types/database';
 
 const ChatHistoryDrawer = lazy(() => import('./UserChatList'));
 
-type UserData = Tables<'users'>;
+type UserData = Pick<Tables<'users'>, 'email' | 'full_name'>;
 
 interface ChatComponentPageProps {
   userInfo: UserData | null;

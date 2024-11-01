@@ -42,7 +42,7 @@ async function submitMessage(
       reset: 0
     };
   }
-  const userInfo = await getUserInfo(session.id);
+  const userInfo = await getUserInfo();
   if (!userInfo) {
     return {
       success: false,
@@ -280,7 +280,7 @@ async function ChatHistoryUpdate(
     return { uiMessages: [], chatId: '' };
   }
 
-  const supabase = createServerSupabaseClient();
+  const supabase = await createServerSupabaseClient();
 
   try {
     const { data: chatData, error } = await supabase

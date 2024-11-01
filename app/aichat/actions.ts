@@ -22,7 +22,7 @@ export async function autoScrollCookie(formData: FormData) {
   });
 
   if (result.success) {
-    cookies().set(
+    (await cookies()).set(
       'autoScrollEnabled',
       result.data.autoScrollEnabled ? 'true' : 'false',
       {
@@ -44,14 +44,13 @@ export async function deleteChatData(chatId: string) {
   if (!session) {
     return { message: 'User not authenticated' };
   }
-  const supabase = createServerSupabaseClient();
+  const supabase = await createServerSupabaseClient();
   try {
     // Delete chat session and associated messages
     const { error: sessionError } = await supabase
       .from('chat_sessions')
       .delete()
-      .eq('id', chatId)
-      .eq('user_id', session.id);
+      .eq('id', chatId);
 
     if (sessionError) throw sessionError;
 
@@ -77,7 +76,7 @@ export async function fetchMoreChatPreviews(offset: number) {
     throw new Error('User not authenticated');
   }
 
-  const supabase = createServerSupabaseClient();
+  const supabase = await createServerSupabaseClient();
   const limit = 30;
 
   try {
@@ -92,7 +91,6 @@ export async function fetchMoreChatPreviews(offset: number) {
         )
       `
       )
-      .eq('user_id', session.id)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 

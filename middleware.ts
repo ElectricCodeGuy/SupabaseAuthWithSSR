@@ -30,12 +30,17 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  await supabase.auth.getUser();
+  const { data: session } = await supabase.auth.getUser();
 
-  /* // If there's no session and the user is trying to access /protected, redirect them to /auth. Changed to be handle in the server component.
   if (!session && request.nextUrl.pathname.startsWith('/protected')) {
     return NextResponse.redirect(new URL('/auth/signin', request.url));
-  }*/
+  }
+  if (!session && request.nextUrl.pathname.startsWith('/actionchat')) {
+    return NextResponse.redirect(new URL('/auth/signin', request.url));
+  }
+  if (!session && request.nextUrl.pathname.startsWith('/aichat')) {
+    return NextResponse.redirect(new URL('/auth/signin', request.url));
+  }
 
   return response;
 }

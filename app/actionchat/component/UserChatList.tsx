@@ -29,7 +29,7 @@ import { ClientMessage, ChatHistoryUpdateResult } from '../action';
 import useSWRInfinite from 'swr/infinite';
 import { Tables } from '@/types/database';
 
-type UserData = Tables<'users'>;
+type UserData = Pick<Tables<'users'>, 'email' | 'full_name'>;
 
 const HtmlTooltip = styled(({ className, ...props }: TooltipProps) => (
   <Tooltip {...props} classes={{ popper: className }} />

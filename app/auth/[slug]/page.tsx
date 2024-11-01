@@ -29,11 +29,10 @@ import { getSession } from '@/lib/server/supabase';
  * You would have to create a page.tsx inside the /auth folder that is the default url for /auth
  */
 
-export default async function AuthPage({
-  params
-}: {
-  params: { slug?: string };
+export default async function AuthPage(props: {
+  params: Promise<{ slug?: string }>;
 }) {
+  const params = await props.params;
   const session = await getSession();
   if (session) {
     redirect('/');

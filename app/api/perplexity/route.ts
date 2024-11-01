@@ -21,7 +21,6 @@ const redis = new Redis({
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // Updated to 30 seconds
-export const revalidate = true;
 
 export async function POST(req: NextRequest) {
   const session = await getSession();

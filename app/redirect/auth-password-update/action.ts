@@ -16,7 +16,7 @@ const formDataSchemaResetPassword = z.object({
 });
 
 export async function resetPassword(formData: FormData) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const result = formDataSchemaResetPassword.safeParse({
     newPassword: formData.get('newPassword')

@@ -6,7 +6,7 @@ import { createServerSupabaseClient } from '@/lib/server/server';
 // Caches the session retrieval operation. This helps in minimizing redundant calls
 // across server components for the same session data.
 async function getSessionUser() {
-  const supabase = createServerSupabaseClient();
+  const supabase = await createServerSupabaseClient();
   try {
     const {
       data: { user }
@@ -22,15 +22,14 @@ export const getSession = cache(getSessionUser);
 
 // Caches the user information retrieval operation. Similar to getSession,
 // this minimizes redundant data fetching across components for the same user data.
-export const getUserInfo = cache(async (userId: string) => {
-  const supabase = createServerSupabaseClient();
+export const getUserInfo = cache(async () => {
+  const supabase = await createServerSupabaseClient();
   // Since the CreateServerSupbaseClient is wrapped in <Database> type, the
   // query method is now typesafe.
   try {
     const { data } = await supabase
       .from('users')
       .select('full_name, email')
-      .eq('id', userId)
       .single();
 
     return data;
