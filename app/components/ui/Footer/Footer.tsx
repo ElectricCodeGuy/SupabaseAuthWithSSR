@@ -1,4 +1,3 @@
-/* eslint-disable jsx-a11y/anchor-is-valid */
 'use client';
 import React from 'react';
 import Image from 'next/image';

@@ -1,4 +1,5 @@
-import React, { type FC, useState, useMemo } from 'react';
+'use client';
+import React, { type FC, useState, memo, useCallback, useMemo } from 'react';
 import { deleteChatData, fetchChatPreviews } from './action';
 import {
   Drawer,
@@ -6,7 +7,6 @@ import {
   List,
   ListItem,
   ListItemButton,
-  Tooltip,
   Button,
   IconButton,
   Dialog,
@@ -18,33 +18,19 @@ import {
   Chip,
   Divider,
   Typography,
-  CircularProgress,
-  styled,
-  tooltipClasses,
-  TooltipProps
+  CircularProgress
 } from '@mui/material';
 import { Delete as DeleteIcon } from '@mui/icons-material';
-import { format, differenceInDays, isToday, isYesterday } from 'date-fns';
-import { ClientMessage, ChatHistoryUpdateResult } from '../action';
-import useSWRInfinite from 'swr/infinite';
+import { format, isToday, isYesterday, subDays } from 'date-fns';
 import { Tables } from '@/types/database';
+import useSWRInfinite from 'swr/infinite';
+import { da } from 'date-fns/locale';
+import { TZDate } from '@date-fns/tz';
+import Link from 'next/link';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
+import ChatIcon from '@mui/icons-material/Chat';
 
-type UserData = Pick<Tables<'users'>, 'email' | 'full_name'>;
-
-const HtmlTooltip = styled(({ className, ...props }: TooltipProps) => (
-  <Tooltip {...props} classes={{ popper: className }} />
-))(({ theme }) => ({
-  [`& .${tooltipClasses.tooltip}`]: {
-    backgroundColor: '#f5f5f9',
-    color: 'rgba(0, 0, 0, 0.87)',
-    maxWidth: 360,
-    maxHeight: 360,
-    overflowY: 'auto',
-    overflowX: 'hidden',
-    fontSize: theme.typography.pxToRem(16),
-    border: '1px solid #dadde9'
-  }
-}));
+type UserInfo = Pick<Tables<'users'>, 'full_name' | 'email'>;
 
 type ChatPreview = {
   id: Tables<'chat_sessions'>['id'];
@@ -55,26 +41,71 @@ type ChatPreview = {
 };
 
 interface CombinedDrawerProps {
-  userInfo: UserData;
-  isDrawerOpen: boolean;
-  setIsDrawerOpen: (isOpen: boolean) => void;
-  ChatHistoryUpdate: (
-    full_name: string,
-    chatId: string
-  ) => Promise<ChatHistoryUpdateResult>;
-  setMessages: (messages: ClientMessage[]) => void;
-  currentChatId: string | null | undefined;
+  userInfo: UserInfo;
+  initialChatPreviews: ChatPreview[];
 }
+
+const useCategorizedChats = (chatPreviews: ChatPreview[][] | undefined) => {
+  return useMemo(() => {
+    const chatPreviewsFlat = chatPreviews ? chatPreviews.flat() : [];
+    const getZonedDate = (date: string) =>
+      new TZDate(new Date(date), 'Europe/Copenhagen');
+
+    const today = chatPreviewsFlat.filter((chat) =>
+      isToday(getZonedDate(chat.created_at))
+    );
+
+    const yesterday = chatPreviewsFlat.filter((chat) =>
+      isYesterday(getZonedDate(chat.created_at))
+    );
+
+    const last7Days = chatPreviewsFlat.filter((chat) => {
+      const chatDate = getZonedDate(chat.created_at);
+      const sevenDaysAgo = subDays(new Date(), 7);
+      return (
+        chatDate > sevenDaysAgo && !isToday(chatDate) && !isYesterday(chatDate)
+      );
+    });
+
+    const last30Days = chatPreviewsFlat.filter((chat) => {
+      const chatDate = getZonedDate(chat.created_at);
+      const thirtyDaysAgo = subDays(new Date(), 30);
+      const sevenDaysAgo = subDays(new Date(), 7);
+      return chatDate > thirtyDaysAgo && chatDate <= sevenDaysAgo;
+    });
+
+    const last2Months = chatPreviewsFlat.filter((chat) => {
+      const chatDate = getZonedDate(chat.created_at);
+      const sixtyDaysAgo = subDays(new Date(), 60);
+      const thirtyDaysAgo = subDays(new Date(), 30);
+      return chatDate > sixtyDaysAgo && chatDate <= thirtyDaysAgo;
+    });
+
+    const older = chatPreviewsFlat.filter((chat) => {
+      const sixtyDaysAgo = subDays(new Date(), 60);
+      return getZonedDate(chat.created_at) <= sixtyDaysAgo;
+    });
+
+    return { today, yesterday, last7Days, last30Days, last2Months, older };
+  }, [chatPreviews]); // Only recalculate when chatPreviews changes
+};
 
 const CombinedDrawer: FC<CombinedDrawerProps> = ({
   userInfo,
-  isDrawerOpen,
-  setIsDrawerOpen,
-  ChatHistoryUpdate,
-  setMessages,
-  currentChatId
+  initialChatPreviews
 }) => {
-  const [hoveredChatId, setHoveredChatId] = useState<string | null>(null);
+  const params = useParams();
+  const router = useRouter();
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+  // Add toggle function
+  const toggleMobileDrawer = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    setIsMobileOpen(!isMobileOpen);
+  };
+
+  const currentChatId = typeof params.id === 'string' ? params.id : undefined;
+
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
   const [chatToDelete, setChatToDelete] = useState<string | null>(null);
 
@@ -85,20 +116,30 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
     size,
     setSize
   } = useSWRInfinite(
-    isDrawerOpen ? (index) => [index, 30] : () => null,
-    async ([index, limit]: [number, number]) => {
-      const offset = index * limit;
-      const newChatPreviews = await fetchChatPreviews(offset, limit);
+    (index) => [`chatPreviews`, index],
+    async ([_, index]) => {
+      const offset = index * 25;
+      const newChatPreviews = await fetchChatPreviews(offset, 25);
       return newChatPreviews;
+    },
+    {
+      fallbackData: [initialChatPreviews],
+      revalidateFirstPage: false,
+      revalidateOnFocus: false, // Add these options
+      revalidateOnReconnect: false,
+      revalidateIfStale: false,
+      revalidateOnMount: false
     }
   );
 
   const hasMore =
-    chatPreviews && chatPreviews[chatPreviews.length - 1].length === 30;
+    chatPreviews && chatPreviews[chatPreviews.length - 1]?.length === 25;
 
-  const loadMoreChats = () => {
-    setSize(size + 1);
-  };
+  const loadMoreChats = useCallback(() => {
+    if (!isLoadingMore) {
+      setSize(size + 1);
+    }
+  }, [isLoadingMore, setSize, size]);
 
   const handleDeleteClick = (id: string) => {
     setChatToDelete(id);
@@ -109,15 +150,11 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
     if (chatToDelete) {
       try {
         await deleteChatData(chatToDelete);
-        // Optimistically update the local cache
-        mutateChatPreviews((currentChatPreviews: ChatPreview[][] = []) => {
-          return currentChatPreviews.map((chatPreviewPage) =>
-            chatPreviewPage.filter((chat) => chat.id !== chatToDelete)
-          );
-        }, false);
+        await mutateChatPreviews();
 
-        if (currentChatId === chatToDelete) {
-          setMessages([]);
+        // If the deleted chat is the current one, redirect to /actionchat while preserving pdf parameter
+        if (chatToDelete === currentChatId) {
+          router.push('/actionchat');
         }
       } catch (error) {
         console.error('Failed to delete the chat:', error);
@@ -127,236 +164,248 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
     setChatToDelete(null);
   };
 
-  const handleChatClick = async (id: string) => {
-    try {
-      const { uiMessages, chatId } = await ChatHistoryUpdate(
-        userInfo.full_name || 'Unknown User',
-        id
-      );
-      setMessages(uiMessages.map((message) => ({ ...message, chatId }))); // Set the chatId for each message
-    } catch (error) {
-      console.error('Failed to update chat history:', error);
-    }
-  };
-
   const formatDate = (dateString: string) => {
-    return format(new Date(dateString), 'yyyy-MM-dd');
+    return format(new Date(dateString), 'PP', { locale: da });
   };
 
-  const categorizedChats = useMemo(() => {
-    const chatPreviewsFlat = chatPreviews ? chatPreviews.flat() : [];
+  const categorizedChats = useCategorizedChats(chatPreviews);
 
-    if (chatPreviewsFlat.length === 0) return {};
-
-    const today: ChatPreview[] = [];
-    const yesterday: ChatPreview[] = [];
-    const last7Days: ChatPreview[] = [];
-    const last30Days: ChatPreview[] = [];
-    const last2Months: ChatPreview[] = [];
-    const older: ChatPreview[] = [];
-
-    chatPreviewsFlat.forEach((chat: ChatPreview) => {
-      const chatDate = new Date(chat.created_at);
-      if (isToday(chatDate)) {
-        today.push(chat);
-      } else if (isYesterday(chatDate)) {
-        yesterday.push(chat);
-      } else if (differenceInDays(new Date(), chatDate) <= 7) {
-        last7Days.push(chat);
-      } else if (differenceInDays(new Date(), chatDate) <= 30) {
-        last30Days.push(chat);
-      } else if (differenceInDays(new Date(), chatDate) <= 60) {
-        last2Months.push(chat);
-      } else {
-        older.push(chat);
-      }
-    });
-
-    return { today, yesterday, last7Days, last30Days, last2Months, older };
-  }, [chatPreviews]);
-
+  const handleChatSelect = useCallback(() => {
+    // Close drawer on mobile screens
+    if (window.innerWidth < 800) {
+      // 600px is MUI's sm breakpoint
+      setIsMobileOpen(false);
+    }
+  }, []);
   return (
-    <Drawer
-      variant="temporary"
-      anchor="right"
-      open={isDrawerOpen}
-      onClose={() => setIsDrawerOpen(false)}
-      SlideProps={{ direction: 'left', timeout: 300 }}
-      ModalProps={{
-        keepMounted: true, // Better performance on mobile
-        slotProps: {
-          backdrop: {
-            style: { backgroundColor: 'transparent' }
+    <>
+      <IconButton
+        onClick={toggleMobileDrawer}
+        size="small"
+        sx={{
+          display: { xs: 'block', sm: 'block', md: 'none' },
+          position: 'fixed',
+          left: 4,
+          bottom: 42,
+          zIndex: 1200
+        }}
+      >
+        <ChatIcon sx={{ color: 'blue' }} />
+      </IconButton>
+      <Drawer
+        variant="persistent"
+        anchor="left"
+        open
+        SlideProps={{ direction: 'left', timeout: 300 }}
+        ModalProps={{
+          slotProps: {
+            backdrop: {
+              style: { backgroundColor: 'transparent' }
+            }
           }
-        }
-      }}
-      sx={{
-        width: {
-          xs: '300px',
-          sm: '300px',
-          md: '350px',
-          lg: '350px',
-          xl: '350px'
-        },
-        '& .MuiPaper-root': {
-          boxShadow: 'none',
+        }}
+        sx={{
           width: {
-            xs: '300px',
-            sm: '300px',
-            md: '350px',
-            lg: '350px',
-            xl: '350px'
+            xs: isMobileOpen ? '100%' : '0%',
+            sm: isMobileOpen ? '40%' : '0%',
+            md: '200px',
+            lg: '250px',
+            xl: '300px'
           },
-          backgroundColor: 'rgba(240, 247, 255, 0.9)',
-          border: '1px solid rgba(0, 0, 0, 0.1)' // Slim, dark border
-        }
-      }}
-    >
-      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            position: 'relative',
-            pt: 2,
-            pr: 2
-          }}
-        >
-          <Typography variant="h3" sx={{ textAlign: 'center' }}>
-            Chat History
-          </Typography>
-        </Box>
-        <Box sx={{ overflow: 'auto', flexGrow: 1 }}>
-          <List>
-            {!chatPreviews ? (
-              Array.from({ length: 5 }).map((_, index) => (
-                <ListItem key={index} disablePadding>
-                  <ListItemButton>
-                    <Skeleton variant="text" width="100%" />
-                  </ListItemButton>
-                </ListItem>
-              ))
-            ) : (
-              <>
-                {chatPreviews.length === 0 ? (
-                  <Typography variant="body2" align="center" sx={{ mt: 2 }}>
-                    You do not have any chat history yet. Start a new chat to
-                    view your chat history.
-                  </Typography>
+          '@media (min-width: 2000px)': {
+            width: '350px'
+          },
+          '& .MuiDrawer-paper': {
+            boxShadow: 'none',
+            width: {
+              xs: isMobileOpen ? '100%' : '0%', // Set width to 0 when closed on mobile
+              sm: isMobileOpen ? '40%' : '0%',
+              md: '200px',
+              lg: '250px',
+              xl: '300px'
+            },
+            '@media (min-width: 2000px)': {
+              width: '350px'
+            },
+            visibility: {
+              xs: isMobileOpen ? 'visible' : 'hidden', // Hide completely when closed on mobile
+              sm: 'visible'
+            },
+            backgroundColor: 'rgba(240, 247, 255, 0.9)',
+            border: '1px solid rgba(0, 0, 0, 0.1)',
+            transition: 'width 0.3s ease-in-out'
+          }
+        }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+          {!userInfo.email ? (
+            // Show sign-in message when no user
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '90vh',
+                textAlign: 'center',
+                p: 2,
+                gap: 2
+              }}
+            >
+              <Typography variant="h6" gutterBottom>
+                Sign in to save and view your chats
+              </Typography>
+
+              <Button
+                component={Link}
+                href="/signin"
+                variant="contained"
+                color="primary"
+                sx={{
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  px: 4,
+                  py: 1
+                }}
+              >
+                Sign in
+              </Button>
+            </Box>
+          ) : (
+            <>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  position: 'relative',
+                  pt: 2,
+                  pr: 2
+                }}
+              >
+                <Typography
+                  variant="h3"
+                  sx={{
+                    textAlign: 'center'
+                  }}
+                >
+                  Chathistorik
+                </Typography>
+              </Box>
+
+              <List sx={{ overflow: 'auto' }}>
+                {!chatPreviews ? (
+                  Array.from({ length: 5 }).map((_, index) => (
+                    <ListItem key={index} disablePadding>
+                      <ListItemButton>
+                        <Skeleton variant="text" width="100%" />
+                      </ListItemButton>
+                    </ListItem>
+                  ))
                 ) : (
                   <>
                     <RenderChatSection
                       title="Today"
                       chats={categorizedChats.today || []}
                       currentChatId={currentChatId}
-                      handleChatClick={handleChatClick}
                       handleDeleteClick={handleDeleteClick}
-                      hoveredChatId={hoveredChatId}
-                      setHoveredChatId={setHoveredChatId}
                       formatDate={formatDate}
+                      onChatSelect={handleChatSelect}
                     />
                     <RenderChatSection
                       title="Yesterday"
                       chats={categorizedChats.yesterday || []}
                       currentChatId={currentChatId}
-                      handleChatClick={handleChatClick}
                       handleDeleteClick={handleDeleteClick}
-                      hoveredChatId={hoveredChatId}
-                      setHoveredChatId={setHoveredChatId}
                       formatDate={formatDate}
+                      onChatSelect={handleChatSelect}
                     />
                     <RenderChatSection
                       title="Last 7 days"
                       chats={categorizedChats.last7Days || []}
                       currentChatId={currentChatId}
-                      handleChatClick={handleChatClick}
                       handleDeleteClick={handleDeleteClick}
-                      hoveredChatId={hoveredChatId}
-                      setHoveredChatId={setHoveredChatId}
                       formatDate={formatDate}
+                      onChatSelect={handleChatSelect}
                     />
                     <RenderChatSection
                       title="Last 30 days"
                       chats={categorizedChats.last30Days || []}
                       currentChatId={currentChatId}
-                      handleChatClick={handleChatClick}
                       handleDeleteClick={handleDeleteClick}
-                      hoveredChatId={hoveredChatId}
-                      setHoveredChatId={setHoveredChatId}
                       formatDate={formatDate}
+                      onChatSelect={handleChatSelect}
                     />
                     <RenderChatSection
-                      title="Last 2 months"
+                      title="Last 2 month"
                       chats={categorizedChats.last2Months || []}
                       currentChatId={currentChatId}
-                      handleChatClick={handleChatClick}
                       handleDeleteClick={handleDeleteClick}
-                      hoveredChatId={hoveredChatId}
-                      setHoveredChatId={setHoveredChatId}
                       formatDate={formatDate}
+                      onChatSelect={handleChatSelect}
                     />
                     <RenderChatSection
-                      title="Older chats"
+                      title="Older"
                       chats={categorizedChats.older || []}
                       currentChatId={currentChatId}
-                      handleChatClick={handleChatClick}
                       handleDeleteClick={handleDeleteClick}
-                      hoveredChatId={hoveredChatId}
-                      setHoveredChatId={setHoveredChatId}
                       formatDate={formatDate}
+                      onChatSelect={handleChatSelect}
                     />
                     {hasMore && (
                       <Box
                         sx={{
                           display: 'flex',
                           justifyContent: 'center',
-                          mt: 2
+                          mt: 2,
+                          mb: 2
                         }}
                       >
-                        {isLoadingMore ? (
-                          <CircularProgress size={24} />
-                        ) : (
-                          <Button
-                            onClick={loadMoreChats}
-                            size="small"
-                            variant="outlined"
-                            sx={{
-                              borderRadius: '8px'
-                            }}
-                          >
-                            Load more
-                          </Button>
-                        )}
+                        <Button
+                          onClick={loadMoreChats}
+                          disabled={isLoadingMore}
+                          size="small"
+                          variant="outlined"
+                          sx={{
+                            borderRadius: '8px',
+                            minWidth: '120px'
+                          }}
+                        >
+                          {isLoadingMore ? (
+                            <CircularProgress size={20} sx={{ mr: 1 }} />
+                          ) : (
+                            'Hent flere'
+                          )}
+                        </Button>
                       </Box>
                     )}
                   </>
                 )}
-              </>
-            )}
-          </List>
+              </List>
+            </>
+          )}
         </Box>
-      </Box>
-      <Dialog
-        open={deleteConfirmationOpen}
-        onClose={() => setDeleteConfirmationOpen(false)}
-      >
-        <DialogTitle>Confirm Deletion</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Are you sure you want to delete this chat?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteConfirmationOpen(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleDeleteConfirmation} color="error">
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Drawer>
+        <Dialog
+          open={deleteConfirmationOpen}
+          onClose={() => setDeleteConfirmationOpen(false)}
+        >
+          <DialogTitle>Bekræft sletning</DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              Er du sikker på, at du vil slette denne chat?
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDeleteConfirmationOpen(false)}>
+              Annuller
+            </Button>
+            <Button onClick={handleDeleteConfirmation} color="error">
+              Slet
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Drawer>
+    </>
   );
 };
 
@@ -364,103 +413,116 @@ type RenderChatSectionProps = {
   title: string;
   chats: ChatPreview[];
   currentChatId: string | null | undefined;
-  handleChatClick: (_id: string) => void;
   handleDeleteClick: (_id: string) => void;
-  hoveredChatId: string | null;
-  setHoveredChatId: React.Dispatch<React.SetStateAction<string | null>>;
   formatDate: (_dateString: string) => string;
+  onChatSelect: (id: string) => void; // Add this prop
 };
+const RenderChatSection: FC<RenderChatSectionProps> = memo(
+  ({
+    title,
+    chats,
+    currentChatId,
+    handleDeleteClick,
+    formatDate,
+    onChatSelect
+  }) => {
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    if (chats.length === 0) return null;
 
-const RenderChatSection: FC<RenderChatSectionProps> = ({
-  title,
-  chats,
-  currentChatId,
-  handleChatClick,
-  handleDeleteClick,
-  hoveredChatId,
-  setHoveredChatId,
-  formatDate
-}) => {
-  if (chats.length === 0) return null;
+    return (
+      <>
+        <Divider sx={{ color: 'textSecondary', px: 1, mb: 2 }}>{title}</Divider>
+        {chats.map(({ id, chat_messages, created_at }) => {
+          const firstMessage = chat_messages[0]?.content || 'No messages yet';
+          const currentParams = new URLSearchParams(searchParams.toString());
+          const href = `/actionchat/${id}${
+            currentParams.toString() ? '?' + currentParams.toString() : ''
+          }`;
 
-  return (
-    <>
-      <Divider>
-        <Typography
-          variant="caption"
-          sx={{
-            color: 'textSecondary'
-          }}
-        >
-          {title}
-        </Typography>
-      </Divider>
-      {chats.map(({ id, chat_messages, created_at }) => {
-        const firstMessage = chat_messages[0]?.content || 'No messages yet';
-        return (
-          <HtmlTooltip key={id} title={firstMessage} placement="right" arrow>
-            <ListItem
-              disablePadding
-              onMouseEnter={() => setHoveredChatId(id)}
-              onMouseLeave={() => setHoveredChatId(null)}
-              sx={{ position: 'relative' }}
-            >
-              <ListItemButton
-                sx={{
-                  fontSize: '0.95rem',
-                  backgroundColor:
-                    currentChatId === id ? 'rgba(0, 0, 0, 0.1)' : 'inherit',
-                  paddingRight: '30px',
-                  '&::after': {
-                    content: 'attr(data-truncated-message)',
-                    display: 'block',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    '@media (max-width: 600px)': {
-                      maxWidth: 'calc(100% - 50px)'
-                    },
-                    '@media (min-width: 601px)': {
-                      maxWidth: 'calc(100% - 70px)'
-                    }
+          return (
+            <ListItemButton
+              key={id}
+              onMouseEnter={() => router.prefetch(href)}
+              onClick={() => onChatSelect(id)}
+              sx={{
+                fontSize: '0.95rem',
+                backgroundColor:
+                  currentChatId === id ? 'rgba(0, 0, 0, 0.1)' : 'inherit',
+                paddingRight: '25px',
+                position: 'relative',
+                '&::after': {
+                  content: 'attr(data-truncated-message)',
+                  display: 'block',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  '@media (max-width: 600px)': {
+                    maxWidth: 'calc(100% - 50px)'
+                  },
+                  '@media (min-width: 601px)': {
+                    maxWidth: 'calc(100% - 70px)'
                   }
-                }}
-                onClick={() => handleChatClick(id)}
-                data-truncated-message={firstMessage}
-              />
+                },
+                // Show delete button on hover
+                '& .delete-button': {
+                  display: 'none'
+                },
+                '&:hover .delete-button': {
+                  display: 'flex'
+                }
+              }}
+              data-truncated-message={firstMessage}
+              component={Link}
+              prefetch={false}
+              href={href}
+            >
               <Chip
                 label={formatDate(created_at)}
                 size="small"
                 sx={{
                   position: 'absolute',
-                  top: '8px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
                   right: {
                     xs: '4px',
                     sm: '4px',
                     md: '20px'
                   },
-                  fontSize: '0.6rem'
+                  fontSize: '0.6rem',
+                  backgroundColor: 'rgba(0, 0, 0, 0.05)',
+                  height: '20px'
                 }}
               />
-              {hoveredChatId === id && (
-                <IconButton
-                  onClick={() => handleDeleteClick(id)}
-                  size="small"
-                  sx={{
-                    padding: '2px',
-                    position: 'absolute',
-                    right: 0
-                  }}
-                >
-                  <DeleteIcon fontSize="inherit" />
-                </IconButton>
-              )}
-            </ListItem>
-          </HtmlTooltip>
-        );
-      })}
-    </>
-  );
-};
+              <IconButton
+                className="delete-button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleDeleteClick(id);
+                }}
+                size="small"
+                sx={{
+                  padding: '2px',
+                  position: 'absolute',
+                  right: 0,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: 'error.main',
+                  '&:hover': {
+                    backgroundColor: 'error.light',
+                    color: 'error.contrastText'
+                  }
+                }}
+              >
+                <DeleteIcon fontSize="inherit" />
+              </IconButton>
+            </ListItemButton>
+          );
+        })}
+      </>
+    );
+  }
+);
+RenderChatSection.displayName = 'RenderChatSection';
 
 export default CombinedDrawer;

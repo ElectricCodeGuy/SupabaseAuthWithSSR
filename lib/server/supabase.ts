@@ -29,7 +29,7 @@ export const getUserInfo = cache(async () => {
   try {
     const { data } = await supabase
       .from('users')
-      .select('full_name, email')
+      .select('full_name, email, id')
       .single();
 
     return data;

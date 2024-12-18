@@ -706,7 +706,7 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
                 <RadioGroup
                   aria-label="model-type"
                   name="model-type"
-                  defaultValue={'standart'}
+                  defaultValue="standart"
                   value={modelType}
                   onChange={(_, newValue) => handleModelTypeChange(newValue)}
                   row

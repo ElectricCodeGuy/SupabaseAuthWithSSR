@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 import React, { useState } from 'react';
 import {
@@ -59,6 +58,7 @@ export function UserMessage({
         <Typography
           variant="caption"
           sx={{
+            width: 'fit-content',
             fontWeight: 'bold',
             position: 'absolute',
             top: -15,

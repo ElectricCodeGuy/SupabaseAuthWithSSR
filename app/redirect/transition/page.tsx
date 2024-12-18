@@ -50,7 +50,7 @@ function TransitionPage() {
       }}
     >
       <Fade
-        in={true}
+        in
         timeout={{ enter: 1000, exit: 500 }}
         style={{ transition: 'ease-in-out' }}
       >
@@ -62,7 +62,7 @@ function TransitionPage() {
       {!completed && (
         <>
           <Fade
-            in={true}
+            in
             timeout={{ enter: 1500, exit: 500 }}
             style={{ transition: 'ease-in-out' }}
           >
@@ -72,7 +72,7 @@ function TransitionPage() {
           </Fade>
 
           <Fade
-            in={true}
+            in
             timeout={{ enter: 2000, exit: 500 }}
             style={{ transition: 'ease-in-out' }}
           >

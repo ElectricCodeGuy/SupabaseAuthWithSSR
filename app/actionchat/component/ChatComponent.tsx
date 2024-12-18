@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, KeyboardEvent, lazy } from 'react';
+import React, { useState, KeyboardEvent } from 'react';
 import { useUIState, useActions } from 'ai/rsc';
 import { type AI } from '../action';
 import { UserMessage } from './botmessage';
@@ -9,7 +9,6 @@ import {
   TextField,
   Box,
   CircularProgress,
-  Container,
   Typography,
   Tooltip,
   FormControl,
@@ -21,33 +20,31 @@ import {
 import {
   Send as SendIcon,
   Stop as StopIcon,
-  DeleteSweep as DeleteSweepIcon,
-  Chat as ChatListIcon
+  DeleteSweep as DeleteSweepIcon
 } from '@mui/icons-material';
 import { ChatScrollAnchor } from '../hooks/chat-scroll-anchor';
 import { Tables } from '@/types/database';
-
-const ChatHistoryDrawer = lazy(() => import('./UserChatList'));
+import ErrorBoundary from './ErrorBoundary';
 
 type UserData = Pick<Tables<'users'>, 'email' | 'full_name'>;
 
 interface ChatComponentPageProps {
   userInfo: UserData | null;
+  chatId?: string;
 }
 
 export default function ChatComponentPage({
-  userInfo
+  userInfo,
+  chatId
 }: ChatComponentPageProps) {
   const [inputValue, setInputValue] = useState('');
   const [messages, setMessages] = useUIState<typeof AI>();
   const [isLoading, setIsLoading] = useState(false);
-  const { submitMessage, ChatHistoryUpdate, resetMessages } =
-    useActions<typeof AI>();
-  const [isUserChatListOpen, setIsUserChatListOpen] = useState(false);
+  const { submitMessage, resetMessages } = useActions<typeof AI>();
   const [selectedModel, setSelectedModel] = useState<'claude3' | 'chatgpt4'>(
     'claude3'
   );
-
+  const currentChatId = chatId || '';
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Enter' && event.shiftKey) {
       // Allow newline on Shift + Enter
@@ -71,269 +68,279 @@ export default function ChatComponentPage({
     }
   };
 
-  const handleLoadChatData = () => {
-    setIsUserChatListOpen(true);
-  };
-
   return (
-    <Container
-      maxWidth={'md'}
-      sx={{
-        mt: 6,
-        mb: 4,
-        width: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        transition: 'width 0.3s ease-in-out',
-        height: '90vh',
-        overflow: 'auto'
-      }}
-    >
-      {messages.length === 0 ? (
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '100%',
-            textAlign: 'center',
-            p: 4
-          }}
-        >
-          <Typography
-            variant="h3"
-            sx={{
-              color: 'textSecondary',
-              mb: 2
-            }}
-          >
-            Chat with our AI Assistant
-          </Typography>
-          <>
-            <Typography
-              variant="body1"
-              sx={{
-                color: 'textSecondary',
-                mb: 2
-              }}
-            >
-              Experience the power of AI-driven conversations with our chat
-              template. Ask questions on any topic and get informative responses
-              instantly.
-            </Typography>
-            <Typography
-              variant="body1"
-              sx={{
-                color: 'textSecondary',
-                mb: 2
-              }}
-            >
-              <strong>
-                Check out{' '}
-                <MuiLink
-                  href="https://www.lovguiden.dk/"
-                  target="_blank"
-                  rel="noopener"
-                  style={{ fontSize: '1.2rem', color: 'blue' }}
-                >
-                  Lovguiden
-                </MuiLink>
-                , a Danish legal AI platform, for a real-world example of AI in
-                action.
-              </strong>
-            </Typography>
-            <Typography
-              variant="h4"
-              sx={{
-                color: 'textSecondary'
-              }}
-            >
-              Start chatting now and enjoy the AI experience!
-            </Typography>
-          </>
-        </Box>
-      ) : (
-        messages.map((message) => (
-          <Box
-            key={message.id}
-            sx={{
-              width: '100%',
-              padding: '2px'
-            }}
-          >
-            {message.display}
-          </Box>
-        ))
-      )}
-      <ChatScrollAnchor trackVisibility={true} />
+    <ErrorBoundary>
       <Box
-        component="form"
-        onSubmit={handleSubmit}
         sx={{
-          left: '50%',
-          transform: 'translateX(-50%)',
-          position: 'fixed',
-          width: {
-            xs: '100%',
-            sm: '80%',
-            md: '70%',
-            lg: '60%',
-            xl: '40%'
-          },
-          bottom: 5,
           display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          transition: 'left 0.3s ease-in-out'
+          flexDirection: 'column',
+          height: {
+            xs: '100vh',
+            sm: '100vh',
+            md: '100vh'
+          },
+          overflow: 'hidden',
+          mx: 'auto'
         }}
       >
-        {userInfo !== null && (
-          <>
-            <IconButton
-              aria-label="open chat list"
-              color="primary"
-              onClick={handleLoadChatData}
-              sx={{ marginRight: '8px' }}
+        {messages.length === 0 ? (
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              height: '100%',
+              textAlign: 'center',
+              p: 4
+            }}
+          >
+            <Typography
+              variant="h3"
+              sx={{
+                color: 'textSecondary',
+                mb: 2
+              }}
             >
-              <ChatListIcon />
-            </IconButton>
-          </>
+              Chat with our AI Assistant
+            </Typography>
+            <>
+              <Typography
+                variant="body1"
+                sx={{
+                  color: 'textSecondary',
+                  mb: 2
+                }}
+              >
+                Experience the power of AI-driven conversations with our chat
+                template. Ask questions on any topic and get informative
+                responses instantly.
+              </Typography>
+              <Typography
+                variant="body1"
+                sx={{
+                  color: 'textSecondary',
+                  mb: 2
+                }}
+              >
+                <strong>
+                  Check out{' '}
+                  <MuiLink
+                    href="https://www.lovguiden.dk/"
+                    target="_blank"
+                    rel="noopener"
+                    style={{ fontSize: '1.2rem', color: 'blue' }}
+                  >
+                    Lovguiden
+                  </MuiLink>
+                  , a Danish legal AI platform, for a real-world example of AI
+                  in action.
+                </strong>
+              </Typography>
+              <Typography
+                variant="h4"
+                sx={{
+                  color: 'textSecondary'
+                }}
+              >
+                Start chatting now and enjoy the AI experience!
+              </Typography>
+            </>
+          </Box>
+        ) : (
+          <Box
+            sx={{
+              flex: 1,
+              overflow: 'auto',
+              width: '100%',
+              px: {
+                xs: 1,
+                sm: 1,
+                md: 2
+              },
+              py: 1
+            }}
+          >
+            {messages.map((message, index) => (
+              <Box
+                key={message.id}
+                sx={{
+                  width: '100%',
+                  maxWidth: '700px',
+                  mx: 'auto',
+                  mb: {
+                    lg: index === messages.length - 1 ? 1 : 0.5,
+                    xl: index === messages.length - 1 ? 0 : 0.5
+                  },
+                  padding: {
+                    xs: '0px',
+                    sm: '0px',
+                    md: '2px',
+                    lg: '1px',
+                    xl: '1px'
+                  }
+                }}
+              >
+                {message.display}
+              </Box>
+            ))}
+            <ChatScrollAnchor trackVisibility />
+          </Box>
         )}
-        <TextField
-          value={inputValue}
-          onChange={(event) => setInputValue(event.target.value)}
-          onKeyDown={handleKeyDown}
-          variant="outlined"
-          multiline
-          maxRows={4}
-          disabled={isLoading}
-          fullWidth
-          size="small"
+        <Box
+          component="form"
+          onSubmit={handleSubmit}
           sx={{
-            '.MuiOutlinedInput-root': {
-              backgroundColor: 'white',
-              borderRadius: '20px',
-              '& .MuiOutlinedInput-inputMultiline': {
-                padding: '0px'
-              }
+            alignItems: 'center',
+            maxWidth: '700px',
+            mx: 'auto',
+            width: '100%',
+            marginTop: 'auto',
+            pb: '8px',
+            px: {
+              xs: '4px',
+              sm: '4px',
+              md: '12px'
             },
-            '& .MuiInputLabel-root': {
-              top: -4,
-              left: -4
+            '@media (min-width: 2000px)': {
+              px: '2px',
+              maxWidth: '725px'
             },
-            width: {
-              sm: '100%',
-              md: '100%',
-              lg: '100%',
-              xl: '90%'
-            }
+            gap: 1,
+            display: 'flex',
+            flexDirection: 'row',
+            position: 'sticky'
           }}
-          slotProps={{
-            input: {
-              endAdornment: (
-                <InputAdornment position="end">
-                  {isLoading ? (
-                    <IconButton
-                      onClick={stop}
-                      color="primary"
-                      sx={{
-                        '&:hover .MuiCircularProgress-root': {
-                          display: 'none'
-                        },
-                        '&:hover .stop-icon': {
-                          display: 'inline-flex'
-                        }
-                      }}
-                    >
-                      <CircularProgress
-                        size={24}
+        >
+          <TextField
+            value={inputValue}
+            onChange={(event) => setInputValue(event.target.value)}
+            onKeyDown={handleKeyDown}
+            variant="outlined"
+            multiline
+            maxRows={4}
+            disabled={isLoading}
+            fullWidth
+            size="small"
+            sx={{
+              '.MuiOutlinedInput-root': {
+                backgroundColor: 'white',
+                borderRadius: '16px',
+                pt: {
+                  xs: 0.5,
+                  sm: 0.5,
+                  md: 0.5,
+                  lg: 0.75,
+                  xl: 0.75
+                },
+                pb: {
+                  xs: 0.5,
+                  sm: 0.5,
+                  md: 0.5,
+                  lg: 0.75,
+                  xl: 0.75
+                },
+                '& .MuiOutlinedInput-inputMultiline': {
+                  padding: '0px'
+                }
+              }
+            }}
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    {isLoading ? (
+                      <IconButton
+                        onClick={stop}
+                        color="primary"
                         sx={{
-                          display: 'inline-flex',
-                          '&:hover': {
+                          '&:hover .MuiCircularProgress-root': {
                             display: 'none'
-                          }
-                        }}
-                      />
-                      <StopIcon
-                        className="stop-icon"
-                        sx={{
-                          display: 'none',
-                          '&:hover': {
+                          },
+                          '&:hover .stop-icon': {
                             display: 'inline-flex'
                           }
                         }}
-                      />
-                    </IconButton>
-                  ) : (
-                    <>
-                      <IconButton
-                        aria-label="send message"
-                        color="primary"
-                        onClick={handleSubmit}
                       >
-                        <SendIcon />
+                        <CircularProgress
+                          size={24}
+                          sx={{
+                            display: 'inline-flex',
+                            '&:hover': {
+                              display: 'none'
+                            }
+                          }}
+                        />
+                        <StopIcon
+                          className="stop-icon"
+                          sx={{
+                            display: 'none',
+                            '&:hover': {
+                              display: 'inline-flex'
+                            }
+                          }}
+                        />
                       </IconButton>
-                      {messages.length > 0 && (
-                        <Tooltip title="Ryd alle beskeder">
-                          <IconButton
-                            aria-label="clear messages"
-                            color="primary"
-                            onClick={handleClearMessages}
-                          >
-                            <DeleteSweepIcon />
-                          </IconButton>
-                        </Tooltip>
-                      )}
-                    </>
-                  )}
-                </InputAdornment>
-              )
-            }
-          }}
-        />
-
-        {userInfo && (
-          <>
-            <ChatHistoryDrawer
-              userInfo={userInfo}
-              isDrawerOpen={isUserChatListOpen}
-              setIsDrawerOpen={setIsUserChatListOpen}
-              ChatHistoryUpdate={ChatHistoryUpdate}
-              setMessages={setMessages}
-              currentChatId={
-                messages.length > 0
-                  ? messages[messages.length - 1].chatId
-                  : null
+                    ) : (
+                      <>
+                        <IconButton
+                          aria-label="send message"
+                          color="primary"
+                          onClick={handleSubmit}
+                        >
+                          <SendIcon />
+                        </IconButton>
+                        {messages.length > 0 && (
+                          <Tooltip title="Ryd alle beskeder">
+                            <IconButton
+                              aria-label="clear messages"
+                              color="primary"
+                              onClick={handleClearMessages}
+                            >
+                              <DeleteSweepIcon />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </>
+                    )}
+                  </InputAdornment>
+                )
               }
-            />
-            <FormControl sx={{ minWidth: 100, marginLeft: '8px' }}>
-              <InputLabel id="model-select-label" size="small">
-                Model
-              </InputLabel>
-              <Select
-                labelId="model-select-label"
-                id="model-select"
-                value={selectedModel}
-                label="Model"
-                onChange={(event) =>
-                  setSelectedModel(event.target.value as 'claude3' | 'chatgpt4')
-                }
-                size="small"
-                sx={{ fontSize: '0.875rem' }}
-              >
-                <MenuItem value="claude3" sx={{ fontSize: '0.875rem' }}>
-                  Claude
-                </MenuItem>
-                <MenuItem value="chatgpt4" sx={{ fontSize: '0.875rem' }}>
-                  GPT-4
-                </MenuItem>
-              </Select>
-            </FormControl>
-          </>
-        )}
+            }}
+          />
+
+          {userInfo && (
+            <Box>
+              <FormControl sx={{ minWidth: 100, marginLeft: '8px' }}>
+                <InputLabel id="model-select-label" size="small">
+                  Model
+                </InputLabel>
+                <Select
+                  labelId="model-select-label"
+                  id="model-select"
+                  value={selectedModel}
+                  label="Model"
+                  onChange={(event) =>
+                    setSelectedModel(
+                      event.target.value as 'claude3' | 'chatgpt4'
+                    )
+                  }
+                  size="small"
+                  sx={{ fontSize: '0.875rem' }}
+                >
+                  <MenuItem value="claude3" sx={{ fontSize: '0.875rem' }}>
+                    Claude
+                  </MenuItem>
+                  <MenuItem value="chatgpt4" sx={{ fontSize: '0.875rem' }}>
+                    GPT-4
+                  </MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+          )}
+        </Box>
       </Box>
-    </Container>
+    </ErrorBoundary>
   );
 
   async function handleSubmit(e: React.FormEvent) {
@@ -347,9 +354,6 @@ export default function ChatComponentPage({
       setInputValue('');
       return;
     }
-
-    const currentChatId =
-      messages.length > 0 ? messages[messages.length - 1].chatId : null;
 
     setMessages((currentMessages) => [
       ...currentMessages,

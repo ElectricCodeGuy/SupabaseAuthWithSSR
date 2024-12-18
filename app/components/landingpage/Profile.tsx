@@ -1,4 +1,3 @@
-/* eslint-disable jsx-a11y/anchor-is-valid */
 import React from 'react';
 import Image from 'next/image';
 import { Box, Typography, Grid2, IconButton, Chip } from '@mui/material';

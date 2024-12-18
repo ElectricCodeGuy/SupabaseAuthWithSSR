@@ -11,23 +11,16 @@ export default async function LandingPage() {
   const session = await getSession();
   const isSessionAvailable = session !== null;
   const userEmail = session?.email;
+
   return (
     <>
-      <>
-        <BannerComponent session={isSessionAvailable} userEmail={userEmail} />
-      </>
-      <>
-        <FeatureCard />
-        <Divider />
-      </>
-      <>
-        <Testimonials />
-        <Divider />
-      </>
-      <>
-        <Profile />
-        <Divider />
-      </>
+      <BannerComponent session={isSessionAvailable} userEmail={userEmail} />
+      <FeatureCard />
+      <Divider />
+      <Testimonials />
+      <Divider />
+      <Profile />
+      <Divider />
     </>
   );
 }

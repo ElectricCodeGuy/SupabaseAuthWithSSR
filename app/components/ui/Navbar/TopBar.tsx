@@ -189,7 +189,7 @@ const AppBarComponent: React.FC<AppBarProps> = ({ session }) => {
           <React.Fragment key={index}>
             <ListItemButton
               component={Link}
-              prefetch={true}
+              prefetch
               title={item.text}
               href={item.href}
               sx={{
@@ -215,25 +215,6 @@ const AppBarComponent: React.FC<AppBarProps> = ({ session }) => {
         ))}
       </List>
     </Box>
-  );
-
-  const mobileAppBarContent = (
-    <>
-      <IconButton
-        edge="end"
-        aria-label="menu"
-        onClick={handleDrawerToggle}
-        sx={{
-          position: 'fixed',
-          top: 0,
-          left: 4,
-          bgcolor: 'rgba(0, 0, 0, 0.04)',
-          borderRadius: '50%'
-        }}
-      >
-        <MenuIcon sx={{ fontSize: '1.75rem' }} />
-      </IconButton>
-    </>
   );
 
   const appBarContent = (
@@ -289,7 +270,7 @@ const AppBarComponent: React.FC<AppBarProps> = ({ session }) => {
         <Box sx={{ display: { xs: 'none', sm: 'flex', md: 'flex' } }}>
           <MuiLink
             component={Link}
-            prefetch={true}
+            prefetch
             title="Protected"
             href="/protected"
             color="inherit"
@@ -300,7 +281,7 @@ const AppBarComponent: React.FC<AppBarProps> = ({ session }) => {
           </MuiLink>
           <MuiLink
             component={Link}
-            prefetch={true}
+            prefetch
             title="AI Chat"
             href="/aichat"
             color="inherit"
@@ -311,7 +292,7 @@ const AppBarComponent: React.FC<AppBarProps> = ({ session }) => {
           </MuiLink>
           <MuiLink
             component={Link}
-            prefetch={true}
+            prefetch
             title="Action Chat"
             href="/actionchat"
             color="inherit"
@@ -330,7 +311,7 @@ const AppBarComponent: React.FC<AppBarProps> = ({ session }) => {
         ) : (
           <Button
             component={Link}
-            prefetch={true}
+            prefetch
             href="/auth/signin"
             color="primary"
             variant="contained"
@@ -374,7 +355,20 @@ const AppBarComponent: React.FC<AppBarProps> = ({ session }) => {
           alignItems: 'center'
         }}
       >
-        {mobileAppBarContent}
+        <IconButton
+          edge="end"
+          aria-label="menu"
+          onClick={handleDrawerToggle}
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 4,
+            bgcolor: 'rgba(0, 0, 0, 0.04)',
+            borderRadius: '50%'
+          }}
+        >
+          <MenuIcon sx={{ fontSize: '1.75rem' }} />
+        </IconButton>
       </AppBar>
 
       <Drawer
@@ -401,12 +395,12 @@ const AppBarComponent: React.FC<AppBarProps> = ({ session }) => {
         onClose={handleClose}
         onClick={handleClose}
       >
-        <MenuItem component={Link} prefetch={true} href="/profile">
+        <MenuItem component={Link} prefetch href="/profile">
           Profile
         </MenuItem>
         <MenuItem
           component={Link}
-          prefetch={true}
+          prefetch
           href="/aichat"
           sx={{ display: { md: 'none' } }}
         >
@@ -414,7 +408,7 @@ const AppBarComponent: React.FC<AppBarProps> = ({ session }) => {
         </MenuItem>
         <MenuItem
           component={Link}
-          prefetch={true}
+          prefetch
           href="/actionchat"
           sx={{ display: { md: 'none' } }}
         >

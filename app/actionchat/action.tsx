@@ -1,6 +1,11 @@
 import React from 'react';
-import { createAI, getMutableAIState, createStreamableUI } from 'ai/rsc';
-import { streamText, generateId } from 'ai';
+import {
+  createAI,
+  getMutableAIState,
+  createStreamableUI,
+  getAIState
+} from 'ai/rsc';
+import { streamText, generateId, smoothStream } from 'ai';
 import { Box, Typography, CircularProgress } from '@mui/material';
 import { BotMessage, UserMessage } from './component/botmessage';
 import { v4 as uuidv4 } from 'uuid';
@@ -9,6 +14,7 @@ import { openai } from '@ai-sdk/openai';
 import { anthropic } from '@ai-sdk/anthropic';
 import { getUserInfo, getSession } from '@/lib/server/supabase';
 import { createServerSupabaseClient } from '@/lib/server/server';
+import { redirect } from 'next/navigation';
 
 const SYSTEM_TEMPLATE = `You are a helpful assistant. Answer all questions to the best of your ability. Provide helpful answers in markdown.`;
 
@@ -196,12 +202,13 @@ async function submitMessage(
       </Box>
     );
 
-    const result = await streamText({
+    const result = streamText({
       model: getModel(model_select),
       maxTokens: 4000,
       temperature: 0,
       frequencyPenalty: 0.5,
       system: SYSTEM_TEMPLATE,
+      experimental_transform: smoothStream({ delayInMs: 20 }),
       messages: [
         ...aiState.get().map((info) => ({
           role: info.role,
@@ -386,11 +393,6 @@ async function resetMessages(): Promise<ResetResult> {
 
     // Call done to finalize the state update
     aiState.done([]);
-
-    return {
-      success: true,
-      message: 'Conversation reset successfully.'
-    };
   } catch (error) {
     console.error('Error resetting chat messages:', error);
     return {
@@ -399,8 +401,9 @@ async function resetMessages(): Promise<ResetResult> {
         'Error resetting chat messages. Please try again later or contact support.'
     };
   }
+  redirect('/actionchat');
 }
-type ServerMessage = {
+export type ServerMessage = {
   role: 'user' | 'assistant';
   content: string;
   name?: string;
@@ -450,6 +453,33 @@ export const AI = createAI<ServerMessage[], ClientMessage[], Actions>({
     submitMessage,
     ChatHistoryUpdate,
     resetMessages
+  },
+  onGetUIState: async () => {
+    'use server';
+
+    // Get current history from app state
+    const historyFromApp = getAIState();
+
+    if (historyFromApp) {
+      const session = await getSession();
+      // If in sync, return current app state
+      return historyFromApp.map((message: ServerMessage) => ({
+        id: generateId(),
+        role: message.role,
+        display:
+          message.role === 'user' ? (
+            <UserMessage
+              full_name={session?.user_metadata.full_name || 'Unknown'}
+            >
+              {message.content}
+            </UserMessage>
+          ) : (
+            <BotMessage>{message.content}</BotMessage>
+          )
+      }));
+    } else {
+      return;
+    }
   },
   initialUIState,
   initialAIState

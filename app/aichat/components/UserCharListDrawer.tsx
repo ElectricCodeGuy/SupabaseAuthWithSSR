@@ -260,7 +260,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
               <Divider />
               <List>{chatListItems}</List>
               {allChatPreviews.length % 30 === 0 && (
-                <ListItem component={'form'} action={handleLoadMore}>
+                <ListItem component="form" action={handleLoadMore}>
                   <Button type="submit" fullWidth disabled={isValidating}>
                     {isValidating ? (
                       <CircularProgress size={24} />
@@ -350,7 +350,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
               <Divider />
               <List>{chatListItems}</List>
               {allChatPreviews.length % 30 === 0 && (
-                <ListItem component={'form'} action={handleLoadMore}>
+                <ListItem component="form" action={handleLoadMore}>
                   <Button type="submit" fullWidth disabled={isValidating}>
                     {isValidating ? (
                       <CircularProgress size={24} />
