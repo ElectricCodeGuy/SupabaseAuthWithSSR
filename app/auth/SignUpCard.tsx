@@ -74,18 +74,6 @@ export default function SignInCard() {
         isValid = false;
       }
 
-      if (!/[A-Z]/.test(password)) {
-        passwordErrorMessage +=
-          'Password must contain at least one uppercase letter. ';
-        isValid = false;
-      }
-
-      if (!/[a-z]/.test(password)) {
-        passwordErrorMessage +=
-          'Password must contain at least one lowercase letter. ';
-        isValid = false;
-      }
-
       if (!/\d/.test(password)) {
         passwordErrorMessage += 'Password must contain at least one number. ';
         isValid = false;
@@ -313,12 +301,6 @@ function PasswordRequirements({ requirements }: PasswordRequirementsProps) {
       <ul style={{ paddingLeft: '20px', margin: 0 }}>
         <li style={{ color: requirements.length ? 'green' : 'red' }}>
           Length (at least 6 characters)
-        </li>
-        <li style={{ color: requirements.uppercase ? 'green' : 'red' }}>
-          Uppercase Letter
-        </li>
-        <li style={{ color: requirements.lowercase ? 'green' : 'red' }}>
-          Lowercase Letter
         </li>
         <li style={{ color: requirements.number ? 'green' : 'red' }}>Number</li>
       </ul>

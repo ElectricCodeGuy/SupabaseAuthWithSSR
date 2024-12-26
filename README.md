@@ -1,4 +1,4 @@
-# Supabase Auth with SSR 🚀
+# Supabase Auth with SSR + RAG 🚀
 
 ## Project Showcase
 
@@ -13,6 +13,8 @@
   <img src="public/images/loginpagepassword.png" alt="Sign In Page Password" style="width: 45%; margin: 10px;">
   <img src="public/images/signuppage.png" alt="Sign Up Page" style="width: 45%; margin: 10px;">
  <img src="public/images/aichatimage.png" alt="AI Chat Page" style="width: 45%; margin: 10px;">
+  <img src="public/images/rag_pic.png" alt="RAG Chat" style="width: 45%; margin: 10px;">
+ 
 </div>
 
 ### Videos
@@ -26,6 +28,40 @@ If you are interested in implementing an AI that can search the internet and lin
  <img src="public/images/onlinesearcher.png" alt="AI Online Searcher Example" style="width: 60%; margin: 10px;">
 
 ## CHANGELOG
+
+## [v1.7.0] - 2024-06-15
+
+### Added
+
+- **Document Chat Feature (RAG)**: Implemented a Retrieval-Augmented Generation system allowing users to chat with their uploaded documents.
+  - Document upload and processing capabilities
+  - Automatic text extraction and chunking
+  - Vector embedding generation using LlamaIndex
+  - Storage in Pinecone vector database
+  - Context-aware document querying
+  - Semantic search across uploaded documents
+
+### New Features Include:
+
+- **Document Processing Pipeline**:
+
+  - Support for multiple document formats (PDF, DOCX)
+  - Automatic text extraction and preprocessing
+  - Smart document chunking for optimal context retrieval
+
+- **Enhanced Chat Interface**:
+
+  - Document-aware chat responses
+  - Source attribution for answers
+  - Context highlighting in responses
+  - Document management interface
+  - Upload progress tracking
+  - Document processing status indicators
+
+- **Interactive Document Navigation**:
+  - **Split-Screen Interface**: Documents display on the right while chatting on the left
+  - **Click-to-Navigate**: Every AI response includes clickable links that automatically navigate to the relevant page in the document
+  - **Smart Context**: AI responses include page numbers and brief quotes with clickable navigation
 
 ## [v1.6.0] - 2024-06-10
 
@@ -52,6 +88,17 @@ If you are interested in implementing an AI that can search the internet and lin
   create index idx_chat_sessions_created_at on public.chat_sessions using btree (created_at desc);
   create index idx_chat_sessions_user_id_created_at on public.chat_sessions using btree (user_id, created_at desc);
 
+  -- Enable RLS for chat_sessions
+  alter table public.chat_sessions enable row level security;
+
+  -- Chat sessions RLS policy
+  create policy "Users can view own chat sessions"
+  on public.chat_sessions
+  as permissive
+  for all
+  to public
+  using (auth.uid() = user_id);
+
   -- Chat Messages Table
   create table public.chat_messages (
     id uuid not null default extensions.uuid_generate_v4(),
@@ -69,6 +116,23 @@ If you are interested in implementing an AI that can search the internet and lin
   create index idx_chat_messages_created_at on public.chat_messages using btree (created_at);
   create index idx_chat_messages_chat_session_id_is_user_message on public.chat_messages using btree (chat_session_id, is_user_message);
   create index idx_chat_messages_chat_session_id_created_at on public.chat_messages using btree (chat_session_id, created_at);
+
+  -- Enable RLS for chat_messages
+  alter table public.chat_messages enable row level security;
+
+  -- Chat messages RLS policy
+  create policy "Users can view messages from their sessions"
+  on public.chat_messages
+  as permissive
+  for all
+  to public
+  using (
+    chat_session_id IN (
+      SELECT chat_sessions.id
+      FROM chat_sessions
+      WHERE chat_sessions.user_id = auth.uid()
+    )
+  );
   ```
 
 ## [v1.5.0] - 2024-06-02
@@ -150,6 +214,7 @@ If you are interested in implementing an AI that can search the internet and lin
   - [Installation](#installation)
   - [Database Setup](#database-setup)
   - [Environment Variables](#environment-variables)
+- [Document Processing Setup](#document-processing-setup)
 - [Usage](#usage)
 - [Email Templates](#email-templates)
 - [Chat Interface Integration](#chat-interface-integration)
@@ -201,6 +266,7 @@ Before launching your application, you must configure the database schema within
      -- UUID from auth.users
      id uuid references auth.users not null primary key,
      full_name text,
+     email text
    );
    ```
 
@@ -222,9 +288,13 @@ Before launching your application, you must configure the database schema within
    create function public.handle_new_user()
    returns trigger as $$
    begin
-     insert into public.users (id, full_name)
-     values (new.id, new.raw_user_meta_data->>'full_name');
-     return new;
+    insert into public.users (id, full_name, email)
+    values (
+      new.id,
+      new.raw_user_meta_data->>'full_name',
+      new.email
+    );
+    return new;
    end;
    $$ language plpgsql security definer;
    ```
@@ -251,39 +321,93 @@ Before launching your application, you must configure the database schema within
    - After signing up, Supabase will send an email to the address you provided. Check your inbox for an email from Supabase or your application.
    - Open the email and click on the verification link to confirm your email address. This step is crucial for activating your account and ensuring that you can log in and access the application's features.
 
-## Setting Up the Error Feedback Database in Supabase OPTIONAL
+# Document Processing Setup
 
-### Step 1: Create the `error_feedback` Table
+To enable document upload and chat functionality, you'll need additional API keys:
 
-To store error feedback data, execute this SQL query in your Supabase SQL editor:
+1. **LlamaIndex Cloud Setup**
 
-```sql
-CREATE TABLE error_feedback (
-    id BIGSERIAL PRIMARY KEY,
-    feedback TEXT NOT NULL,
-    category TEXT,
-    errorMessage TEXT,
-    errorStack TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
-```
+   - Visit [LlamaIndex Cloud](https://cloud.llamaindex.ai/)
+   - Create an account and get your API key
+   - Add to `.env.local`:
+     ```
+     LLAMA_CLOUD_API_KEY=your_api_key_here
+     ```
 
-This table will store feedback messages, their categories, any associated error messages, and the error stack trace to help with debugging.
+2. **Pinecone Setup**
+   - Sign up at [Pinecone](https://www.pinecone.io/)
+   - Create an index with dimensions=3072
+   - Add to `.env.local`:
+     ```
+     PINECONE_INDEX_NAME=your_index_name
+     PINECONE_API_KEY=your_api_key
+     ```
 
-### Step 2: Configure Row Level Security (RLS)
+These services enable document processing, embedding storage, and semantic search capabilities in your chat interface.
 
-1. **Enable RLS for the `error_feedback` table**:
+### Storage Setup and RLS
 
-   - Navigate to `Authentication` > `Policies` in your Supabase project dashboard.
-   - Select the `error_feedback` table and enable RLS.
+After setting up the basic database structure, you need to configure storage and its associated security policies in Supabase.
 
-2. **Create an RLS policy for inserts (Optional)**:
-   - If you want to restrict who can insert data into this table, you can create a policy.
-   - Click "New Policy", provide a name like `Allow feedback insertion`.
-   - Set the **Policy Definition** to allow `INSERT` operations.
-   - For the **Using expression**, you could use `(auth.role() = 'authenticated')` to only allow authenticated users to insert feedback.
-   - Leave the **Check expression** as is if no further restrictions are needed or adjust according to your requirements.
-   - Ensure the **Policy Command** is set to `INSERT`.
+1. **Create Storage Bucket**
+
+   First, create a storage bucket named 'userfiles' in your Supabase dashboard:
+
+   - Go to Storage in your Supabase dashboard
+   - Click "Create Bucket"
+   - Name it "userfiles"
+   - Set it to private
+
+2. **Configure Storage RLS Policies**
+
+   Add the following policies to secure your storage. These policies ensure users can only access their own files and folders.
+
+   ```sql
+   -- Policy 1: Allow users to select their own files
+   create policy "User can select own files"
+   on storage.objects for select
+   using ((bucket_id = 'userfiles'::text) AND
+          ((auth.uid())::text = (storage.foldername(name))[1]));
+
+   -- Policy 2: Allow users to insert their own files
+   create policy "User can insert own files"
+   on storage.objects for insert
+   with check ((bucket_id = 'userfiles'::text) AND
+               ((auth.uid())::text = (storage.foldername(name))[1]));
+
+   -- Policy 3: Allow users to update their own files
+   create policy "User can update own files"
+   on storage.objects for update
+   using ((bucket_id = 'userfiles'::text) AND
+          ((auth.uid())::text = (storage.foldername(name))[1]));
+
+   -- Policy 4: Allow users to delete their own files
+   create policy "User can delete own files"
+   on storage.objects for delete
+   using ((bucket_id = 'userfiles'::text) AND
+          ((auth.uid())::text = (storage.foldername(name))[1]));
+
+   -- Policy 5: Allow public select access to objects
+   create policy "Allow public select access"
+   on storage.objects for select
+   using (true);
+   ```
+
+   These policies accomplish the following:
+
+   - Policies 1-4 ensure users can only manage (select, insert, update, delete) files within their own user directory
+   - Policy 5 allows public select access to all objects, which is necessary for certain Supabase functionality
+
+   The `storage.foldername(name)[1]` function extracts the first part of the file path, which should match the user's ID.
+
+3. **Verify Configuration**
+
+   After setting up these policies:
+
+   - Users can only access files in their own directory
+   - Files are organized by user ID automatically
+   - Public select access is maintained for system functionality
+   - All other operations are restricted to file owners only
 
 ### Environment Variables
 
@@ -291,6 +415,13 @@ Configure your environment by renaming `.env.local.example` to `.env.local` and 
 
 - `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase project URL.
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase anon (public) key.
+
+**Document Processing:**
+
+- `LLAMA_CLOUD_API_KEY`: Your LlamaIndex Cloud API key
+- `PINECONE_INDEX_NAME`: Your Pinecone index name
+- `PINECONE_API_KEY`: Your Pinecone API key
+- `PINECONE_ENVIRONMENT`: Your Pinecone environment
 
 Optional variables for extended functionality:
 
@@ -408,53 +539,9 @@ Reset Password Email For users that have requested a password reset:
 >
 ```
 
-## Chat Interface Integration
-
-### OpenAI and Perplexity API
-
-This project includes integration with OpenAI and Perplexity API endpoints for powering an advanced chat interface. Users can interact with an AI model, with the option to switch between different models or APIs for varied responses.
-
-### Upstash Redis for Chat History
-
-Chat conversations are stored and managed using Upstash Redis, allowing for efficient retrieval of chat history. This ensures users can access previous conversations, enhancing the chat experience.
-
-### Implementation
-
-To integrate the chat features:
-
-1. **Set Up API Routes**: Create API routes in your Next.js project for interacting with OpenAI and Perplexity API.
-
-2. **Configure Upstash Redis**: Set up Upstash Redis for storing chat conversations. Ensure environment variables for Upstash Redis are correctly configured.
-
-3. **Update the Chat Interface**: Utilize the provided chat interface component, adjusting the API endpoint based on the selected model type.
-
 ## 📜 License
 
 🔖 Licensed under the MIT License. See LICENSE.md for details.
-
-## 🙏 Acknowledgements
-
-- 🎉 A special thank you to the **Supabase team** for developing such a versatile and user-friendly tool. Their commitment to making database interaction seamless and efficient has greatly enhanced this project.
-- 🛠 Appreciation goes to **TypeScript** for its powerful type system that makes JavaScript code safer and easier to understand. This project leverages TypeScript to ensure code reliability and maintainability.
-- 🌐 Thanks to **Vercel** for their innovative platform and tools like `@vercel/ai`, which simplify the deployment process and enhance the integration of AI features into web applications.
-- 🤖 Gratitude to **Langchain** for their toolkit that makes it easier to build language AI applications, enabling this project to integrate complex AI functionalities with ease.
-- 💡 This project also benefits from the innovative `@supabase/ssr` package, which seamlessly integrates Supabase authentication with Next.js server-side rendering, providing a robust foundation for secure and efficient user authentication.
-
-Each of these contributions has been invaluable in creating a comprehensive, secure, and user-friendly application. Thank you for your tools, services, and the community support that makes projects like this possible.
-
-## 📦 Packages Used
-
-- 🧰 Material-UI (`@mui/material`, `@mui/icons-material`): Provides a comprehensive suite of UI tools for React applications.
-- 🎨 @emotion/react, @emotion/styled, @emotion/cache: CSS-in-JS libraries used for styling components in a more expressive and dynamic way.
-- 🚀 @supabase/supabase-js, @supabase/ssr: Official Supabase client for JavaScript, enabling interaction with Supabase services including authentication, database queries, and more, with support for server-side rendering.
-- 🖼 Next.js (`next`): A React framework for building server-rendered applications, static websites, and more.
-- ⚛️ React (`react`, `react-dom`): A JavaScript library for building user interfaces.
-- 🆕 @mui/material-nextjs: An experimental package for integrating Material-UI with Next.js projects.
-- 🤖 Langchain (`langchain`): A toolkit for building language AI applications, simplifying the integration of large language models.
-- 🧠 AI by Vercel (`@vercel/ai`): Provides easy access to AI tools and models directly within the Vercel platform.
-- 📝 React Markdown (`react-markdown`): A component to render Markdown text in React applications, used for formatting chat messages.
-
-Each package plays a crucial role in building, styling, and securing the application, ensuring a seamless user experience and robust functionality.
 
 ```
 

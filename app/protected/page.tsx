@@ -18,24 +18,12 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import InfoIcon from '@mui/icons-material/Info';
 import { format } from 'date-fns';
+import { redirect } from 'next/navigation';
 
 export default async function ProtectedPage() {
   const userInfo = await getUserInfo();
   if (!userInfo) {
-    return (
-      <Container>
-        <Typography
-          variant="h6"
-          align="center"
-          sx={{
-            color: 'error',
-            my: 4
-          }}
-        >
-          Error fetching user information.
-        </Typography>
-      </Container>
-    );
+    redirect('/auth/signin');
   }
 
   // Hypothetical user attributes (example)

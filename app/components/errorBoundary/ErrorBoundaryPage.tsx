@@ -13,7 +13,6 @@ import {
 } from '@mui/material';
 import { Error as ErrorIcon } from '@mui/icons-material';
 import { SelectChangeEvent } from '@mui/material/Select';
-import { logFeedback } from './action';
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -81,6 +80,18 @@ class GeneralErrorBoundary extends React.Component<
     window.location.reload();
   };
 
+  public handleSubmitFeedback = (e: React.FormEvent): void => {
+    e.preventDefault();
+    const { error, errorInfo, feedback, feedbackCategory } = this.state;
+
+    console.log('Error Feedback:', {
+      feedback,
+      category: feedbackCategory,
+      errorMessage: error?.message,
+      errorStack: errorInfo?.componentStack
+    });
+  };
+
   public render(): React.ReactNode {
     const { children } = this.props;
     const {
@@ -113,12 +124,8 @@ class GeneralErrorBoundary extends React.Component<
             {errorInfo && <pre>{errorInfo.componentStack}</pre>}
           </Typography>
         </Collapse>
-        <form action={logFeedback}>
-          <Box
-            sx={{
-              my: 2
-            }}
-          >
+        <form onSubmit={this.handleSubmitFeedback}>
+          <Box sx={{ my: 2 }}>
             <Select
               value={feedbackCategory}
               onChange={this.handleFeedbackCategoryChange}
@@ -129,11 +136,7 @@ class GeneralErrorBoundary extends React.Component<
               <MenuItem value="performance">Performance Issue</MenuItem>
             </Select>
           </Box>
-          <Box
-            sx={{
-              my: 2
-            }}
-          >
+          <Box sx={{ my: 2 }}>
             <TextareaAutosize
               value={feedback}
               onChange={this.handleFeedbackChange}
@@ -145,11 +148,7 @@ class GeneralErrorBoundary extends React.Component<
             Submit Feedback
           </Button>
         </form>
-        <Box
-          sx={{
-            mt: 2
-          }}
-        >
+        <Box sx={{ mt: 2 }}>
           <Button
             variant="contained"
             color="secondary"

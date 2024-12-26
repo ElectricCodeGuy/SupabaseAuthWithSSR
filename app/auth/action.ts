@@ -73,6 +73,7 @@ export async function signup(formData: FormData) {
     }
   });
   if (error) {
+    console.error('Error:', error);
     redirect(
       '/auth?authState=signup&error=' + encodeURIComponent('Invalid input')
     );

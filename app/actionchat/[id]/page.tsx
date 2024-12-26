@@ -4,10 +4,11 @@ import { type Metadata } from 'next';
 import { Box } from '@mui/material';
 import { createServerSupabaseClient } from '@/lib/server/server';
 import ChatComponentPage from '../component/ChatComponent';
-import { getUserInfo } from '@/lib/server/supabase';
+import { getUserInfo, getSession } from '@/lib/server/supabase';
 import { notFound } from 'next/navigation';
 import { AI as AiProvider } from '../action';
 import type { ServerMessage } from '../action';
+import DocumentViewer from '../component/PDFViewer';
 
 export const maxDuration = 120;
 
@@ -58,11 +59,14 @@ async function getChatMessages(chatId: string) {
 }
 interface PageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ [key: string]: string | '' }>;
 }
 
 export default async function Page(props: PageProps) {
-  const params = await props.params;
-
+  const [params, searchParams] = await Promise.all([
+    props.params,
+    props.searchParams
+  ]);
   const userInfo = await getUserInfo();
 
   const { messages, userId } = await getChatMessages(params.id);
@@ -71,10 +75,39 @@ export default async function Page(props: PageProps) {
   }
 
   return (
-    <Box sx={{ flex: 1 }}>
-      <AiProvider initialAIState={messages}>
-        <ChatComponentPage userInfo={userInfo} chatId={params.id} />
-      </AiProvider>
+    <Box
+      sx={{
+        display: 'flex',
+        width: '100%',
+        overflow: 'hidden'
+      }}
+    >
+      <Box sx={{ flex: 1 }}>
+        <AiProvider initialAIState={messages}>
+          <ChatComponentPage userInfo={userInfo} chatId={params.id} />
+        </AiProvider>
+      </Box>
+
+      {searchParams.pdf ? (
+        <DocumentViewerSuspended
+          fileName={decodeURIComponent(searchParams.pdf)}
+        />
+      ) : null}
     </Box>
+  );
+}
+
+async function DocumentViewerSuspended({ fileName }: { fileName: string }) {
+  const session = await getSession();
+  const userId = session?.id;
+
+  const hasActiveSubscription = Boolean(session);
+
+  return (
+    <DocumentViewer
+      fileName={fileName}
+      userId={userId}
+      hasActiveSubscription={hasActiveSubscription}
+    />
   );
 }

@@ -8,6 +8,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '@/types/database';
 import { unstable_noStore as noStore } from 'next/cache';
 import { Tables } from '@/types/database';
+import { UploadProvider } from './context/uploadContext';
 
 export const maxDuration = 120;
 
@@ -54,7 +55,7 @@ async function fetchChatPreviews(
     return [];
   }
 }
-type UserInfo = Pick<Tables<'users'>, 'full_name' | 'email'>;
+type UserInfo = Pick<Tables<'users'>, 'full_name' | 'email' | 'id'>;
 type ChatPreview = {
   id: Tables<'chat_sessions'>['id'];
   created_at: Tables<'chat_sessions'>['created_at'];
@@ -75,6 +76,7 @@ export default async function Layout(props: { children: React.ReactNode }) {
     initialChatPreviews = await fetchChatPreviews(0, 25, supabase);
   } else {
     userInfo = {
+      id: '',
       full_name: '',
       email: ''
     };
@@ -82,11 +84,13 @@ export default async function Layout(props: { children: React.ReactNode }) {
 
   return (
     <Box sx={{ display: 'flex' }}>
-      <ChatHistoryDrawer
-        userInfo={userInfo}
-        initialChatPreviews={initialChatPreviews}
-      />
-      {props.children}
+      <UploadProvider>
+        <ChatHistoryDrawer
+          userInfo={userInfo}
+          initialChatPreviews={initialChatPreviews}
+        />
+        {props.children}
+      </UploadProvider>
     </Box>
   );
 }

@@ -15,16 +15,21 @@ import {
   InputLabel,
   Select,
   Link as MuiLink,
-  MenuItem
+  MenuItem,
+  Popover
 } from '@mui/material';
 import {
   Send as SendIcon,
   Stop as StopIcon,
-  DeleteSweep as DeleteSweepIcon
+  DeleteSweep as DeleteSweepIcon,
+  Chat as ChatIcon,
+  PictureAsPdf as PdfIcon
 } from '@mui/icons-material';
+import { useRouter } from 'next/navigation';
 import { ChatScrollAnchor } from '../hooks/chat-scroll-anchor';
 import { Tables } from '@/types/database';
 import ErrorBoundary from './ErrorBoundary';
+import { useUpload } from '../context/uploadContext'; // Add this import
 
 type UserData = Pick<Tables<'users'>, 'email' | 'full_name'>;
 
@@ -38,12 +43,27 @@ export default function ChatComponentPage({
   chatId
 }: ChatComponentPageProps) {
   const [inputValue, setInputValue] = useState('');
+  const router = useRouter();
   const [messages, setMessages] = useUIState<typeof AI>();
   const [isLoading, setIsLoading] = useState(false);
-  const { submitMessage, resetMessages } = useActions<typeof AI>();
+  const { submitMessage, uploadFilesAndQuery, resetMessages } =
+    useActions<typeof AI>();
+  const { selectedBlobs, selectedMode, setSelectedMode } = useUpload(); // Add this line
+
   const [selectedModel, setSelectedModel] = useState<'claude3' | 'chatgpt4'>(
     'claude3'
   );
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+
+  // Add these handlers
+  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
   const currentChatId = chatId || '';
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Enter' && event.shiftKey) {
@@ -59,8 +79,7 @@ export default function ChatComponentPage({
       const result = await resetMessages();
       if (result.success) {
         setMessages([]);
-        // Optionally, you can show a success message to the user
-        // For example, using a snackbar or alert
+        router.refresh();
       } else {
         // Handle the error, maybe show an error message to the user
         console.error('Failed to reset messages:', result.message);
@@ -92,7 +111,7 @@ export default function ChatComponentPage({
               alignItems: 'center',
               height: '100%',
               textAlign: 'center',
-              p: 4
+              p: 1
             }}
           >
             <Typography
@@ -146,6 +165,76 @@ export default function ChatComponentPage({
                 Start chatting now and enjoy the AI experience!
               </Typography>
             </>
+            <>
+              <Box
+                sx={{
+                  display: 'flex',
+                  gap: 2,
+                  mt: 4,
+                  justifyContent: 'center'
+                }}
+              >
+                <Tooltip title="Regular Chat Mode">
+                  <IconButton
+                    onClick={() => setSelectedMode('default')}
+                    sx={{
+                      width: 80,
+                      height: 80,
+                      border:
+                        selectedMode === 'default'
+                          ? '2px solid #1976d2'
+                          : '1px solid #ccc',
+                      borderRadius: '12px',
+                      '&:hover': {
+                        backgroundColor: 'rgba(25, 118, 210, 0.04)'
+                      }
+                    }}
+                  >
+                    <ChatIcon
+                      sx={{
+                        fontSize: 40,
+                        color: selectedMode === 'default' ? '#1976d2' : '#666'
+                      }}
+                    />
+                  </IconButton>
+                </Tooltip>
+
+                <Tooltip title="PDF Chat Mode">
+                  <IconButton
+                    onClick={() => setSelectedMode('pdf')}
+                    sx={{
+                      width: 80,
+                      height: 80,
+                      border:
+                        selectedMode === 'pdf'
+                          ? '2px solid #1976d2'
+                          : '1px solid #ccc',
+                      borderRadius: '12px',
+                      '&:hover': {
+                        backgroundColor: 'rgba(25, 118, 210, 0.04)'
+                      }
+                    }}
+                  >
+                    <PdfIcon
+                      sx={{
+                        fontSize: 40,
+                        color: selectedMode === 'pdf' ? '#1976d2' : '#666'
+                      }}
+                    />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'textSecondary',
+                  mt: 2
+                }}
+              >
+                Select your preferred chat mode
+              </Typography>
+            </>
           </Box>
         ) : (
           <Box
@@ -161,17 +250,13 @@ export default function ChatComponentPage({
               py: 1
             }}
           >
-            {messages.map((message, index) => (
+            {messages.map((message) => (
               <Box
                 key={message.id}
                 sx={{
                   width: '100%',
                   maxWidth: '700px',
                   mx: 'auto',
-                  mb: {
-                    lg: index === messages.length - 1 ? 1 : 0.5,
-                    xl: index === messages.length - 1 ? 0 : 0.5
-                  },
                   padding: {
                     xs: '0px',
                     sm: '0px',
@@ -308,7 +393,116 @@ export default function ChatComponentPage({
               }
             }}
           />
-
+          {messages.length > 0 && (
+            <>
+              <Tooltip title="Skift mode" arrow placement="top">
+                <IconButton
+                  onClick={handleClick}
+                  sx={{
+                    p: 0.5,
+                    height: 'fit-content',
+                    border: '1px solid rgba(0, 0, 0, 0.12)',
+                    borderRadius: '8px',
+                    '&:hover': {
+                      backgroundColor: 'rgba(0, 0, 0, 0.04)'
+                    }
+                  }}
+                >
+                  {selectedMode === 'default' ? (
+                    <ChatIcon sx={{ width: 24, height: 24 }} />
+                  ) : (
+                    <PdfIcon sx={{ width: 24, height: 24 }} />
+                  )}
+                </IconButton>
+              </Tooltip>
+              <Popover
+                open={open}
+                anchorEl={anchorEl}
+                onClose={handleClose}
+                anchorOrigin={{
+                  vertical: 'top',
+                  horizontal: 'left'
+                }}
+                transformOrigin={{
+                  vertical: 'bottom',
+                  horizontal: 'left'
+                }}
+              >
+                <Box sx={{ width: 300, display: 'flex', flexDirection: 'row' }}>
+                  {[
+                    {
+                      mode: 'default',
+                      icon: <ChatIcon sx={{ width: 40, height: 40 }} />,
+                      title: 'Regular Chat'
+                    },
+                    {
+                      mode: 'pdf',
+                      icon: <PdfIcon sx={{ width: 40, height: 40 }} />,
+                      title: 'PDF Chat'
+                    }
+                  ].map((item, index) => (
+                    <MenuItem
+                      key={item.mode}
+                      onClick={() => {
+                        setSelectedMode(item.mode as 'default' | 'pdf');
+                        handleClose();
+                      }}
+                      selected={selectedMode === item.mode}
+                      sx={{
+                        width: '50%', // Make each item take up 50% of the space
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: 1,
+                        py: 1.5,
+                        borderRight:
+                          index === 0
+                            ? '1px solid rgba(0, 0, 0, 0.12)'
+                            : 'none', // Add border between items
+                        '&.Mui-selected': {
+                          backgroundColor: 'rgba(0, 0, 0, 0.08)',
+                          border: '1px solid rgba(0, 0, 0, 0.12)',
+                          '&:hover': {
+                            backgroundColor: 'rgba(0, 0, 0, 0.08)'
+                          },
+                          '& .MuiTypography-root': {
+                            color: 'text.primary'
+                          }
+                        },
+                        '&:hover': {
+                          backgroundColor:
+                            selectedMode === item.mode
+                              ? 'rgba(0, 0, 0, 0.08)'
+                              : 'rgba(0, 0, 0, 0.04)'
+                        }
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          color:
+                            selectedMode === item.mode
+                              ? 'primary.main'
+                              : 'text.secondary'
+                        }}
+                      >
+                        {item.icon}
+                      </Box>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontWeight: selectedMode === item.mode ? 600 : 400,
+                          textAlign: 'center',
+                          color: 'text.primary'
+                        }}
+                      >
+                        {item.title}
+                      </Typography>
+                    </MenuItem>
+                  ))}
+                </Box>
+              </Popover>
+            </>
+          )}
           {userInfo && (
             <Box>
               <FormControl sx={{ minWidth: 100, marginLeft: '8px' }}>
@@ -370,11 +564,24 @@ export default function ChatComponentPage({
     ]);
     setIsLoading(true);
 
-    const responseMessage = await submitMessage(
-      inputValue,
-      selectedModel,
-      currentChatId || ''
-    );
+    let responseMessage;
+
+    // Use different query methods based on selected mode
+    if (selectedMode === 'pdf') {
+      responseMessage = await uploadFilesAndQuery(
+        inputValue,
+        currentChatId || '',
+        selectedModel,
+        selectedBlobs
+      );
+    } else {
+      // Default chat mode
+      responseMessage = await submitMessage(
+        inputValue,
+        selectedModel,
+        currentChatId || ''
+      );
+    }
 
     setMessages((currentMessages) => [
       ...currentMessages,

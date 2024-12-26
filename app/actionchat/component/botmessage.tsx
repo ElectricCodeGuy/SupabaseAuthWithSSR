@@ -8,19 +8,22 @@ import {
   TableCell,
   TableContainer,
   TableHead,
-  TableRow
+  TableRow,
+  Link as MuiLink
 } from '@mui/material';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeHighlight, { Options as HighlightOptions } from 'rehype-highlight';
 import 'highlight.js/styles/github-dark.css';
-
+import Link from 'next/link';
 import {
   Android as AndroidIcon,
   ContentCopy as ContentCopyIcon,
   CheckCircle as CheckCircleIcon
 } from '@mui/icons-material';
+import { encodeBase64 } from '../lib/base64';
+
 const highlightOptionsAI: HighlightOptions = {
   detect: true,
   prefix: 'hljs-'
@@ -40,7 +43,7 @@ export function UserMessage({
         background: '#daf8cb',
         color: '#203728',
         pt: 2,
-        borderRadius: '16px',
+        borderRadius: '8px',
         margin: '8px 0',
         alignSelf: 'flex-end',
         wordBreak: 'break-word',
@@ -69,7 +72,6 @@ export function UserMessage({
         </Typography>
         <Box
           sx={{
-            mt: 1,
             ml: 2,
             flexGrow: 1,
             overflow: 'hidden',
@@ -100,7 +102,31 @@ export function BotMessage({
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 1000);
   };
+  const createDocumentLink = (href: string) => {
+    // Parse the existing URL parameters
+    const params = new URLSearchParams(href.substring(1)); // Remove the leading '?'
 
+    // Get the PDF filename and page number
+    const pdfTitle = params.get('pdf');
+    const pageNumber = params.get('p');
+
+    // Create new URLSearchParams
+    const newSearchParams = new URLSearchParams();
+
+    if (pdfTitle) {
+      // Encode the PDF title
+      const encodedFilename = encodeURIComponent(encodeBase64(pdfTitle));
+      newSearchParams.set('pdf', encodedFilename);
+    }
+
+    if (pageNumber) {
+      // Keep the page number as is
+      newSearchParams.set('p', pageNumber);
+    }
+
+    // Construct the final URL
+    return `?${newSearchParams.toString()}`;
+  };
   return (
     <Box
       sx={{
@@ -108,7 +134,7 @@ export function BotMessage({
         background: '#f0f0f0',
         color: '#2c3e50',
         pt: 2,
-        borderRadius: '16px',
+        borderRadius: '8px',
         margin: '8px 0',
         alignSelf: 'flex-start',
         wordBreak: 'break-word',
@@ -261,6 +287,19 @@ export function BotMessage({
                   </div>
                 </div>
               );
+            },
+            a: ({ href, children }) => {
+              if (href) {
+                // Handle PDF links
+
+                const fullHref = createDocumentLink(href);
+                return (
+                  <Link href={fullHref} passHref prefetch={false}>
+                    {children}
+                  </Link>
+                );
+              }
+              return <MuiLink>{children}</MuiLink>;
             }
           }}
           remarkPlugins={[remarkGfm, remarkMath]}
