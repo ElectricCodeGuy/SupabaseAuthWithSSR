@@ -9,8 +9,8 @@ import {
   Typography
 } from '@mui/material';
 import { useFormStatus } from 'react-dom';
-import { resetPasswordForEmail } from './action';
-import Message from './messages';
+import { resetPasswordForEmail } from '../action';
+import Message from '../messages';
 import { usePathname } from 'next/navigation';
 
 interface ForgotPasswordProps {

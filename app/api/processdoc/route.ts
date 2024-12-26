@@ -268,7 +268,8 @@ async function processDocumentWithAgentChains(
   });
 
   try {
-    // Race between the actual processing and the timeout
+    // Race between the actual processing and the timeout. This is here to prevent the AI function from hanging,
+    // witch tend to happen from time to time...
     const result = await Promise.race<AgentChainResult>([
       preliminaryAnswerChainAgent(prompt),
       timeout

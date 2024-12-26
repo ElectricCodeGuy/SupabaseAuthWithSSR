@@ -11,13 +11,13 @@ import {
   Typography,
   CircularProgress
 } from '@mui/material';
-import ForgotPassword from './ForgotPassword';
-import Message from './messages';
-import { GoogleIcon } from './CustomIcons';
-import { signup } from './action';
+import ForgotPassword from '../signin/ForgotPassword';
+import Message from '../messages';
+import { GoogleIcon } from '../CustomIcons';
+import { signup } from '../action';
 import { useRouter } from 'next/navigation';
 import { useFormStatus } from 'react-dom';
-import { signInWithGoogle } from './OAuth';
+import { signInWithGoogle } from '../signin/OAuth';
 
 export default function SignInCard() {
   const [email, setEmail] = useState('');

@@ -14,11 +14,11 @@ import {
   CircularProgress
 } from '@mui/material';
 import ForgotPassword from './ForgotPassword';
-import { GoogleIcon } from './CustomIcons';
-import { login } from './action';
+import { GoogleIcon } from '../CustomIcons';
+import { login } from '../action';
 import { signInWithGoogle } from './OAuth';
 import { useRouter } from 'next/navigation';
-import Message from './messages';
+import Message from '../messages';
 import { useFormStatus } from 'react-dom';
 
 export default function SignInCard() {

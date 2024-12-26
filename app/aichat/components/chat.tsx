@@ -27,7 +27,6 @@ import {
   Autocomplete,
   IconButton,
   Paper,
-  Container,
   CircularProgress,
   Grid2,
   InputAdornment,
@@ -36,7 +35,9 @@ import {
   RadioGroup,
   FormControlLabel,
   FormControl,
-  Link as MuiLink
+  Link as MuiLink,
+  type SxProps,
+  type Theme
 } from '@mui/material';
 import {
   Person as PersonIcon,
@@ -72,39 +73,35 @@ interface ChatProps {
   chatId?: string;
 }
 
-const messageStyles = {
+const messageStyles: Record<string, SxProps<Theme>> = {
   userMessage: {
-    position: 'relative',
     background: '#daf8cb',
     color: '#203728',
-    padding: '10px 20px',
-    paddingLeft: '40px',
-    borderRadius: '16px',
-    margin: '8px 0',
-    maxWidth: '100%',
-    alignSelf: 'flex-end',
-    wordBreak: 'break-word',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-    boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
-  },
-  aiMessage: {
     position: 'relative',
-    background: '#f0f0f0',
-    color: '#2c3e50',
-    padding: '10px 20px',
-    paddingLeft: '40px',
-    borderRadius: '16px',
+    pt: 2,
+    borderRadius: '8px',
     margin: '8px 0',
-    maxWidth: '100%',
     alignSelf: 'flex-start',
     wordBreak: 'break-word',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'flex-start',
     boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
-  }
+  } as const,
+  aiMessage: {
+    position: 'relative',
+    background: '#f0f0f0',
+    color: '#2c3e50',
+    pt: 2,
+    borderRadius: '8px',
+    margin: '8px 0',
+    alignSelf: 'flex-start',
+    wordBreak: 'break-word',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+  } as const
 };
 
 interface ChatMessageProps {
@@ -249,12 +246,6 @@ const MessageComponent = ({ message }: { message: Message }) => {
         </Box>
       )}
       <Box sx={{ overflowWrap: 'break-word' }}>
-        <Typography
-          variant="caption"
-          sx={{ fontWeight: 'bold', display: 'block' }}
-        >
-          {message.role === 'user' ? 'You' : 'AI'}
-        </Typography>
         {message.role === 'user' ? (
           <ReactMarkdown
             components={componentsUser}
@@ -447,11 +438,17 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
   };
 
   return (
-    <Container
+    <Box
       sx={{
-        maxHeight: '100vh',
-        maxWidth: { lg: 'md', xl: 'lg' },
-        overflow: 'auto'
+        display: 'flex',
+        flexDirection: 'column',
+        height: {
+          xs: '100vh',
+          sm: '100vh',
+          md: '100vh'
+        },
+        width: '100%',
+        mx: 'auto'
       }}
     >
       {messages.length === 0 ? (
@@ -495,44 +492,47 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
           </>
         </Box>
       ) : (
-        <List
-          sx={{
-            marginBottom: '120px'
-          }}
-        >
-          <ChatMessage messages={messages} />
-        </List>
+        <Box sx={{ flex: 1, overflowY: 'auto' }}>
+          <List
+            sx={{
+              width: '100%',
+              mx: 'auto',
+              maxWidth: '1000px',
+              padding: {
+                xs: '0px',
+                sm: '0px',
+                md: '2px',
+                lg: '1px',
+                xl: '1px'
+              }
+            }}
+          >
+            <ChatMessage messages={messages} />
+          </List>
+        </Box>
       )}
       <Box
         component="form"
         onSubmit={handleSubmit}
         sx={{
-          position: 'fixed',
-          left: {
-            xs: '50%',
-            sm: '50%',
-            md: 'calc(50% - 175px)',
-            lg: 'calc(50% - 175px)',
-            xl: 'calc(50% - 175px)'
+          alignItems: 'center',
+          maxWidth: '700px',
+          mx: 'auto',
+          width: '100%',
+          marginTop: 'auto',
+          pb: '8px',
+          px: {
+            xs: '4px',
+            sm: '4px',
+            md: '12px'
           },
-          transform: 'translateX(-50%)',
-          bottom: 0,
-          zIndex: 1100,
+          '@media (min-width: 2000px)': {
+            px: '2px',
+            maxWidth: '850px'
+          },
           display: 'flex',
-          justifyContent: 'center',
-          padding: '2px',
-          marginBottom: '8px',
-          width: {
-            xs: '100%',
-            sm: '100%',
-            md: '60%',
-            lg: '55%',
-            xl: '100%'
-          },
-          boxSizing: 'border-box',
-          transition: 'left 0.3s ease-in-out',
-          maxWidth: 'calc(100% - 32px)',
-          mx: 'auto' // Horizontally centering the maxWidth content
+          flexDirection: 'row',
+          position: 'sticky'
         }}
       >
         <Paper
@@ -541,7 +541,6 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
             backgroundColor: 'lightgray',
             pr: 0.5,
             pl: 0.5,
-            paddingBottom: 1,
             maxWidth: 1000,
             borderRadius: '20px',
             height: 'auto',
@@ -753,7 +752,7 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
           <KeyboardArrowUpIcon />
         </Fab>
       )}
-    </Container>
+    </Box>
   );
 };
 

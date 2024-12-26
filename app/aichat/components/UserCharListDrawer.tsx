@@ -1,6 +1,6 @@
 'use client';
 import React, { type FC, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import { deleteChatData } from '../actions';
 import useSWRImmutable from 'swr/immutable';
 import {
@@ -30,15 +30,15 @@ import Link from 'next/link';
 
 type CombinedDrawerProps = {
   chatPreviews: ChatPreview[];
-  chatId?: string;
 };
 
 const CombinedDrawer: FC<CombinedDrawerProps> = ({
-  chatPreviews: initialChatPreviews,
-  chatId
+  chatPreviews: initialChatPreviews
 }) => {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const params = useParams();
+  const currentChatId = (params?.id as string) || ''; // Extract and type cast id from params
   const theme = useTheme();
 
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
@@ -79,7 +79,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
       : message;
   };
 
-  const isSelected = (id: string) => id === chatId;
+  const isSelected = (id: string) => id === currentChatId;
 
   const handleDeleteClick = (id: string) => {
     setChatToDelete(id);
@@ -90,7 +90,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
     if (chatToDelete) {
       try {
         await deleteChatData(chatToDelete);
-        if (chatToDelete === chatId) {
+        if (chatToDelete === currentChatId) {
           const newHref = '/aichat';
           router.replace(newHref, { scroll: false });
         }
@@ -219,7 +219,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
       >
         <Drawer
           variant="permanent"
-          anchor="right"
+          anchor="left"
           sx={{
             width: drawerWidth,
             overflowx: 'hidden',
@@ -310,7 +310,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
         }}
       >
         <SwipeableDrawer
-          anchor="right"
+          anchor="left"
           open={drawerOpen}
           onClose={() => setDrawerOpen(false)}
           onOpen={() => setDrawerOpen(true)}

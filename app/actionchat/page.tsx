@@ -1,5 +1,5 @@
 import 'server-only';
-import { Box } from '@mui/system';
+import { Box } from '@mui/material';
 import { getUserInfo, getSession } from '@/lib/server/supabase';
 import ChatComponentPage from './component/ChatComponent';
 import { AI as AiProvider } from './action';

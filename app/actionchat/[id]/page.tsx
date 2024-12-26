@@ -9,6 +9,7 @@ import { notFound } from 'next/navigation';
 import { AI as AiProvider } from '../action';
 import type { ServerMessage } from '../action';
 import DocumentViewer from '../component/PDFViewer';
+import { unstable_noStore as noStore } from 'next/cache';
 
 export const maxDuration = 120;
 
@@ -19,6 +20,7 @@ export const metadata: Metadata = {
   }
 };
 async function getChatMessages(chatId: string) {
+  noStore();
   const supabase = await createServerSupabaseClient();
 
   try {
