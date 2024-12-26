@@ -29,7 +29,7 @@ If you are interested in implementing an AI that can search the internet and lin
 
 ## CHANGELOG
 
-## [v1.7.0] - 2024-06-15
+## [v1.7.0] - 2024-12-26
 
 ### Added
 
