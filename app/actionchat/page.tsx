@@ -1,12 +1,11 @@
 import 'server-only';
 import { Box } from '@mui/material';
-import { getUserInfo, getSession } from '@/lib/server/supabase';
+import { getUserInfo } from '@/lib/server/supabase';
 import ChatComponentPage from './component/ChatComponent';
 import { AI as AiProvider } from './action';
 import DocumentViewer from './component/PDFViewer';
 
-export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+export const maxDuration = 60; // Incrase the lambda duration to 60 seconds
 
 interface PageProps {
   searchParams: Promise<{ [key: string]: string | '' }>;
@@ -40,7 +39,7 @@ export default async function Page(props: PageProps) {
 }
 
 async function DocumentViewerSuspended({ fileName }: { fileName: string }) {
-  const session = await getSession();
+  const session = await getUserInfo();
   const userId = session?.id;
 
   const hasActiveSubscription = Boolean(session);

@@ -95,8 +95,7 @@ export async function POST(req: NextRequest) {
     return result.toDataStreamResponse({
       headers: {
         'x-chat-id': chatSessionId,
-        'x-new-chat': isNewChat ? 'true' : 'false',
-        'Content-Type': 'text/plain; charset=utf-8'
+        'x-new-chat': isNewChat ? 'true' : 'false'
       }
     });
   } catch (e) {

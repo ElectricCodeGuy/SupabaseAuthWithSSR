@@ -10,7 +10,7 @@ import { unstable_noStore as noStore } from 'next/cache';
 import { Tables } from '@/types/database';
 import { UploadProvider } from './context/uploadContext';
 
-export const maxDuration = 120;
+export const maxDuration = 60; // Incrase the lambda duration to 60 seconds
 
 async function fetchChatPreviews(
   offset: number,

@@ -24,13 +24,16 @@ export const getSession = cache(getSessionUser);
 // this minimizes redundant data fetching across components for the same user data.
 export const getUserInfo = cache(async () => {
   const supabase = await createServerSupabaseClient();
-  // Since the CreateServerSupbaseClient is wrapped in <Database> type, the
-  // query method is now typesafe.
   try {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('users')
       .select('full_name, email, id')
-      .single();
+      .maybeSingle(); // MaybeSingle returns null if no data is found. single() returns an error if no data is found.
+
+    if (error) {
+      console.error('Supabase Error:', error);
+      return null;
+    }
 
     return data;
   } catch (error) {

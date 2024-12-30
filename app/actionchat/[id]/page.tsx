@@ -4,14 +4,14 @@ import { type Metadata } from 'next';
 import { Box } from '@mui/material';
 import { createServerSupabaseClient } from '@/lib/server/server';
 import ChatComponentPage from '../component/ChatComponent';
-import { getUserInfo, getSession } from '@/lib/server/supabase';
+import { getUserInfo } from '@/lib/server/supabase';
 import { notFound } from 'next/navigation';
 import { AI as AiProvider } from '../action';
 import type { ServerMessage } from '../action';
 import DocumentViewer from '../component/PDFViewer';
 import { unstable_noStore as noStore } from 'next/cache';
 
-export const maxDuration = 120;
+export const maxDuration = 60; // Incrase the lambda duration to 60 seconds
 
 export const metadata: Metadata = {
   robots: {
@@ -100,7 +100,7 @@ export default async function Page(props: PageProps) {
 }
 
 async function DocumentViewerSuspended({ fileName }: { fileName: string }) {
-  const session = await getSession();
+  const session = await getUserInfo();
   const userId = session?.id;
 
   const hasActiveSubscription = Boolean(session);
