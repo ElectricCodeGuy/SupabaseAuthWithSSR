@@ -328,110 +328,6 @@ async function submitMessage(
   };
 }
 
-type ChatSessionWithMessages = {
-  id: string;
-  user_id: string;
-  created_at: string;
-  updated_at: string;
-  chat_messages: {
-    id: string;
-    is_user_message: boolean;
-    content: string | null;
-    created_at: string;
-  }[];
-};
-
-async function ChatHistoryUpdate(
-  full_name: string,
-  chatId: string
-): Promise<ChatHistoryUpdateResult> {
-  'use server';
-  const session = await getSession();
-  if (!session) {
-    return { uiMessages: [], chatId: '' };
-  }
-
-  const supabase = await createServerSupabaseClient();
-
-  try {
-    const { data: chatData, error } = await supabase
-      .from('chat_sessions')
-      .select(
-        `
-        id,
-        user_id,
-        created_at,
-        updated_at,
-        chat_messages (
-          id,
-          is_user_message,
-          content,
-          created_at
-        )
-      `
-      )
-      .eq('id', chatId)
-      .eq('user_id', session.id)
-      .order('created_at', {
-        ascending: true,
-        referencedTable: 'chat_messages'
-      })
-      .single();
-
-    if (error) throw error;
-
-    if (!chatData) {
-      return { uiMessages: [], chatId: '' };
-    }
-
-    const typedChatData = chatData as ChatSessionWithMessages;
-
-    const combinedMessages: {
-      role: 'user' | 'assistant';
-      id: string;
-      content: string;
-    }[] = typedChatData.chat_messages.map((message) => ({
-      role: message.is_user_message ? 'user' : 'assistant',
-      id: message.id,
-      content: message.content || ''
-    }));
-
-    const aiState = getMutableAIState<typeof AI>();
-    const aiStateMessages: ServerMessage[] = combinedMessages.map(
-      (message) => ({
-        role: message.role,
-        content: message.content
-      })
-    );
-    aiState.done(aiStateMessages);
-
-    const uiMessages: ClientMessage[] = combinedMessages.map((message) => {
-      if (message.role === 'user') {
-        return {
-          id: message.id,
-          role: 'user',
-          display: (
-            <UserMessage full_name={full_name}>{message.content}</UserMessage>
-          ),
-          chatId: chatId
-        };
-      } else {
-        return {
-          id: message.id,
-          role: 'assistant',
-          display: <BotMessage>{message.content}</BotMessage>,
-          chatId: chatId
-        };
-      }
-    });
-
-    return { uiMessages, chatId };
-  } catch (error) {
-    console.error('Error fetching chat data from Supabase:', error);
-    return { uiMessages: [], chatId: '' };
-  }
-}
-
 type ResetResult = {
   success: boolean;
   message: string;
@@ -1421,11 +1317,6 @@ export type SubmitMessageResult = {
   status: StreamableValue<string, any>;
 };
 
-export type ChatHistoryUpdateResult = {
-  uiMessages: ClientMessage[];
-  chatId: string;
-};
-
 type Actions = {
   submitMessage: (
     currentUserMessage: string,
@@ -1443,10 +1334,6 @@ type Actions = {
     model_select: 'claude3' | 'chatgpt4',
     chatId: string
   ) => Promise<SearchToolResult>;
-  ChatHistoryUpdate: (
-    full_name: string,
-    chatId: string
-  ) => Promise<ChatHistoryUpdateResult>;
   resetMessages: () => Promise<ResetResult>;
 };
 
@@ -1455,7 +1342,6 @@ export const AI = createAI<ServerMessage[], ClientMessage[], Actions>({
     submitMessage,
     uploadFilesAndQuery,
     SearchTool,
-    ChatHistoryUpdate,
     resetMessages
   },
   onGetUIState: async () => {
