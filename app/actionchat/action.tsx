@@ -1478,7 +1478,7 @@ export const AI = createAI<ServerMessage[], ClientMessage[], Actions>({
           ) : (
             <>
               <BotMessage>{message.content}</BotMessage>
-              {message.sources && (
+              {message.sources && message.sources.length > 0 && (
                 <InternetSearchToolResults searchResults={message.sources} />
               )}
             </>
