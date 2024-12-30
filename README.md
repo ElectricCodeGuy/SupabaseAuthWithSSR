@@ -27,11 +27,8 @@ You can find the videos located inside the public folder!
 
 ### Added
 
-- **PG Vector Integration**: Replaced Pinecone with Supabase's pgvector for document embeddings storage and similarity search.
-  - Eliminated external API dependencies and reduced latency
-  - Improved type safety and data consistency
-  - Unified storage solution with existing application data
-  - Significant cost reduction for vector operations
+- **PG Vector Integration**:
+- Replaced Pinecone with Supabase's pgvector for document embeddings storage and similarity search.
 
 ### Why Replace Pinecone?
 
