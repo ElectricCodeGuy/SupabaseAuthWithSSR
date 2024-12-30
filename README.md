@@ -1,4 +1,4 @@
-# Supabase Auth with SSR + RAG 🚀
+# Supabase Auth with SSR + RAG + Tavily AI Web Search 🔍
 
 ## Project Showcase
 
