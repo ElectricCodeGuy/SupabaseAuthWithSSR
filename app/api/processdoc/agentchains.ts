@@ -67,7 +67,10 @@ const documentMetadataSchema = z.object({
     .array(z.string())
     .describe(
       'Identify up to 10 key entities (e.g., people, organizations, laws, concepts) mentioned in the document.'
-    )
+    ),
+  primaryLanguage: z
+    .string()
+    .describe('Identify the primary language used in the document content.')
 });
 
 export const generateDocumentMetadata = async (content: string) => {

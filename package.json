@@ -19,7 +19,6 @@
     "@mui/icons-material": "^6.1.4",
     "@mui/material": "^6.1.4",
     "@mui/material-nextjs": "^6.1.4",
-    "@pinecone-database/pinecone": "^4.0.0",
     "@supabase/ssr": "^0.5.1",
     "@supabase/supabase-js": "^2.45.6",
     "@upstash/ratelimit": "^2.0.2",

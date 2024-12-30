@@ -331,6 +331,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
                   component="form"
                   action={async (formData: FormData) => {
                     formData.append('filePath', encodeBase64(file.name));
+                    formData.append('filterTag', filterTag); // Add the filterTag
                     await deleteFilterTagAndDocumentChunks(formData);
                     await mutateFiles();
                   }}

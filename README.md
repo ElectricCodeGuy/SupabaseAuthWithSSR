@@ -23,6 +23,187 @@ You can find the videos located inside the public folder!
 
 ## CHANGELOG
 
+## [v1.8.1] - 2024-12-30
+
+### Added
+
+- **PG Vector Integration**: Replaced Pinecone with Supabase's pgvector for document embeddings storage and similarity search.
+  - Eliminated external API dependencies and reduced latency
+  - Improved type safety and data consistency
+  - Unified storage solution with existing application data
+  - Significant cost reduction for vector operations
+
+### Why Replace Pinecone?
+
+While Pinecone is popular, it presented significant challenges in production:
+
+- **Lack of Type Safety**:
+
+  - No proper TypeScript support
+  - Difficult to maintain type consistency
+  - Error-prone metadata management
+
+- **Data Management Nightmare**:
+
+  - No SQL support for updating metadata
+  - Having to maintain data in two separate systems
+  - Complex and limited update operations
+
+- **Support and Cost Issues**:
+  - Unresponsive support team
+  - Limited help with technical issues
+  - Expensive serverless pricing model
+
+### Benefits of Supabase pgvector
+
+The migration to pgvector provides:
+
+- **Unified Data Layer**:
+
+  - Single database for all application data
+  - Native PostgreSQL features
+  - Built-in Row Level Security (RLS)
+
+- **Better Development**:
+
+  - Familiar SQL interface
+  - Strong type checking
+  - Improved debugging tools
+
+- **Enhanced Query Optimization**:
+  - Implemented an intelligent query preprocessing step for document similarity search.
+  - Query variation generation for improved semantic matching
+  - Context-aware query reformulation based on document metadata
+  - Automatic deduplication of search results
+  - Improved relevance through multi-query aggregation
+
+### Technical Implementation
+
+#### Vector Document Storage
+
+```sql
+-- Enable the vector extension
+CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA extensions;
+
+-- Create the vector_documents table
+CREATE TABLE IF NOT EXISTS public.vector_documents (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  embedding extensions.vector(3072),
+  text_content text NOT NULL,
+  title text NOT NULL,
+  timestamp date NOT NULL,
+  ai_title text,
+  ai_description text,
+  ai_maintopics text[],
+  ai_keyentities text[],
+  filter_tags text,
+  page_number integer NOT NULL,
+  total_pages integer NOT NULL,
+  chunk_number integer NOT NULL,
+  total_chunks integer NOT NULL,
+  primary_language text,
+  created_at timestamptz DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT vector_documents_pkey PRIMARY KEY (id),
+  CONSTRAINT vector_documents_unique_chunk UNIQUE (user_id, title, "timestamp", page_number, chunk_number),
+  CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+);
+
+-- Create indexes
+CREATE INDEX IF NOT EXISTS idx_vector_documents_user_id ON public.vector_documents USING btree (user_id);
+CREATE INDEX IF NOT EXISTS idx_vector_documents_lookup ON public.vector_documents USING btree (
+  user_id,
+  title,
+  "timestamp",
+  page_number,
+  chunk_number
+);
+
+-- Enable RLS
+ALTER TABLE public.vector_documents ENABLE ROW LEVEL SECURITY;
+
+-- Optimized RLS Policies for vector_documents
+CREATE POLICY "Users can only read their own documents"
+ON public.vector_documents
+FOR SELECT
+TO authenticated
+USING (user_id = (SELECT auth.uid()));
+```
+
+#### Similarity Search Function
+
+Implemented an efficient similarity search stored procedure:
+
+```sql
+CREATE OR REPLACE FUNCTION match_documents(
+  query_embedding vector(3072),
+  match_count int,
+  filter_user_id uuid,
+  filter_files text[],
+  similarity_threshold float
+)
+RETURNS TABLE (
+  id uuid,
+  text_content text,
+  title text,
+  doc_timestamp date,
+  ai_title text,
+  ai_description text,
+  ai_maintopics text[],
+  ai_keyentities text[],
+  filter_tags text,
+  page_number int,
+  total_pages int,
+  chunk_number int,
+  total_chunks int,
+  similarity float
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    vd.id,
+    vd.text_content,
+    vd.title,
+    vd."timestamp" as doc_timestamp,
+    vd.ai_title,
+    vd.ai_description,
+    vd.ai_maintopics,
+    vd.ai_keyentities,
+    vd.filter_tags,
+    vd.page_number,
+    vd.total_pages,
+    vd.chunk_number,
+    vd.total_chunks,
+    1 - (vd.embedding <=> query_embedding) as similarity
+  FROM
+    vector_documents vd
+  WHERE
+    vd.user_id = filter_user_id
+    AND vd.filter_tags = ANY(filter_files)
+    AND 1 - (vd.embedding <=> query_embedding) > similarity_threshold
+  ORDER BY
+    vd.embedding <=> query_embedding ASC
+  LIMIT LEAST(match_count, 200);
+END;
+$$;
+```
+
+For more information about implementing vector similarity search with pgvector, check out [Supabase's Vector Columns and Embeddings Guide](https://supabase.com/docs/guides/ai/vector-columns?queryGroups=database-method&database-method=dashboard).
+
+### Improved
+
+- **Performance**: Significant reduction in query latency by eliminating external API calls
+- **Cost Efficiency**: Reduced operational costs by using native PostgreSQL capabilities
+- **Reliability**: Improved system stability with fewer external dependencies
+- **Search Quality**: Enhanced search results through intelligent query optimization
+
+### Technical Benefits
+
+- **Co-located Storage**: Vector embeddings stored alongside other application data
+- **Simplified Architecture**: Reduced system complexity by eliminating external vector store
+
 ## [v1.8.0] - 2024-12-30
 
 ### Added
@@ -55,7 +236,6 @@ You can find the videos located inside the public folder!
   - Implemented robust loading state management
   - Clear visual feedback during operations
   - Smooth transitions between states
-  - Cancel capability during searches
 
 ### Fixed
 
@@ -307,17 +487,9 @@ Before launching your application, you must configure the database schema within
 
    This SQL statement creates a `users` table with columns for storing user data such as `id`, `full_name`. The `id` column is a foreign key referencing the `auth.users` table.
 
-2. **Enable Row Level Security (RLS)**
-
-   ```sql
-   alter table users enable row level security;
-   create policy "Can view own user data." on users for select using (auth.uid() = id);
-   create policy "Can update own user data." on users for update using (auth.uid() = id);
-   ```
-
    These SQL statements enable Row Level Security (RLS) on the `users` table and create policies to allow users to view and update their own data.
 
-3. **Create a Trigger Function**
+2. **Create a Trigger Function**
 
    ```sql
    create function public.handle_new_user()
@@ -334,9 +506,9 @@ Before launching your application, you must configure the database schema within
    $$ language plpgsql security definer;
    ```
 
-   This SQL function is a trigger function that automatically inserts a new user entry into the `public.users` table when a new user signs up via Supabase Auth. It extracts the `id`, `full_name` from the `auth.users` table and inserts them into the corresponding columns in the `public.users` table.
+This SQL function is a trigger function that automatically inserts a new user entry into the `public.users` table when a new user signs up via Supabase Auth. It extracts the `id`, `full_name` from the `auth.users` table and inserts them into the corresponding columns in the `public.users` table.
 
-4. **Create a Trigger**
+3. **Create a Trigger**
 
    ```sql
    create trigger on_auth_user_created
@@ -344,17 +516,165 @@ Before launching your application, you must configure the database schema within
      for each row execute procedure public.handle_new_user();
    ```
 
-   This SQL statement creates a trigger named `on_auth_user_created` that executes the `public.handle_new_user()` function after each new user is inserted into the `auth.users` table.
+This SQL statement creates a trigger named `on_auth_user_created` that executes the `public.handle_new_user()` function after each new user is inserted into the `auth.users` table.
 
-5. **Sign Up for an Account**
+4. **Sign Up for an Account**
 
-   - Navigate to `http://localhost:3000/auth` in your web browser.
-   - Use the sign-up form to create an account. Ensure you use a valid email address that you have access to, as you'll need to verify it in the next step.
+- Navigate to `http://localhost:3000/auth` in your web browser.
+- Use the sign-up form to create an account. Ensure you use a valid email address that you have access to, as you'll need to verify it in the next step.
 
-6. **Verify Your Email**
+5. **Verify Your Email**
 
-   - After signing up, Supabase will send an email to the address you provided. Check your inbox for an email from Supabase or your application.
-   - Open the email and click on the verification link to confirm your email address. This step is crucial for activating your account and ensuring that you can log in and access the application's features.
+- After signing up, Supabase will send an email to the address you provided. Check your inbox for an email from Supabase or your application.
+- Open the email and click on the verification link to confirm your email address. This step is crucial for activating your account and ensuring that you can log in and access the application's features.
+
+6. **Make the rest of the tables, RLS and RPC**
+
+```sql
+-- Enable the vector extension
+CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA extensions;
+
+-- Create the vector_documents table
+CREATE TABLE IF NOT EXISTS public.vector_documents (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  embedding extensions.vector(3072),
+  text_content text NOT NULL,
+  title text NOT NULL,
+  timestamp date NOT NULL,
+  ai_title text,
+  ai_description text,
+  ai_maintopics text[],
+  ai_keyentities text[],
+  filter_tags text,
+  page_number integer NOT NULL,
+  total_pages integer NOT NULL,
+  chunk_number integer NOT NULL,
+  total_chunks integer NOT NULL,
+  primary_language text,
+  created_at timestamptz DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT vector_documents_pkey PRIMARY KEY (id),
+  CONSTRAINT vector_documents_unique_chunk UNIQUE (user_id, title, "timestamp", page_number, chunk_number),
+  CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+);
+
+-- Create indexes
+CREATE INDEX IF NOT EXISTS idx_vector_documents_user_id ON public.vector_documents USING btree (user_id);
+CREATE INDEX IF NOT EXISTS idx_vector_documents_lookup ON public.vector_documents USING btree (
+  user_id,
+  title,
+  "timestamp",
+  page_number,
+  chunk_number
+);
+
+-- Enable RLS
+ALTER TABLE public.vector_documents ENABLE ROW LEVEL SECURITY;
+
+-- Optimized RLS Policies for vector_documents
+CREATE POLICY "Users can only read their own documents"
+ON public.vector_documents
+FOR SELECT
+TO authenticated
+USING (user_id = (SELECT auth.uid()));
+
+-- Users Table RLS Policies
+CREATE POLICY "Users can insert own data"
+ON public.users
+FOR INSERT
+TO public
+WITH CHECK (id = (SELECT auth.uid()));
+
+CREATE POLICY "Users can update own data"
+ON public.users
+FOR UPDATE
+TO public
+USING (id = (SELECT auth.uid()))
+WITH CHECK (id = (SELECT auth.uid()));
+
+CREATE POLICY "Users can view own data"
+ON public.users
+FOR SELECT
+TO public
+USING (id = (SELECT auth.uid()));
+
+-- Chat Sessions RLS Policies
+CREATE POLICY "Users can view own chat sessions"
+ON public.chat_sessions
+AS PERMISSIVE
+FOR ALL
+TO public
+USING (user_id = (SELECT auth.uid()));
+
+-- Chat Messages RLS Policies
+CREATE POLICY "Users can view messages from their sessions"
+ON public.chat_messages
+AS PERMISSIVE
+FOR ALL
+TO public
+USING (
+  chat_session_id IN (
+      SELECT chat_sessions.id
+      FROM chat_sessions
+      WHERE chat_sessions.user_id = (SELECT auth.uid())
+  )
+);
+
+-- Create the similarity search function
+CREATE OR REPLACE FUNCTION match_documents(
+  query_embedding vector(3072),
+  match_count int,
+  filter_user_id uuid,
+  filter_files text[],
+  similarity_threshold float DEFAULT 0.70
+)
+RETURNS TABLE (
+  id uuid,
+  text_content text,
+  title text,
+  doc_timestamp date,
+  ai_title text,
+  ai_description text,
+  ai_maintopics text[],
+  ai_keyentities text[],
+  filter_tags text,
+  page_number int,
+  total_pages int,
+  chunk_number int,
+  total_chunks int,
+  similarity float
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+      vd.id,
+      vd.text_content,
+      vd.title,
+      vd."timestamp" as doc_timestamp,
+      vd.ai_title,
+      vd.ai_description,
+      vd.ai_maintopics,
+      vd.ai_keyentities,
+      vd.filter_tags,
+      vd.page_number,
+      vd.total_pages,
+      vd.chunk_number,
+      vd.total_chunks,
+      1 - (vd.embedding <=> query_embedding) as similarity
+  FROM
+      vector_documents vd
+  WHERE
+      vd.user_id = filter_user_id
+      AND vd.filter_tags = ANY(filter_files)
+      AND 1 - (vd.embedding <=> query_embedding) > similarity_threshold
+  ORDER BY
+      vd.embedding <=> query_embedding ASC
+  LIMIT LEAST(match_count, 200);
+END;
+$$;
+```
 
 # Document Processing Setup
 
@@ -362,21 +682,12 @@ To enable document upload and chat functionality, you'll need additional API key
 
 1. **LlamaIndex Cloud Setup**
 
-   - Visit [LlamaIndex Cloud](https://cloud.llamaindex.ai/)
-   - Create an account and get your API key
-   - Add to `.env.local`:
-     ```
-     LLAMA_CLOUD_API_KEY=your_api_key_here
-     ```
-
-2. **Pinecone Setup**
-   - Sign up at [Pinecone](https://www.pinecone.io/)
-   - Create an index with dimensions=3072
-   - Add to `.env.local`:
-     ```
-     PINECONE_INDEX_NAME=your_index_name
-     PINECONE_API_KEY=your_api_key
-     ```
+- Visit [LlamaIndex Cloud](https://cloud.llamaindex.ai/)
+- Create an account and get your API key
+- Add to `.env.local`:
+  ```
+  LLAMA_CLOUD_API_KEY=your_api_key_here
+  ```
 
 These services enable document processing, embedding storage, and semantic search capabilities in your chat interface.
 
@@ -386,63 +697,63 @@ After setting up the basic database structure, you need to configure storage and
 
 1. **Create Storage Bucket**
 
-   First, create a storage bucket named 'userfiles' in your Supabase dashboard:
+First, create a storage bucket named 'userfiles' in your Supabase dashboard:
 
-   - Go to Storage in your Supabase dashboard
-   - Click "Create Bucket"
-   - Name it "userfiles"
-   - Set it to private
+- Go to Storage in your Supabase dashboard
+- Click "Create Bucket"
+- Name it "userfiles"
+- Set it to private
 
 2. **Configure Storage RLS Policies**
 
-   Add the following policies to secure your storage. These policies ensure users can only access their own files and folders.
+Add the following policies to secure your storage. These policies ensure users can only access their own files and folders.
 
-   ```sql
-   -- Policy 1: Allow users to select their own files
-   create policy "User can select own files"
-   on storage.objects for select
-   using ((bucket_id = 'userfiles'::text) AND
-          ((auth.uid())::text = (storage.foldername(name))[1]));
+```sql
+-- Policy 1: Allow users to select their own files
+create policy "User can select own files"
+on storage.objects for select
+using ((bucket_id = 'userfiles'::text) AND
+       ((auth.uid())::text = (storage.foldername(name))[1]));
 
-   -- Policy 2: Allow users to insert their own files
-   create policy "User can insert own files"
-   on storage.objects for insert
-   with check ((bucket_id = 'userfiles'::text) AND
-               ((auth.uid())::text = (storage.foldername(name))[1]));
+-- Policy 2: Allow users to insert their own files
+create policy "User can insert own files"
+on storage.objects for insert
+with check ((bucket_id = 'userfiles'::text) AND
+            ((auth.uid())::text = (storage.foldername(name))[1]));
 
-   -- Policy 3: Allow users to update their own files
-   create policy "User can update own files"
-   on storage.objects for update
-   using ((bucket_id = 'userfiles'::text) AND
-          ((auth.uid())::text = (storage.foldername(name))[1]));
+-- Policy 3: Allow users to update their own files
+create policy "User can update own files"
+on storage.objects for update
+using ((bucket_id = 'userfiles'::text) AND
+       ((auth.uid())::text = (storage.foldername(name))[1]));
 
-   -- Policy 4: Allow users to delete their own files
-   create policy "User can delete own files"
-   on storage.objects for delete
-   using ((bucket_id = 'userfiles'::text) AND
-          ((auth.uid())::text = (storage.foldername(name))[1]));
+-- Policy 4: Allow users to delete their own files
+create policy "User can delete own files"
+on storage.objects for delete
+using ((bucket_id = 'userfiles'::text) AND
+       ((auth.uid())::text = (storage.foldername(name))[1]));
 
-   -- Policy 5: Allow public select access to objects
-   create policy "Allow public select access"
-   on storage.objects for select
-   using (true);
-   ```
+-- Policy 5: Allow public select access to objects
+create policy "Allow public select access"
+on storage.objects for select
+using (true);
+```
 
-   These policies accomplish the following:
+These policies accomplish the following:
 
-   - Policies 1-4 ensure users can only manage (select, insert, update, delete) files within their own user directory
-   - Policy 5 allows public select access to all objects, which is necessary for certain Supabase functionality
+- Policies 1-4 ensure users can only manage (select, insert, update, delete) files within their own user directory
+- Policy 5 allows public select access to all objects, which is necessary for certain Supabase functionality
 
-   The `storage.foldername(name)[1]` function extracts the first part of the file path, which should match the user's ID.
+The `storage.foldername(name)[1]` function extracts the first part of the file path, which should match the user's ID.
 
 3. **Verify Configuration**
 
-   After setting up these policies:
+After setting up these policies:
 
-   - Users can only access files in their own directory
-   - Files are organized by user ID automatically
-   - Public select access is maintained for system functionality
-   - All other operations are restricted to file owners only
+- Users can only access files in their own directory
+- Files are organized by user ID automatically
+- Public select access is maintained for system functionality
+- All other operations are restricted to file owners only
 
 ### Environment Variables
 
@@ -454,9 +765,6 @@ Configure your environment by renaming `.env.local.example` to `.env.local` and 
 **Document Processing:**
 
 - `LLAMA_CLOUD_API_KEY`: Your LlamaIndex Cloud API key
-- `PINECONE_INDEX_NAME`: Your Pinecone index name
-- `PINECONE_API_KEY`: Your Pinecone API key
-- `PINECONE_ENVIRONMENT`: Your Pinecone environment
 
 Optional variables for extended functionality:
 
@@ -568,6 +876,10 @@ Reset Password Email For users that have requested a password reset:
 ## 📜 License
 
 🔖 Licensed under the MIT License. See LICENSE.md for details.
+
+```
+
+```
 
 ```
 

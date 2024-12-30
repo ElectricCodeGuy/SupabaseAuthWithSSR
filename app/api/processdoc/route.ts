@@ -1,9 +1,7 @@
-// File: /api/checkdoc.ts
-
 import { type NextRequest, NextResponse } from 'next/server';
-import { Pinecone } from '@pinecone-database/pinecone';
 import { embed } from 'ai';
 import { getSession } from '@/lib/server/supabase';
+import { createAdminClient } from '@/lib/server/admin';
 import { format } from 'date-fns';
 import { TZDate } from '@date-fns/tz';
 import {
@@ -21,8 +19,8 @@ export const maxDuration = 300;
 
 const embeddingBackOffOptions: IBackOffOptions = {
   numOfAttempts: 3,
-  startingDelay: 5000, // 5 seconds
-  maxDelay: 10000, // 10 seconds
+  startingDelay: 5000,
+  maxDelay: 10000,
   timeMultiple: 2,
   jitter: 'full',
   delayFirstAttempt: false,
@@ -30,7 +28,7 @@ const embeddingBackOffOptions: IBackOffOptions = {
     console.error(
       `Embedding attempt ${attemptNumber} failed with error: ${error}`
     );
-    return attemptNumber < 3; // Only retry twice (3 attempts total)
+    return attemptNumber < 3;
   }
 };
 
@@ -41,20 +39,12 @@ async function getEmbeddingWithRetry(text: string) {
         model: openai.embedding('text-embedding-3-large'),
         value: text
       });
-
       return embedding;
     }, embeddingBackOffOptions);
   } catch (error) {
     console.error('Failed to get embedding after all retries:', error);
     return null;
   }
-}
-
-function initPineconeIndex(userId: string) {
-  const namespace = `document_${userId}`;
-  const indexName = process.env.PINECONE_INDEX_NAME!;
-  const pinecone = new Pinecone();
-  return pinecone.index(indexName).namespace(namespace);
 }
 
 function sanitizeFilename(filename: string): string {
@@ -64,35 +54,32 @@ function sanitizeFilename(filename: string): string {
     .replace(/[^a-zA-Z0-9._-]/g, '_');
   return sanitized;
 }
-interface PineconeRecord {
-  id: string;
-  values: number[];
-  metadata: {
-    text: string;
-    title: string;
-    timestamp: string;
-    ai_title: string;
-    ai_description: string;
-    ai_maintopics: string[];
-    ai_keyentities: string[];
-    filterTags: string;
-    page: number;
-    totalPages: number;
-    chunk: number;
-    totalChunks: number;
-  };
+
+interface DocumentRecord {
+  user_id: string;
+  embedding: string; // Changed from number[] to string
+  text_content: string;
+  title: string;
+  timestamp: string;
+  ai_title: string;
+  ai_description: string;
+  ai_maintopics: string[];
+  ai_keyentities: string[];
+  primary_language: string;
+  filter_tags: string;
+  page_number: number;
+  total_pages: number;
+  chunk_number: number;
+  total_chunks: number;
 }
 
 async function processFile(pages: string[], fileName: string, userId: string) {
-  const pineconeIndex = initPineconeIndex(userId);
-
   let selectedDocuments = pages;
   if (pages.length > 19) {
     selectedDocuments = [...pages.slice(0, 10), ...pages.slice(-10)];
   }
 
   const combinedDocumentContent = selectedDocuments.join('\n\n');
-
   const { object } = await generateDocumentMetadata(combinedDocumentContent);
 
   const now = new TZDate(new Date(), 'Europe/Copenhagen');
@@ -101,8 +88,8 @@ async function processFile(pages: string[], fileName: string, userId: string) {
   const filterTags = `${sanitizedFilename}[[${timestamp}]]`;
   const totalPages = pages.length;
 
-  const processingBatchSize = 200; // For processing documents
-  const upsertBatchSize = 100; // For Pinecone upserts
+  const processingBatchSize = 200;
+  const upsertBatchSize = 100;
 
   let totalPromptTokens = 0;
   let totalCompletionTokens = 0;
@@ -118,10 +105,10 @@ async function processFile(pages: string[], fileName: string, userId: string) {
   };
 
   const pageChunks = chunks(pages, processingBatchSize);
-
+  const supabase = createAdminClient();
   for (let chunkIndex = 0; chunkIndex < pageChunks.length; chunkIndex++) {
     const batch = pageChunks[chunkIndex];
-    let batchRecords: PineconeRecord[] = [];
+    let batchRecords: DocumentRecord[] = [];
 
     await Promise.all(
       batch.map(async (doc: string, index: number) => {
@@ -144,7 +131,6 @@ async function processFile(pages: string[], fileName: string, userId: string) {
           totalPromptTokens += usage.promptTokens;
           totalCompletionTokens += usage.completionTokens;
 
-          // If we got no preliminary answers (due to timeout), use a simpler content structure
           const combinedContent = combinedPreliminaryAnswers
             ? `
       File Name: ${fileName}
@@ -177,35 +163,31 @@ async function processFile(pages: string[], fileName: string, userId: string) {
           } else {
             contentChunks = [combinedContent];
           }
+
           for (let i = 0; i < contentChunks.length; i++) {
             const chunk = contentChunks[i];
-
             const embedding = await getEmbeddingWithRetry(chunk);
 
-            // Skip this chunk if embedding failed
             if (!embedding) {
               continue;
             }
 
-            const uniqueId = `${filterTags}_${totalPages}_${pageNumber}_${i}`;
-
             batchRecords.push({
-              id: String(uniqueId),
-              values: embedding,
-              metadata: {
-                text: doc,
-                title: fileName,
-                timestamp,
-                ai_title: object.descriptiveTitle,
-                ai_description: object.shortDescription,
-                ai_maintopics: object.mainTopics,
-                ai_keyentities: object.keyEntities,
-                filterTags,
-                page: pageNumber,
-                totalPages,
-                chunk: i + 1,
-                totalChunks: contentChunks.length
-              }
+              user_id: userId,
+              embedding: `[${embedding.join(',')}]`,
+              text_content: doc,
+              title: fileName,
+              timestamp,
+              ai_title: object.descriptiveTitle,
+              ai_description: object.shortDescription,
+              ai_maintopics: object.mainTopics,
+              ai_keyentities: object.keyEntities,
+              primary_language: object.primaryLanguage,
+              filter_tags: filterTags,
+              page_number: pageNumber,
+              total_pages: totalPages,
+              chunk_number: i + 1,
+              total_chunks: contentChunks.length
             });
           }
         } catch (error) {
@@ -214,23 +196,31 @@ async function processFile(pages: string[], fileName: string, userId: string) {
       })
     );
 
-    // Upsert records in batches of 50
-    const pineconeUpsertBatches = chunks(batchRecords, upsertBatchSize);
-    for (const upsertBatch of pineconeUpsertBatches) {
+    // Upsert records in batches
+    const upsertBatches = chunks(batchRecords, upsertBatchSize);
+    for (const batch of upsertBatches) {
       try {
-        await pineconeIndex.upsert(upsertBatch);
+        const { error } = await supabase
+          .from('vector_documents')
+          .upsert(batch, {
+            onConflict: 'user_id, title, timestamp, page_number, chunk_number',
+            ignoreDuplicates: false
+          });
+
+        if (error) {
+          console.error('Error upserting batch to Supabase:', error);
+        }
       } catch (error) {
-        console.error('Error upserting batch to Pinecone:', error);
+        console.error('Error upserting batch to Supabase:', error);
       }
     }
 
-    // Clear batchRecords after processing
     batchRecords = [];
   }
+
   console.log('Token Usage:', totalPromptTokens, totalCompletionTokens);
   return filterTags;
 }
-
 type ContentAnalysisType = {
   preliminary_answer_1: string;
   preliminary_answer_2: string;

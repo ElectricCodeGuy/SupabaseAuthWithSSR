@@ -27,7 +27,6 @@ import { anthropic } from '@ai-sdk/anthropic';
 import { getUserInfo, getSession } from '@/lib/server/supabase';
 import { createServerSupabaseClient } from '@/lib/server/server';
 import { redirect } from 'next/navigation';
-import { Pinecone, type Index } from '@pinecone-database/pinecone';
 import { Ratelimit } from '@upstash/ratelimit';
 import { redis } from '@/lib/server/server';
 import { load } from 'cheerio';
@@ -242,11 +241,14 @@ async function submitMessage(
       system: SYSTEM_TEMPLATE,
       experimental_transform: smoothStream({ delayInMs: 20 }),
       messages: [
-        ...aiState.get().map((info) => ({
-          role: info.role,
-          content: info.content,
-          name: info.name
-        }))
+        ...aiState
+          .get()
+          .slice(-7) // Limit to the last 7 messages to avoid overwhelming the model
+          .map((info) => ({
+            role: info.role,
+            content: info.content,
+            name: info.name
+          }))
       ],
       onFinish: async (event) => {
         const { text, usage } = event;
@@ -473,10 +475,70 @@ function sanitizeFilename(filename: string): string {
     .replace(/[^a-zA-Z0-9._-]/g, '_');
 }
 
-async function initPineconeIndex(ns: string): Promise<Index> {
-  const indexName = process.env.PINECONE_INDEX_NAME!;
-  const pinecone = new Pinecone();
-  return pinecone.index(indexName).namespace(ns);
+async function querySupabaseVectors(
+  queryEmbedding: number[],
+  userId: string,
+  selectedFiles: string[],
+  topK: number = 40,
+  similarityThreshold: number = 0.78
+): Promise<
+  Array<{
+    pageContent: string;
+    metadata: {
+      text: string;
+      title: string;
+      timestamp: string;
+      ai_title: string;
+      ai_description: string;
+      ai_maintopics: string[];
+      ai_keyentities: string[];
+      filterTags: string;
+      page: number;
+      totalPages: number;
+      chunk: number;
+      totalChunks: number;
+      similarity: number;
+    };
+  }>
+> {
+  const supabase = await createServerSupabaseClient();
+
+  // Convert embedding array to string format for query
+  const embeddingString = `[${queryEmbedding.join(',')}]`;
+
+  const { data: matches, error } = await supabase.rpc('match_documents', {
+    query_embedding: embeddingString,
+    match_count: topK,
+    filter_user_id: userId,
+    filter_files: selectedFiles,
+    similarity_threshold: similarityThreshold
+  });
+
+  if (error) {
+    console.error('Error querying vectors:', error);
+    throw error;
+  }
+
+  return (
+    matches?.map((match) => ({
+      pageContent: match.text_content,
+      metadata: {
+        text: match.text_content,
+        title: match.title,
+        timestamp: match.doc_timestamp,
+        ai_title: match.ai_title,
+        ai_description: match.ai_description,
+        ai_maintopics: match.ai_maintopics,
+        ai_keyentities: match.ai_keyentities,
+        filterTags: match.filter_tags,
+        page: match.page_number,
+        totalPages: match.total_pages,
+        chunk: match.chunk_number,
+        totalChunks: match.total_chunks,
+        similarity: match.similarity
+      }
+    })) || []
+  );
 }
 
 async function embedQuery(text: string): Promise<number[]> {
@@ -487,21 +549,28 @@ async function embedQuery(text: string): Promise<number[]> {
   return embedding;
 }
 
-interface DocumentMetadata {
-  text: string;
-  title: string;
-  timestamp: string;
-  ai_title: string;
-  ai_description: string;
-  ai_maintopics: string;
-  ai_keyentities: string;
-  filterTags: string;
-  page: number;
-  totalPages: number;
-  chunk: number;
-  totalChunks: number;
+async function getSelectedDocumentsMetadata(
+  userId: string,
+  selectedFiles: string[]
+) {
+  const supabase = await createServerSupabaseClient();
+
+  const { data, error } = await supabase
+    .from('vector_documents')
+    .select('title, ai_title, ai_description, ai_maintopics, primary_language')
+    .eq('user_id', userId)
+    .in('filter_tags', selectedFiles)
+    .eq('page_number', 1);
+
+  if (error) {
+    console.error('Error fetching document metadata:', error);
+    return [];
+  }
+
+  return data || [];
 }
 
+// Update the uploadFilesAndQuery function
 async function uploadFilesAndQuery(
   currentUserMessage: string,
   chatId: string,
@@ -511,10 +580,10 @@ async function uploadFilesAndQuery(
   'use server';
 
   const CurrentChatSessionId = chatId || uuidv4();
-
   const aiState = getMutableAIState<typeof AI>();
   const status = createStreamableValue('searching');
   const userInfo = await getUserInfo();
+
   if (!userInfo) {
     status.done('done');
     return {
@@ -526,8 +595,6 @@ async function uploadFilesAndQuery(
       status: status.value
     };
   }
-
-  // Update AI state with new message.
   aiState.update([
     ...aiState.get(),
     {
@@ -566,8 +633,7 @@ async function uploadFilesAndQuery(
       </Typography>
     </Box>
   );
-  // We need to come up with a better way to handle this.
-  // This is a temporary solution to avoid the issue of the user not being able to see the response.
+
   const sanitizedFilenames = selectedFiles.map((filename) => {
     // Split the filename and timestamp
     const [name, timestamp] = filename.split('[[');
@@ -579,28 +645,102 @@ async function uploadFilesAndQuery(
     return timestamp ? `${sanitizedName}[[${timestamp}` : sanitizedName;
   });
 
+  const documentsMetadata = await getSelectedDocumentsMetadata(
+    userInfo.id,
+    sanitizedFilenames
+  );
+
+  // Create context for query optimization
+  const documentContext = documentsMetadata
+    .map((doc) => {
+      const parts = [`Document Title: ${doc.title}`];
+      if (doc.ai_title) parts.push(`Improved Title: ${doc.ai_title}`);
+      if (doc.ai_description) parts.push(`Description: ${doc.ai_description}`);
+      if (doc.ai_maintopics && Array.isArray(doc.ai_maintopics)) {
+        parts.push(`Main Topics: ${doc.ai_maintopics.join(', ')}`);
+      }
+      if (doc.primary_language)
+        parts.push(
+          `Primary Language used in the document: ${doc.primary_language}`
+        );
+      return parts.join('\n');
+    })
+    .join('\n\n');
+
+  // Generate optimized queries
+  const { object } = await generateObject({
+    model: openai('gpt-4o-mini'),
+    system: `You are an expert in information retrieval. Your task is to reformulate the user's query to optimize search results for vector similarity search.
+    
+Available documents context:
+${documentContext}
+
+Generate three variations of the query that:
+1. Precisely identifies the main topic or key concept, matching terminology from the available documents
+2. Focuses on the context or domain relevant to the question
+3. Explores potential applications or implications of the topic
+
+Keep the variations focused on the content available in the provided documents.`,
+    schema: zodSchemaSearch,
+    messages: [
+      ...aiState
+        .get()
+        .slice(-7) // Limit to the last 7 messages to avoid overwhelming the model
+        .map((info) => ({
+          role: info.role,
+          content: info.content,
+          name: info.name
+        }))
+    ]
+  });
+
+  // Process each query variation
+  const queries = [object.variation1, object.variation2, object.variation3];
+  console.log('Optimized queries:', queries);
+  // Create array of promises for embeddings
+  const embeddings = await Promise.all(
+    queries.map((query) => embedQuery(query))
+  );
+
+  // Create array of promises for vector searches
+  const searchResultsPromises = await Promise.all(
+    embeddings.map(
+      (embedding) =>
+        querySupabaseVectors(
+          embedding,
+          userInfo.id,
+          sanitizedFilenames,
+          40, // Adjust topK as needed. There is a hard limit of 200 results included in the RPC.
+          0.7
+        ) // Adjust similarity threshold as needed. Usually do not set it higher than 0.7 since it may not find any results.
+      // You can optimize the systemprompt for the new queries to improve the results.
+    )
+  );
+
+  // Flatten and deduplicate results
+  const allSearchResults = searchResultsPromises.flat();
+
+  // Deduplicate results based on content and page number
+  const uniqueResults = allSearchResults.reduce(
+    (acc, current) => {
+      const isDuplicate = acc.some(
+        (item) =>
+          item.metadata.title === current.metadata.title &&
+          item.metadata.page === current.metadata.page
+      );
+      if (!isDuplicate) {
+        acc.push(current);
+      }
+      return acc;
+    },
+    [] as typeof allSearchResults
+  );
+
+  const searchResults = uniqueResults.sort(
+    (a, b) => b.metadata.similarity - a.metadata.similarity
+  );
+
   (async () => {
-    const pineconeIndex = await initPineconeIndex(`document_${userInfo.id}`);
-
-    const filter = {
-      filterTags: { $in: sanitizedFilenames }
-    };
-
-    const queryEmbedding = await embedQuery(currentUserMessage);
-
-    const queryResponse = await pineconeIndex.query({
-      vector: queryEmbedding,
-      topK: 40,
-      includeMetadata: true,
-      filter: filter
-    });
-
-    const searchResults =
-      queryResponse.matches?.map((match) => ({
-        pageContent: match.metadata?.text || '',
-        metadata: match.metadata as unknown as DocumentMetadata
-      })) || [];
-
     uiStream.update(
       <Box
         sx={{
@@ -650,9 +790,7 @@ async function uploadFilesAndQuery(
       return Object.entries(groupedResults)
         .map(([_key, docs]) => {
           // Sort documents by page number
-          docs.sort(
-            (a, b) => (a.metadata.page as number) - (b.metadata.page as number)
-          );
+          docs.sort((a, b) => a.metadata.page - b.metadata.page);
 
           // Extract common metadata (only once per document)
           const {
@@ -733,10 +871,11 @@ ${formattedSearchResults}
     const result = streamText({
       model: getModel(model_select),
       system: systemPromptTemplate,
+      experimental_transform: smoothStream({ delayInMs: 20 }),
       messages: [
         ...aiState
           .get()
-          .slice(-7)
+          .slice(-7) // Limit to the last 7 messages to avoid overwhelming the model
           .map((info) => ({
             role: info.role,
             content: info.content,
@@ -966,7 +1105,16 @@ async function SearchTool(
       system: contextualizeQSystemPrompt,
       schema: zodSchemaSearch,
       mode: 'json',
-      messages: aiState.get()
+      messages: [
+        ...aiState
+          .get()
+          .slice(-7) // Limit to the last 7 messages to avoid overwhelming the model
+          .map((info) => ({
+            role: info.role,
+            content: info.content,
+            name: info.name
+          }))
+      ]
     });
 
     // Filter out empty queries
@@ -1141,12 +1289,16 @@ Remember to maintain a professional yet conversational tone throughout the respo
     const result = streamText({
       model: getModel(model_select),
       system: systemPromptTemplate,
+      experimental_transform: smoothStream({ delayInMs: 20 }),
       messages: [
-        ...aiState.get().map((info) => ({
-          role: info.role,
-          content: info.content,
-          name: info.name
-        }))
+        ...aiState
+          .get()
+          .slice(-7) // Limit to the last 7 messages to avoid overwhelming the model
+          .map((info) => ({
+            role: info.role,
+            content: info.content,
+            name: info.name
+          }))
       ],
       onFinish: async (event) => {
         const { usage, text } = event;

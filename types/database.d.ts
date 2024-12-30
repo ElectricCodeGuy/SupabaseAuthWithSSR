@@ -143,6 +143,74 @@ export type Database = {
         };
         Relationships: [];
       };
+      vector_documents: {
+        Row: {
+          ai_description: string | null;
+          ai_keyentities: string[] | null;
+          ai_maintopics: string[] | null;
+          ai_title: string | null;
+          chunk_number: number;
+          created_at: string | null;
+          embedding: string | null;
+          filter_tags: string | null;
+          id: string;
+          page_number: number;
+          primary_language: string | null;
+          text_content: string;
+          timestamp: string;
+          title: string;
+          total_chunks: number;
+          total_pages: number;
+          user_id: string;
+        };
+        Insert: {
+          ai_description?: string | null;
+          ai_keyentities?: string[] | null;
+          ai_maintopics?: string[] | null;
+          ai_title?: string | null;
+          chunk_number: number;
+          created_at?: string | null;
+          embedding?: string | null;
+          filter_tags?: string | null;
+          id?: string;
+          page_number: number;
+          primary_language?: string | null;
+          text_content: string;
+          timestamp: string;
+          title: string;
+          total_chunks: number;
+          total_pages: number;
+          user_id: string;
+        };
+        Update: {
+          ai_description?: string | null;
+          ai_keyentities?: string[] | null;
+          ai_maintopics?: string[] | null;
+          ai_title?: string | null;
+          chunk_number?: number;
+          created_at?: string | null;
+          embedding?: string | null;
+          filter_tags?: string | null;
+          id?: string;
+          page_number?: number;
+          primary_language?: string | null;
+          text_content?: string;
+          timestamp?: string;
+          title?: string;
+          total_chunks?: number;
+          total_pages?: number;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'fk_user';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -162,6 +230,31 @@ export type Database = {
           created_at: string;
           last_accessed_at: string;
           metadata: Json;
+        }[];
+      };
+      match_documents: {
+        Args: {
+          query_embedding: string;
+          match_count: number;
+          filter_user_id: string;
+          filter_files: string[];
+          similarity_threshold?: number;
+        };
+        Returns: {
+          id: string;
+          text_content: string;
+          title: string;
+          doc_timestamp: string;
+          ai_title: string;
+          ai_description: string;
+          ai_maintopics: string[];
+          ai_keyentities: string[];
+          filter_tags: string;
+          page_number: number;
+          total_pages: number;
+          chunk_number: number;
+          total_chunks: number;
+          similarity: number;
         }[];
       };
     };
