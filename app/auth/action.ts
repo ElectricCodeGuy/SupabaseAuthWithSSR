@@ -31,9 +31,7 @@ export async function login(formData: FormData) {
   });
 
   if (error) {
-    redirect(
-      '/auth?authState=signin&error=' + encodeURIComponent('Login Error')
-    );
+    redirect('/auth/signin?&error=' + encodeURIComponent('Login Error'));
   }
 
   revalidatePath('/', 'layout');
@@ -58,9 +56,7 @@ export async function signup(formData: FormData) {
   });
 
   if (!result.success) {
-    redirect(
-      '/auth?authState=signup&error=' + encodeURIComponent('Invalid Input')
-    );
+    redirect('/auth/signup?error=' + encodeURIComponent('Invalid Input'));
   }
 
   const { email, password, fullName } = result.data;
@@ -74,13 +70,11 @@ export async function signup(formData: FormData) {
   });
   if (error) {
     console.error('Error:', error);
-    redirect(
-      '/auth?authState=signup&error=' + encodeURIComponent('Invalid input')
-    );
+    redirect('/auth/signup?error=' + encodeURIComponent('Invalid input'));
   }
 
   redirect(
-    '/auth?authState=signup&message=' +
+    '/auth/signin?message=' +
       encodeURIComponent('Check your email to confirm your account')
   );
 }
@@ -97,7 +91,7 @@ export async function resetPasswordForEmail(formData: FormData) {
 
   if (!result.success) {
     redirect(
-      '/auth?authState=reset&error=' +
+      '/auth/signin?error=' +
         encodeURIComponent('Failed to send password reset email')
     );
   }
@@ -105,13 +99,13 @@ export async function resetPasswordForEmail(formData: FormData) {
 
   if (error) {
     redirect(
-      '/auth?authState=reset&error=' +
+      '/auth/signin?error=' +
         encodeURIComponent('Failed to send password reset email')
     );
   }
 
   redirect(
-    '/auth?authState=reset&message=' +
+    '/auth/signin?message=' +
       encodeURIComponent(
         'Check your email to continue the password reset process'
       )
@@ -124,9 +118,7 @@ export async function signout() {
   const signOutResult = await supabase.auth.signOut();
 
   if (signOutResult?.error) {
-    redirect(
-      '/auth?authState=signin?error=' + encodeURIComponent('Logout error')
-    );
+    redirect('/?error=' + encodeURIComponent('Logout error'));
   } else {
     redirect('/');
   }

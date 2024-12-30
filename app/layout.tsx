@@ -1,12 +1,12 @@
 // RootLayout.tsx
-import React, { type ReactNode } from 'react';
+import React, { type ReactNode, Suspense } from 'react';
 import { Inter } from 'next/font/google';
 import Footer from '@/app/components/ui/Footer/Footer';
 import ThemeRegistry from '@/theme/ThemeRegistry';
 import RootErrorBoundary from '@/app/components/errorBoundary/ErrorBoundaryPage';
 import { getSession } from '@/lib/server/supabase';
 import Sidebar from '@/app/components/ui/Navbar/TopBar';
-
+import SnackbarMessages from './components/ui/SnackbarMessage';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
@@ -38,6 +38,9 @@ export default async function RootLayout({
             <Sidebar session={isSessionAvailable} />
             {children}
             <Footer />
+            <Suspense fallback={null}>
+              <SnackbarMessages />
+            </Suspense>
           </body>
         </RootErrorBoundary>
       </ThemeRegistry>

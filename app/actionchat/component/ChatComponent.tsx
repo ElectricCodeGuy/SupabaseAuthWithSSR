@@ -1,8 +1,8 @@
 'use client';
 import React, { useState, KeyboardEvent } from 'react';
-import { useUIState, useActions } from 'ai/rsc';
+import { useUIState, useActions, readStreamableValue } from 'ai/rsc';
 import { type AI } from '../action';
-import { UserMessage } from './botmessage';
+import { UserMessage } from './ChatWrapper';
 import {
   IconButton,
   InputAdornment,
@@ -16,42 +16,51 @@ import {
   Select,
   Link as MuiLink,
   MenuItem,
-  Popover
+  Popover,
+  Button
 } from '@mui/material';
 import {
   Send as SendIcon,
   Stop as StopIcon,
   DeleteSweep as DeleteSweepIcon,
   Chat as ChatIcon,
-  PictureAsPdf as PdfIcon
+  PictureAsPdf as PdfIcon,
+  Search as SearchIcon
 } from '@mui/icons-material';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { ChatScrollAnchor } from '../hooks/chat-scroll-anchor';
 import { Tables } from '@/types/database';
 import ErrorBoundary from './ErrorBoundary';
 import { useUpload } from '../context/uploadContext'; // Add this import
+import Link from 'next/link';
+import { useSWRConfig } from 'swr';
 
 type UserData = Pick<Tables<'users'>, 'email' | 'full_name'>;
 
 interface ChatComponentPageProps {
   userInfo: UserData | null;
-  chatId?: string;
 }
 
 export default function ChatComponentPage({
-  userInfo,
-  chatId
+  userInfo
 }: ChatComponentPageProps) {
   const [inputValue, setInputValue] = useState('');
   const router = useRouter();
   const [messages, setMessages] = useUIState<typeof AI>();
-  const [isLoading, setIsLoading] = useState(false);
-  const { submitMessage, uploadFilesAndQuery, resetMessages } =
+  const [rateLimitInfo, setRateLimitInfo] = useState<{
+    success: boolean;
+    message?: string;
+    reset?: number;
+  } | null>(null);
+  const { submitMessage, uploadFilesAndQuery, resetMessages, SearchTool } =
     useActions<typeof AI>();
   const { selectedBlobs, selectedMode, setSelectedMode } = useUpload(); // Add this line
 
   const [selectedModel, setSelectedModel] = useState<'claude3' | 'chatgpt4'>(
     'claude3'
+  );
+  const [loadingState, setLoadingState] = useState<'searching' | 'done' | null>(
+    null
   );
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
@@ -64,7 +73,8 @@ export default function ChatComponentPage({
   const handleClose = () => {
     setAnchorEl(null);
   };
-  const currentChatId = chatId || '';
+  const { id } = useParams();
+  const currentChatId = (id as string) || '';
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Enter' && event.shiftKey) {
       // Allow newline on Shift + Enter
@@ -86,7 +96,7 @@ export default function ChatComponentPage({
       }
     }
   };
-
+  const { mutate } = useSWRConfig();
   return (
     <ErrorBoundary>
       <Box
@@ -135,6 +145,35 @@ export default function ChatComponentPage({
                 template. Ask questions on any topic and get informative
                 responses instantly.
               </Typography>
+
+              {/* Add this new Typography section for Tavily */}
+              <Typography
+                variant="body1"
+                sx={{
+                  color: 'textSecondary',
+                  mb: 2,
+                  maxWidth: '600px',
+                  border: '1px solid #e0e0e0',
+                  borderRadius: '8px',
+                  padding: 2,
+                  backgroundColor: 'rgba(25, 118, 210, 0.04)'
+                }}
+              >
+                <strong>🔍 Web Search Mode:</strong> Powered by{' '}
+                <MuiLink
+                  href="https://tavily.com/"
+                  target="_blank"
+                  rel="noopener"
+                  style={{ color: 'blue' }}
+                >
+                  Tavily AI
+                </MuiLink>
+                , our search feature provides real-time, accurate information
+                from across the web. Get up-to-date answers with reliable
+                sources and citations. Perfect for current events,
+                fact-checking, and research queries.
+              </Typography>
+
               <Typography
                 variant="body1"
                 sx={{
@@ -155,14 +194,6 @@ export default function ChatComponentPage({
                   , a Danish legal AI platform, for a real-world example of AI
                   in action.
                 </strong>
-              </Typography>
-              <Typography
-                variant="h4"
-                sx={{
-                  color: 'textSecondary'
-                }}
-              >
-                Start chatting now and enjoy the AI experience!
               </Typography>
             </>
             <>
@@ -185,9 +216,7 @@ export default function ChatComponentPage({
                           ? '2px solid #1976d2'
                           : '1px solid #ccc',
                       borderRadius: '12px',
-                      '&:hover': {
-                        backgroundColor: 'rgba(25, 118, 210, 0.04)'
-                      }
+                      '&:hover': { backgroundColor: 'rgba(25, 118, 210, 0.04)' }
                     }}
                   >
                     <ChatIcon
@@ -210,15 +239,36 @@ export default function ChatComponentPage({
                           ? '2px solid #1976d2'
                           : '1px solid #ccc',
                       borderRadius: '12px',
-                      '&:hover': {
-                        backgroundColor: 'rgba(25, 118, 210, 0.04)'
-                      }
+                      '&:hover': { backgroundColor: 'rgba(25, 118, 210, 0.04)' }
                     }}
                   >
                     <PdfIcon
                       sx={{
                         fontSize: 40,
                         color: selectedMode === 'pdf' ? '#1976d2' : '#666'
+                      }}
+                    />
+                  </IconButton>
+                </Tooltip>
+
+                <Tooltip title="Web Search Mode (Powered by Tavily AI)">
+                  <IconButton
+                    onClick={() => setSelectedMode('search')}
+                    sx={{
+                      width: 80,
+                      height: 80,
+                      border:
+                        selectedMode === 'search'
+                          ? '2px solid #1976d2'
+                          : '1px solid #ccc',
+                      borderRadius: '12px',
+                      '&:hover': { backgroundColor: 'rgba(25, 118, 210, 0.04)' }
+                    }}
+                  >
+                    <SearchIcon
+                      sx={{
+                        fontSize: 40,
+                        color: selectedMode === 'search' ? '#1976d2' : '#666'
                       }}
                     />
                   </IconButton>
@@ -272,6 +322,55 @@ export default function ChatComponentPage({
             <ChatScrollAnchor trackVisibility />
           </Box>
         )}
+        {rateLimitInfo &&
+          !rateLimitInfo.success &&
+          rateLimitInfo.reset &&
+          userInfo && (
+            <Box
+              sx={{
+                backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                borderRadius: '8px',
+                maxWidth: '800px',
+                padding: {
+                  xs: '1px',
+                  sm: '1px',
+                  md: '2px',
+                  lg: '4px',
+                  xl: '4px'
+                },
+                my: 1,
+                textAlign: 'center',
+                mx: 'auto'
+              }}
+            >
+              <Typography variant="body1" component="p" sx={{ mb: 1 }}>
+                {rateLimitInfo.message}
+              </Typography>
+              <Typography variant="body2" component="p" sx={{ mb: 1 }}>
+                Please wait until{' '}
+                {new Date(rateLimitInfo.reset * 1000).toLocaleTimeString()} to
+                send more messages.
+              </Typography>
+              <Button
+                component={Link}
+                href="#"
+                variant="contained"
+                color="primary"
+                size="small"
+                sx={{
+                  textTransform: 'none',
+                  borderRadius: '8px',
+                  '&:hover': {
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 8px rgba(0,0,0,0.2)'
+                  },
+                  transition: 'all 0.2s ease-in-out'
+                }}
+              >
+                Buy more credits
+              </Button>
+            </Box>
+          )}
         <Box
           component="form"
           onSubmit={handleSubmit}
@@ -304,7 +403,7 @@ export default function ChatComponentPage({
             variant="outlined"
             multiline
             maxRows={4}
-            disabled={isLoading}
+            disabled={loadingState === 'searching'}
             fullWidth
             size="small"
             sx={{
@@ -334,7 +433,7 @@ export default function ChatComponentPage({
               input: {
                 endAdornment: (
                   <InputAdornment position="end">
-                    {isLoading ? (
+                    {loadingState === 'searching' ? (
                       <IconButton
                         onClick={stop}
                         color="primary"
@@ -410,8 +509,10 @@ export default function ChatComponentPage({
                 >
                   {selectedMode === 'default' ? (
                     <ChatIcon sx={{ width: 24, height: 24 }} />
-                  ) : (
+                  ) : selectedMode === 'pdf' ? (
                     <PdfIcon sx={{ width: 24, height: 24 }} />
+                  ) : (
+                    <SearchIcon sx={{ width: 24, height: 24 }} />
                   )}
                 </IconButton>
               </Tooltip>
@@ -428,7 +529,13 @@ export default function ChatComponentPage({
                   horizontal: 'left'
                 }}
               >
-                <Box sx={{ width: 300, display: 'flex', flexDirection: 'row' }}>
+                <Box
+                  sx={{
+                    width: 'fit-content',
+                    display: 'flex',
+                    flexDirection: 'row'
+                  }}
+                >
                   {[
                     {
                       mode: 'default',
@@ -439,12 +546,19 @@ export default function ChatComponentPage({
                       mode: 'pdf',
                       icon: <PdfIcon sx={{ width: 40, height: 40 }} />,
                       title: 'PDF Chat'
+                    },
+                    {
+                      mode: 'search',
+                      icon: <SearchIcon sx={{ width: 40, height: 40 }} />,
+                      title: 'Web Search'
                     }
                   ].map((item, index) => (
                     <MenuItem
                       key={item.mode}
                       onClick={() => {
-                        setSelectedMode(item.mode as 'default' | 'pdf');
+                        setSelectedMode(
+                          item.mode as 'default' | 'pdf' | 'search'
+                        );
                         handleClose();
                       }}
                       selected={selectedMode === item.mode}
@@ -562,37 +676,84 @@ export default function ChatComponentPage({
         chatId: currentChatId
       }
     ]);
-    setIsLoading(true);
+    setLoadingState('searching');
 
-    let responseMessage;
+    let response;
 
     // Use different query methods based on selected mode
     if (selectedMode === 'pdf') {
-      responseMessage = await uploadFilesAndQuery(
+      response = await uploadFilesAndQuery(
         inputValue,
         currentChatId || '',
         selectedModel,
         selectedBlobs
       );
+    } else if (selectedMode === 'search') {
+      response = await SearchTool(
+        inputValue,
+        selectedModel,
+        currentChatId || ''
+      );
     } else {
       // Default chat mode
-      responseMessage = await submitMessage(
+      response = await submitMessage(
         inputValue,
         selectedModel,
         currentChatId || ''
       );
     }
 
-    setMessages((currentMessages) => [
-      ...currentMessages,
-      {
-        ...responseMessage,
-        role: 'assistant',
-        id: responseMessage.id || Date.now(),
-        display: responseMessage.display
+    if (response.success === false) {
+      // Only set rate limit info if it's actually a rate limit issue
+      if (response.reset) {
+        // Rate limit messages typically include a reset timestamp
+        setRateLimitInfo({
+          success: response.success,
+          message: response.message,
+          reset: response.reset
+        });
+      } else {
+        // For other errors, just reset the state
+        setRateLimitInfo(null);
       }
-    ]);
+      setLoadingState(null);
+    } else {
+      setMessages((currentMessages) => [
+        ...currentMessages,
+        {
+          ...response,
+          role: 'assistant',
+          id: response.id || Date.now(),
+          display: response.display
+        }
+      ]);
+    }
+    for await (const status of readStreamableValue(response.status)) {
+      switch (status) {
+        case 'searching':
+          setLoadingState('searching');
+          break;
+        case 'done':
+          setLoadingState(null);
+          break;
+        default:
+          setLoadingState(null);
+      }
+    }
+    if (response.chatId && !currentChatId) {
+      const currentSearchParams = new URLSearchParams(window.location.search);
+      let newUrl = `/actionchat/${response.chatId}`;
+
+      if (currentSearchParams.toString()) {
+        newUrl += `?${currentSearchParams.toString()}`;
+      }
+
+      mutate((key) => Array.isArray(key) && key[0] === 'chatPreviews');
+      router.replace(newUrl, { scroll: false });
+      router.refresh();
+    }
+
     setInputValue('');
-    setIsLoading(false);
+    setLoadingState(null);
   }
 }

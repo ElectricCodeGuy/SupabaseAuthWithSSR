@@ -86,7 +86,7 @@ export default async function Page(props: PageProps) {
     >
       <Box sx={{ flex: 1 }}>
         <AiProvider initialAIState={messages}>
-          <ChatComponentPage userInfo={userInfo} chatId={params.id} />
+          <ChatComponentPage userInfo={userInfo} />
         </AiProvider>
       </Box>
 

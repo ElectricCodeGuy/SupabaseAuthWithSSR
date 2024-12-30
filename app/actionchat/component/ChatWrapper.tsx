@@ -9,7 +9,9 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Link as MuiLink
+  Link as MuiLink,
+  Grid2,
+  CardContent
 } from '@mui/material';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -43,8 +45,17 @@ export function UserMessage({
         background: '#daf8cb',
         color: '#203728',
         pt: 2,
+        pb: 1,
         borderRadius: '8px',
-        margin: '8px 0',
+        margin: {
+          xs: '2px 0',
+          sm: '2px 0',
+          md: '2px 0'
+        },
+        ml: 1,
+        flexGrow: 1,
+        overflow: 'hidden',
+        px: 1,
         alignSelf: 'flex-end',
         wordBreak: 'break-word',
         display: 'flex',
@@ -53,37 +64,25 @@ export function UserMessage({
         boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
       }}
     >
-      <Box
+      <Typography
+        variant="caption"
         sx={{
-          position: 'relative'
+          fontWeight: 'bold',
+          position: 'absolute',
+          top: 0,
+          left: '10px',
+          width: '100%',
+          whiteSpace: 'nowrap',
+          textOverflow: 'ellipsis'
         }}
       >
-        <Typography
-          variant="caption"
-          sx={{
-            width: 'fit-content',
-            fontWeight: 'bold',
-            position: 'absolute',
-            top: -15,
-            left: '10px'
-          }}
-        >
-          {full_name}
-        </Typography>
-        <Box
-          sx={{
-            ml: 2,
-            flexGrow: 1,
-            overflow: 'hidden',
-            px: 1
-          }}
-        >
-          <ReactMarkdown>{children?.toString()}</ReactMarkdown>
-        </Box>
-      </Box>
+        {full_name}
+      </Typography>
+      <ReactMarkdown>{children?.toString()}</ReactMarkdown>
     </Box>
   );
 }
+
 export function BotMessage({
   children,
   className
@@ -290,14 +289,27 @@ export function BotMessage({
             },
             a: ({ href, children }) => {
               if (href) {
-                // Handle PDF links
-
-                const fullHref = createDocumentLink(href);
-                return (
-                  <Link href={fullHref} passHref prefetch={false}>
-                    {children}
-                  </Link>
-                );
+                // Check if the link starts with http:// or https://
+                if (href.startsWith('http://') || href.startsWith('https://')) {
+                  // For web links, return a regular link that opens in a new tab
+                  return (
+                    <MuiLink
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {children}
+                    </MuiLink>
+                  );
+                } else {
+                  // For document links, use createDocumentLink
+                  const fullHref = createDocumentLink(href);
+                  return (
+                    <Link href={fullHref} passHref prefetch={false}>
+                      {children}
+                    </Link>
+                  );
+                }
               }
               return <MuiLink>{children}</MuiLink>;
             }
@@ -311,3 +323,51 @@ export function BotMessage({
     </Box>
   );
 }
+
+interface SearchResult {
+  title: string;
+  url: string;
+}
+
+export const InternetSearchToolResults = ({
+  searchResults
+}: {
+  searchResults: SearchResult[];
+}) => (
+  <Grid2 container spacing={1} justifyContent="center">
+    {searchResults.map((result, index) => {
+      return (
+        <Grid2
+          size={{ xs: 12, sm: 6, md: 4 }}
+          key={index}
+          sx={{
+            borderRadius: '8px',
+            padding: '0px',
+            height: 'fit-content',
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+            backgroundColor: 'Window',
+            '&:hover': {
+              boxShadow: '0 4px 8px rgba(0,0,0,0.2)'
+            }
+          }}
+        >
+          <CardContent sx={{ padding: '8px' }}>
+            <MuiLink
+              href={result.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{
+                fontSize: '0.9rem',
+                textDecoration: 'none'
+              }}
+            >
+              {result.title}
+            </MuiLink>
+          </CardContent>
+        </Grid2>
+      );
+    })}
+  </Grid2>
+);

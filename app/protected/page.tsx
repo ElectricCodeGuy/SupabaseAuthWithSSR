@@ -2,8 +2,6 @@ import 'server-only';
 import { getUserInfo } from '@/lib/server/supabase';
 import {
   Typography,
-  Box,
-  Container,
   Card,
   CardContent,
   Avatar,
@@ -36,57 +34,59 @@ export default async function ProtectedPage() {
   };
 
   return (
-    <Container>
-      <Box sx={{ my: 4, display: 'flex', justifyContent: 'center' }}>
-        <Card sx={{ maxWidth: 600, width: '100%' }}>
-          <CardContent>
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center'
-              }}
-            >
-              <Avatar
-                sx={{ bgcolor: 'secondary.main', mb: 2, width: 56, height: 56 }}
-              >
-                <PersonIcon />
-              </Avatar>
-              <Typography variant="h5" component="h2" gutterBottom>
-                Welcome, {userInfo.full_name}
-              </Typography>
-              <List>
-                <ListItem>
-                  <ListItemIcon>
-                    <EmailIcon />
-                  </ListItemIcon>
-                  <ListItemText primary={userInfo.email} />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon>
-                    <LocationOnIcon />
-                  </ListItemIcon>
-                  <ListItemText primary={userAttributes.location} />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon>
-                    <CalendarTodayIcon />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={`Joined: ${userAttributes.joinDate}`}
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon>
-                    <InfoIcon />
-                  </ListItemIcon>
-                  <ListItemText primary={userAttributes.bio} />
-                </ListItem>
-              </List>
-            </Box>
-          </CardContent>
-        </Card>
-      </Box>
-    </Container>
+    <Card
+      sx={{
+        maxWidth: 600,
+        width: '100%',
+        display: 'flex',
+        justifyContent: 'center',
+        mt: 'auto',
+        mx: 'auto',
+        borderRadius: 1
+      }}
+    >
+      <CardContent
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center'
+        }}
+      >
+        <Avatar
+          sx={{ bgcolor: 'secondary.main', mb: 2, width: 56, height: 56 }}
+        >
+          <PersonIcon />
+        </Avatar>
+        <Typography variant="h5" component="h2" gutterBottom>
+          Welcome, {userInfo.full_name}
+        </Typography>
+        <List>
+          <ListItem>
+            <ListItemIcon>
+              <EmailIcon />
+            </ListItemIcon>
+            <ListItemText primary={userInfo.email} />
+          </ListItem>
+          <ListItem>
+            <ListItemIcon>
+              <LocationOnIcon />
+            </ListItemIcon>
+            <ListItemText primary={userAttributes.location} />
+          </ListItem>
+          <ListItem>
+            <ListItemIcon>
+              <CalendarTodayIcon />
+            </ListItemIcon>
+            <ListItemText primary={`Joined: ${userAttributes.joinDate}`} />
+          </ListItem>
+          <ListItem>
+            <ListItemIcon>
+              <InfoIcon />
+            </ListItemIcon>
+            <ListItemText primary={userAttributes.bio} />
+          </ListItem>
+        </List>
+      </CardContent>
+    </Card>
   );
 }

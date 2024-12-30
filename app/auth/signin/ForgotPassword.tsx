@@ -10,7 +10,6 @@ import {
 } from '@mui/material';
 import { useFormStatus } from 'react-dom';
 import { resetPasswordForEmail } from '../action';
-import Message from '../messages';
 import { usePathname } from 'next/navigation';
 
 interface ForgotPasswordProps {
@@ -79,7 +78,6 @@ export default function ForgotPassword({
           </Typography>
         )}
         <SubmitButton />
-        <Message />
         <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
           <Button onClick={handleClose}>Cancel</Button>
         </Box>

@@ -20,7 +20,7 @@ import {
   Menu,
   MenuItem
 } from '@mui/material';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Menu as MenuIcon } from '@mui/icons-material';
 import useScrollTrigger from '@mui/material/useScrollTrigger';
@@ -54,6 +54,7 @@ interface AppBarProps {
 
 const AppBarComponent: React.FC<AppBarProps> = ({ session }) => {
   const pathname = usePathname();
+  const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
@@ -204,9 +205,8 @@ const AppBarComponent: React.FC<AppBarProps> = ({ session }) => {
             >
               <ListItemText
                 primary={item.text}
-                primaryTypographyProps={{
-                  fontWeight: 600,
-                  variant: 'h3'
+                slotProps={{
+                  primary: { component: 'div', fontWeight: 600, variant: 'h3' }
                 }}
               />
             </ListItemButton>
@@ -395,12 +395,18 @@ const AppBarComponent: React.FC<AppBarProps> = ({ session }) => {
         onClose={handleClose}
         onClick={handleClose}
       >
-        <MenuItem component={Link} prefetch href="/profile">
+        <MenuItem
+          component={Link}
+          prefetch={false}
+          onMouseEnter={() => router.prefetch('/profile')}
+          href="/profile"
+        >
           Profile
         </MenuItem>
         <MenuItem
           component={Link}
-          prefetch
+          prefetch={false}
+          onMouseEnter={() => router.prefetch('/aichat')}
           href="/aichat"
           sx={{ display: { md: 'none' } }}
         >
@@ -408,7 +414,8 @@ const AppBarComponent: React.FC<AppBarProps> = ({ session }) => {
         </MenuItem>
         <MenuItem
           component={Link}
-          prefetch
+          prefetch={false}
+          onMouseEnter={() => router.prefetch('/actionchat')}
           href="/actionchat"
           sx={{ display: { md: 'none' } }}
         >

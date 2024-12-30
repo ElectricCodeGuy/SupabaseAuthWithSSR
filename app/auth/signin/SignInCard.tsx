@@ -18,7 +18,6 @@ import { GoogleIcon } from '../CustomIcons';
 import { login } from '../action';
 import { signInWithGoogle } from './OAuth';
 import { useRouter } from 'next/navigation';
-import Message from '../messages';
 import { useFormStatus } from 'react-dom';
 
 export default function SignInCard() {
@@ -172,9 +171,8 @@ export default function SignInCard() {
         />
         <ForgotPassword open={open} handleClose={handleClose} />
         <SubmitButton />
-        <Message />
         <Button
-          variant="text"
+          variant="outlined"
           sx={{ alignSelf: 'center' }}
           onClick={() => router.push('/auth/signup')}
         >
@@ -202,7 +200,13 @@ function SubmitButton() {
   const { pending } = useFormStatus();
 
   return (
-    <Button type="submit" fullWidth variant="contained" disabled={pending}>
+    <Button
+      type="submit"
+      fullWidth
+      variant="contained"
+      disabled={pending}
+      sx={{ mb: 1 }}
+    >
       {pending ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
     </Button>
   );

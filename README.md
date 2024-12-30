@@ -21,13 +21,48 @@
 
 You can find the videos located inside the public folder!
 
-## For Implementing AI with Internet Search Capabilities
-
-If you are interested in implementing an AI that can search the internet and link to its sources, please contact me at [oh@opkurser.dk](mailto:oh@opkurser.dk). Below is an example image of what such a system might look like.
-
- <img src="public/images/onlinesearcher.png" alt="AI Online Searcher Example" style="width: 60%; margin: 10px;">
-
 ## CHANGELOG
+
+## [v1.8.0] - 2024-03-15
+
+### Added
+
+- **Tavily AI Web Search Integration**: Implemented real-time internet search capabilities using Tavily AI's search API.
+  - Live web search during chat conversations
+  - Source attribution for search results
+  - Seamless integration with existing chat interface
+
+<img src="public/images/TavilySeach.png" alt="Tavily Search Integration" style="width: 60%; margin: 10px;">
+
+### New Features Include:
+
+- **Web Search Capabilities**:
+
+  - Real-time internet searches during conversations
+  - Accurate and up-to-date information from reliable sources
+  - Source links provided with responses
+  - Context-aware search results integrated into chat flow
+
+- **Enhanced Chat Interface**:
+  - New search mode toggle in chat interface
+  - Visual indicators for active search operations
+  - Improved loading states and feedback
+  - Seamless switching between chat modes (Regular, PDF, Web Search)
+
+### Improved
+
+- **Loading States**:
+  - Implemented robust loading state management
+  - Clear visual feedback during operations
+  - Smooth transitions between states
+  - Cancel capability during searches
+
+### Fixed
+
+- Various UI/UX bugs and improvements
+- Enhanced error handling for search operations
+- Improved response formatting and display
+- Better handling of concurrent operations
 
 ## [v1.7.0] - 2024-12-26
 
@@ -475,15 +510,6 @@ When users sign up, they'll receive an email to confirm their account. The templ
         href="{{ .SiteURL }}/api/auth/callback?token_hash={{ .TokenHash }}&type=email"
         >Confirm your email</a
       >
-
-      <div class="footer">
-        <p>
-          For any queries, reach out to us at
-          <a href="mailto:support@nordiskapihub.com"
-            >support@YourCompanyName.com</a
-          >
-        </p>
-      </div>
     </div>
   </body>
 </html>

@@ -27,12 +27,16 @@ export async function GET(request: NextRequest) {
       if (next) {
         // If the 'next' parameter exists, redirect to its value
         redirectTo.pathname = next;
-      } else {
-        redirectTo.pathname = '/auth';
         redirectTo.searchParams.set(
           'message',
           encodeURIComponent('You can now sign in.')
-        ); // Add the message in Danish
+        );
+      } else {
+        redirectTo.pathname = '/auth/signin';
+        redirectTo.searchParams.set(
+          'message',
+          encodeURIComponent('You can now sign in.')
+        );
       }
     } else {
       // OTP verification failed, redirect to error page

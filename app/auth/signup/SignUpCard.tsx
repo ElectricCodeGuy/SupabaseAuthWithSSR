@@ -12,7 +12,6 @@ import {
   CircularProgress
 } from '@mui/material';
 import ForgotPassword from '../signin/ForgotPassword';
-import Message from '../messages';
 import { GoogleIcon } from '../CustomIcons';
 import { signup } from '../action';
 import { useRouter } from 'next/navigation';
@@ -218,9 +217,8 @@ export default function SignInCard() {
             />
           </FormControl>
           <SubmitButton />
-          <Message />
           <Button
-            variant="text"
+            variant="outlined"
             sx={{ alignSelf: 'center' }}
             onClick={() => router.push('/auth/signin')}
           >
@@ -265,7 +263,13 @@ function SubmitButton() {
   const { pending } = useFormStatus();
 
   return (
-    <Button type="submit" fullWidth variant="contained" disabled={pending}>
+    <Button
+      type="submit"
+      fullWidth
+      variant="contained"
+      disabled={pending}
+      sx={{ my: 2 }}
+    >
       {pending ? (
         <CircularProgress size={24} color="inherit" />
       ) : (
