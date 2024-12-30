@@ -1,10 +1,8 @@
 import { createServerSupabaseClient } from '@/lib/server/server';
 
-export type OpenAiLog = {
-  id: string;
-  user_id: string | null;
-  created_at: string;
-  updated_at: string;
+export type Source = {
+  title: string;
+  url: string;
 };
 
 export const saveChatToSupbabase = async (
@@ -12,7 +10,7 @@ export const saveChatToSupbabase = async (
   userId: string,
   currentMessageContent: string,
   completion: string,
-  sources?: string[]
+  sources?: Source[]
 ): Promise<void> => {
   if (!chatSessionId) {
     console.warn('Chat session ID is empty. Skipping saving chat to Supabase.');
@@ -37,13 +35,14 @@ export const saveChatToSupbabase = async (
       {
         chat_session_id: chatSessionId,
         is_user_message: true,
-        content: currentMessageContent
+        content: currentMessageContent,
+        sources: null // User messages don't have sources
       },
       {
         chat_session_id: chatSessionId,
         is_user_message: false,
         content: completion,
-        sources: sources && sources.length > 0 ? sources : null
+        sources: sources ? JSON.stringify(sources) : null // Store sources as JSON string
       }
     ];
 

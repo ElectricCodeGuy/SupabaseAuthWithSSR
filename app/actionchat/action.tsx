@@ -1306,11 +1306,17 @@ Remember to maintain a professional yet conversational tone throughout the respo
         console.log('Prompt Tokens:', promptTokens);
         console.log('Completion Tokens:', completionTokens);
         console.log('Total Tokens:', totalTokens);
+        const formattedSources = searchResults.map((result) => ({
+          title: result.title,
+          url: result.url
+        }));
+
         await saveChatToSupbabase(
           CurrentChatSessionId,
           userInfo.id,
           currentUserMessage,
-          text
+          text,
+          formattedSources // Pass the formatted sources
         );
 
         aiState.done([
@@ -1326,8 +1332,8 @@ Remember to maintain a professional yet conversational tone throughout the respo
       fullResponse += textDelta;
       stream.update(
         <>
-          <InternetSearchToolResults searchResults={searchResults} />
           <BotMessage>{fullResponse}</BotMessage>
+          <InternetSearchToolResults searchResults={searchResults} />
         </>
       );
     }
@@ -1370,11 +1376,15 @@ Remember to maintain a professional yet conversational tone throughout the respo
     status: status.value
   };
 }
-
+type Source = {
+  title: string;
+  url: string;
+};
 export type ServerMessage = {
   role: 'user' | 'assistant';
   content: string;
   name?: string;
+  sources?: Source[];
 };
 
 export type ClientMessage = {
@@ -1451,12 +1461,10 @@ export const AI = createAI<ServerMessage[], ClientMessage[], Actions>({
   onGetUIState: async () => {
     'use server';
 
-    // Get current history from app state
     const historyFromApp = getAIState();
 
     if (historyFromApp) {
       const session = await getSession();
-      // If in sync, return current app state
       return historyFromApp.map((message: ServerMessage) => ({
         id: generateId(),
         role: message.role,
@@ -1468,7 +1476,12 @@ export const AI = createAI<ServerMessage[], ClientMessage[], Actions>({
               {message.content}
             </UserMessage>
           ) : (
-            <BotMessage>{message.content}</BotMessage>
+            <>
+              <BotMessage>{message.content}</BotMessage>
+              {message.sources && (
+                <InternetSearchToolResults searchResults={message.sources} />
+              )}
+            </>
           )
       }));
     } else {

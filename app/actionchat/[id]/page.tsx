@@ -19,6 +19,17 @@ export const metadata: Metadata = {
     index: false
   }
 };
+
+type Source = {
+  title: string;
+  url: string;
+};
+
+// Type guard function to check if the value is a string
+function isJsonString(value: unknown): value is string {
+  return typeof value === 'string';
+}
+
 async function getChatMessages(chatId: string) {
   noStore();
   const supabase = await createServerSupabaseClient();
@@ -32,7 +43,8 @@ async function getChatMessages(chatId: string) {
         chat_messages (
           is_user_message,
           content,
-          created_at
+          created_at,
+          sources
         )
       `
       )
@@ -46,12 +58,39 @@ async function getChatMessages(chatId: string) {
     if (error || !chatData) return { messages: [], userId: null };
 
     return {
-      messages: chatData.chat_messages.map(
-        (message): ServerMessage => ({
+      messages: chatData.chat_messages.map((message): ServerMessage => {
+        let parsedSources: Source[] = [];
+
+        if (message.sources) {
+          try {
+            // First ensure we're working with a string
+            if (isJsonString(message.sources)) {
+              const parsed = JSON.parse(message.sources);
+              // Verify the parsed data is an array of Source objects
+              if (
+                Array.isArray(parsed) &&
+                parsed.every(
+                  (item) =>
+                    typeof item === 'object' &&
+                    item !== null &&
+                    'title' in item &&
+                    'url' in item
+                )
+              ) {
+                parsedSources = parsed as Source[];
+              }
+            }
+          } catch (e) {
+            console.error('Error parsing sources:', e);
+          }
+        }
+
+        return {
           role: message.is_user_message ? 'user' : ('assistant' as const),
-          content: message.content || ''
-        })
-      ),
+          content: message.content || '',
+          sources: parsedSources
+        };
+      }),
       userId: chatData.user_id
     };
   } catch (error) {

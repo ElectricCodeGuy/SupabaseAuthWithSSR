@@ -287,18 +287,19 @@ For more information about implementing vector similarity search with pgvector, 
 
   ```sql
   -- Chat Sessions Table
-  create table public.chat_sessions (
-    id text not null,
-    user_id uuid not null,
-    created_at timestamp with time zone not null default now(),
-    updated_at timestamp with time zone not null default now(),
-    constraint chat_sessions_pkey primary key (id),
-    constraint chat_sessions_user_id_fkey foreign key (user_id) references users (id) on delete cascade
-  ) tablespace pg_default;
+  create table
+    public.chat_sessions (
+      id uuid not null default extensions.uuid_generate_v4 (),
+      user_id uuid not null,
+      created_at timestamp with time zone not null default current_timestamp,
+      updated_at timestamp with time zone not null default current_timestamp,
+      constraint chat_sessions_pkey primary key (id),
+      constraint chat_sessions_user_id_fkey foreign key (user_id) references users (id)
+    ) tablespace pg_default;
 
-  create index idx_chat_sessions_user_id on public.chat_sessions using btree (user_id);
-  create index idx_chat_sessions_created_at on public.chat_sessions using btree (created_at desc);
-  create index idx_chat_sessions_user_id_created_at on public.chat_sessions using btree (user_id, created_at desc);
+  create index if not exists idx_chat_sessions_user_id on public.chat_sessions using btree (user_id) tablespace pg_default;
+
+  create index if not exists chat_sessions_created_at_idx on public.chat_sessions using btree (created_at) tablespace pg_default;
 
   -- Enable RLS for chat_sessions
   alter table public.chat_sessions enable row level security;
@@ -311,23 +312,20 @@ For more information about implementing vector similarity search with pgvector, 
   to public
   using (auth.uid() = user_id);
 
-  -- Chat Messages Table
-  create table public.chat_messages (
-    id uuid not null default extensions.uuid_generate_v4(),
-    chat_session_id text not null,
-    is_user_message boolean not null,
-    content text null,
-    sources jsonb null,
-    created_at timestamp with time zone not null default now(),
-    constraint chat_messages_pkey primary key (id),
-    constraint chat_messages_chat_session_id_fkey foreign key (chat_session_id) references chat_sessions (id) on delete cascade
-  ) tablespace pg_default;
+    -- Chat Messages Table
+  create table
+    public.chat_messages (
+      id uuid not null default extensions.uuid_generate_v4 (),
+      chat_session_id uuid not null,
+      content text null,
+      is_user_message boolean not null,
+      sources jsonb null,
+      created_at timestamp with time zone not null default current_timestamp,
+      constraint chat_messages_pkey primary key (id),
+      constraint chat_messages_chat_session_id_fkey foreign key (chat_session_id) references chat_sessions (id) on delete cascade
+    ) tablespace pg_default;
 
-  create index idx_chat_messages_chat_session_id on public.chat_messages using btree (chat_session_id);
-  create index idx_chat_messages_is_user_message on public.chat_messages using btree (is_user_message);
-  create index idx_chat_messages_created_at on public.chat_messages using btree (created_at);
-  create index idx_chat_messages_chat_session_id_is_user_message on public.chat_messages using btree (chat_session_id, is_user_message);
-  create index idx_chat_messages_chat_session_id_created_at on public.chat_messages using btree (chat_session_id, created_at);
+  create index if not exists idx_chat_messages_chat_session_id on public.chat_messages using btree (chat_session_id) tablespace pg_default;
 
   -- Enable RLS for chat_messages
   alter table public.chat_messages enable row level security;
@@ -528,6 +526,54 @@ This SQL statement creates a trigger named `on_auth_user_created` that executes 
 6. **Make the rest of the tables, RLS and RPC**
 
 ```sql
+
+
+  -- Chat Sessions Table
+  create table
+    public.chat_sessions (
+      id uuid not null default extensions.uuid_generate_v4 (),
+      user_id uuid not null,
+      created_at timestamp with time zone not null default current_timestamp,
+      updated_at timestamp with time zone not null default current_timestamp,
+      constraint chat_sessions_pkey primary key (id),
+      constraint chat_sessions_user_id_fkey foreign key (user_id) references users (id)
+    ) tablespace pg_default;
+
+  create index if not exists idx_chat_sessions_user_id on public.chat_sessions using btree (user_id) tablespace pg_default;
+
+  create index if not exists chat_sessions_created_at_idx on public.chat_sessions using btree (created_at) tablespace pg_default;
+
+  -- Chat Messages Table
+  create table
+    public.chat_messages (
+      id uuid not null default extensions.uuid_generate_v4 (),
+      chat_session_id uuid not null,
+      content text null,
+      is_user_message boolean not null,
+      sources jsonb null,
+      created_at timestamp with time zone not null default current_timestamp,
+      constraint chat_messages_pkey primary key (id),
+      constraint chat_messages_chat_session_id_fkey foreign key (chat_session_id) references chat_sessions (id) on delete cascade
+    ) tablespace pg_default;
+
+  create index if not exists idx_chat_messages_chat_session_id on public.chat_messages using btree (chat_session_id) tablespace pg_default;
+  -- Enable RLS for chat_messages
+  alter table public.chat_messages enable row level security;
+
+  -- Chat messages RLS policy
+  create policy "Users can view messages from their sessions"
+  on public.chat_messages
+  as permissive
+  for all
+  to public
+  using (
+    chat_session_id IN (
+      SELECT chat_sessions.id
+      FROM chat_sessions
+      WHERE chat_sessions.user_id = auth.uid()
+    )
+  );
+
 -- Enable the vector extension
 CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA extensions;
 

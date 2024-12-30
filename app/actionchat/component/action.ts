@@ -63,8 +63,7 @@ export async function deleteChatData(chatId: string) {
     const { error: sessionError } = await supabase
       .from('chat_sessions')
       .delete()
-      .eq('id', chatId)
-      .eq('user_id', session.id);
+      .eq('id', chatId);
 
     if (sessionError) throw sessionError;
     revalidateTag('chat-history');

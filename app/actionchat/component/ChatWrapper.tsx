@@ -11,7 +11,8 @@ import {
   TableRow,
   Link as MuiLink,
   Grid2,
-  CardContent
+  Stack,
+  IconButton
 } from '@mui/material';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -22,7 +23,10 @@ import Link from 'next/link';
 import {
   Android as AndroidIcon,
   ContentCopy as ContentCopyIcon,
-  CheckCircle as CheckCircleIcon
+  CheckCircle as CheckCircleIcon,
+  Public as PublicIcon,
+  OpenInNew as OpenInNewIcon,
+  Link as LinkIcon
 } from '@mui/icons-material';
 import { encodeBase64 } from '../lib/base64';
 
@@ -334,40 +338,130 @@ export const InternetSearchToolResults = ({
 }: {
   searchResults: SearchResult[];
 }) => (
-  <Grid2 container spacing={1} justifyContent="center">
-    {searchResults.map((result, index) => {
-      return (
-        <Grid2
-          size={{ xs: 12, sm: 6, md: 4 }}
-          key={index}
-          sx={{
-            borderRadius: '8px',
-            padding: '0px',
-            height: 'fit-content',
-            display: 'flex',
-            flexDirection: 'column',
-            boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-            backgroundColor: 'Window',
-            '&:hover': {
-              boxShadow: '0 4px 8px rgba(0,0,0,0.2)'
-            }
-          }}
-        >
-          <CardContent sx={{ padding: '8px' }}>
-            <MuiLink
-              href={result.url}
-              target="_blank"
-              rel="noopener noreferrer"
+  <Box sx={{ my: 2 }}>
+    <Typography
+      variant="h6"
+      sx={{
+        mb: 2,
+        color: 'primary.main',
+        fontWeight: 600,
+        textAlign: 'center',
+        borderBottom: '2px solid',
+        borderColor: 'primary.light',
+        pb: 1
+      }}
+    >
+      📚 Reference Sources ({searchResults.length})
+    </Typography>
+
+    <Grid2 container spacing={2} justifyContent="center">
+      {searchResults.map((result, index) => {
+        const domain = new URL(result.url).hostname.replace('www.', '');
+
+        return (
+          <Grid2
+            size={{ xs: 12, sm: 6, md: 6 }}
+            key={index}
+            sx={{
+              p: 2,
+              height: '100%', // Make paper fill grid height
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 2,
+              borderRadius: 2,
+              transition: 'all 0.3s ease',
+              backgroundColor: 'background.paper',
+              boxShadow: (theme) => theme.shadows[3],
+              '&:hover': {
+                transform: 'translateY(-2px)',
+                boxShadow: (theme) => theme.shadows[4],
+                '& .source-link': {
+                  color: 'primary.main'
+                }
+              }
+            }}
+          >
+            <Box sx={{ flex: 1 }}>
+              {' '}
+              {/* Flex container for title */}
+              <MuiLink
+                href={result.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="source-link"
+                sx={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 1,
+                  fontSize: '0.95rem',
+                  fontWeight: 500,
+                  color: 'text.primary',
+                  textDecoration: 'none',
+                  lineHeight: 1.4,
+                  transition: 'color 0.2s ease'
+                }}
+              >
+                <LinkIcon
+                  sx={{
+                    color: 'primary.main',
+                    fontSize: '1.2rem',
+                    mt: 0.3,
+                    flexShrink: 0 // Prevent icon from shrinking
+                  }}
+                />
+                <Typography
+                  component="span"
+                  sx={{
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    width: '100%'
+                  }}
+                >
+                  {result.title}
+                </Typography>
+              </MuiLink>
+            </Box>
+
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
               sx={{
-                fontSize: '0.9rem',
-                textDecoration: 'none'
+                pt: 1,
+                borderTop: '1px solid',
+                borderColor: 'grey.200',
+                mt: 'auto' // Push to bottom
               }}
             >
-              {result.title}
-            </MuiLink>
-          </CardContent>
-        </Grid2>
-      );
-    })}
-  </Grid2>
+              <Typography
+                variant="caption"
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                  color: 'text.secondary'
+                }}
+              >
+                <PublicIcon sx={{ fontSize: '1rem' }} />
+                {domain}
+              </Typography>
+
+              <IconButton
+                size="small"
+                href={result.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{ color: 'primary.main' }}
+              >
+                <OpenInNewIcon fontSize="small" />
+              </IconButton>
+            </Stack>
+          </Grid2>
+        );
+      })}
+    </Grid2>
+  </Box>
 );
