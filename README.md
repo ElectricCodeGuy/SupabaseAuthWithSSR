@@ -23,7 +23,7 @@ You can find the videos located inside the public folder!
 
 ## CHANGELOG
 
-## [v1.8.0] - 2024-03-15
+## [v1.8.0] - 2024-12-30
 
 ### Added
 
