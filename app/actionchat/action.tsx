@@ -38,11 +38,11 @@ const SYSTEM_TEMPLATE = `You are a helpful assistant. Answer all questions to th
 
 const getModel = (selectedModel: 'claude3' | 'chatgpt4') => {
   if (selectedModel === 'claude3') {
-    return anthropic('claude-3-5-sonnet-20240620');
+    return anthropic('claude-3-5-sonnet-20241022');
   } else if (selectedModel === 'chatgpt4') {
     return openai('gpt-4o');
   }
-  return anthropic('claude-3-5-sonnet-20240620');
+  return anthropic('claude-3-5-sonnet-20241022');
 };
 
 async function submitMessage(

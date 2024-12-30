@@ -16,7 +16,7 @@ const SYSTEM_TEMPLATE = `You are a helpful assistant. Answer all questions to th
 
 const getModel = (selectedModel: string) => {
   if (selectedModel === 'claude3-opus') {
-    return anthropic('claude-3-5-sonnet-20240620');
+    return anthropic('claude-3-5-sonnet-202410220');
   } else {
     return openai(selectedModel);
   }
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
   try {
     const model = getModel(selectedModel);
 
-    const result = await streamText({
+    const result = streamText({
       model,
       system: SYSTEM_TEMPLATE,
       messages: messages,
