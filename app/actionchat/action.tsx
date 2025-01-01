@@ -233,7 +233,7 @@ async function submitMessage(
       </Box>
     );
 
-    const result = streamText({
+    const { textStream } = streamText({
       model: getModel(model_select),
       maxTokens: 4000,
       temperature: 0,
@@ -284,7 +284,7 @@ async function submitMessage(
     });
 
     let fullResponse = '';
-    for await (const textDelta of result.textStream) {
+    for await (const textDelta of textStream) {
       fullResponse += textDelta;
       uiStream.update(<BotMessage>{fullResponse}</BotMessage>);
     }
@@ -764,7 +764,7 @@ ${formattedSearchResults}
 `;
     })();
 
-    const result = streamText({
+    const { textStream } = streamText({
       model: getModel(model_select),
       system: systemPromptTemplate,
       experimental_transform: smoothStream({ delayInMs: 20 }),
@@ -799,7 +799,7 @@ ${formattedSearchResults}
     });
 
     let fullResponse = '';
-    for await (const textDelta of result.textStream) {
+    for await (const textDelta of textStream) {
       fullResponse += textDelta;
       uiStream.update(<BotMessage>{fullResponse}</BotMessage>);
     }
@@ -1182,7 +1182,7 @@ Remember to maintain a professional yet conversational tone throughout the respo
 `;
     console.log('Search Results:', systemPromptTemplate);
     // Generate AI response based on search results
-    const result = streamText({
+    const { textStream } = streamText({
       model: getModel(model_select),
       system: systemPromptTemplate,
       experimental_transform: smoothStream({ delayInMs: 20 }),
@@ -1224,7 +1224,7 @@ Remember to maintain a professional yet conversational tone throughout the respo
 
     // Stream AI response to UI
     let fullResponse = '';
-    for await (const textDelta of result.textStream) {
+    for await (const textDelta of textStream) {
       fullResponse += textDelta;
       stream.update(
         <>

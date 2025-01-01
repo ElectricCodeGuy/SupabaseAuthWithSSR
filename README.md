@@ -105,6 +105,7 @@ CREATE TABLE IF NOT EXISTS public.vector_documents (
   CONSTRAINT vector_documents_unique_chunk UNIQUE (user_id, title, "timestamp", page_number, chunk_number),
   CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 );
+-- Note: PostgreSQL currently does not support indexing vectors with more than 2,000 dimensions. If you have hundreds of thousands of documents resulting in hundreds of thousands of vectors, you need to use an embedding model that produces 2,000 dimensions or fewer.
 
 -- Create indexes
 CREATE INDEX IF NOT EXISTS idx_vector_documents_user_id ON public.vector_documents USING btree (user_id);
@@ -576,6 +577,8 @@ This SQL statement creates a trigger named `on_auth_user_created` that executes 
 
 -- Enable the vector extension
 CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA extensions;
+
+-- Note: PostgreSQL currently does not support indexing vectors with more than 2,000 dimensions. If you have hundreds of thousands of documents resulting in hundreds of thousands of vectors, you need to use an embedding model that produces 2,000 dimensions or fewer.
 
 -- Create the vector_documents table
 CREATE TABLE IF NOT EXISTS public.vector_documents (
