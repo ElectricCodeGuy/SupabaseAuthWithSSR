@@ -14,7 +14,16 @@ import {
   embed,
   generateObject
 } from 'ai';
-import { Box, Typography, CircularProgress } from '@mui/material';
+import {
+  Box,
+  Typography,
+  CircularProgress,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText
+} from '@mui/material';
+import { Search as SearchIcon } from '@mui/icons-material';
 import {
   BotMessage,
   UserMessage,
@@ -593,79 +602,91 @@ Keep the variations focused on the content available in the provided documents.`
   // Process each query variation
   const queries = [object.variation1, object.variation2, object.variation3];
   console.log('Optimized queries:', queries);
-  // Create array of promises for embeddings
-  const embeddings = await Promise.all(
-    queries.map((query) => embedQuery(query))
-  );
-
-  // Create array of promises for vector searches
-  const searchResultsPromises = await Promise.all(
-    embeddings.map(
-      (embedding) =>
-        querySupabaseVectors(
-          embedding,
-          userInfo.id,
-          sanitizedFilenames,
-          40, // Adjust topK as needed. There is a hard limit of 200 results included in the RPC.
-          0.7
-        ) // Adjust similarity threshold as needed. Usually do not set it higher than 0.7 since it may not find any results.
-      // You can optimize the systemprompt for the new queries to improve the results.
-    )
-  );
-
-  // Flatten and deduplicate results
-  const allSearchResults = searchResultsPromises.flat();
-
-  // Deduplicate results based on content and page number
-  const uniqueResults = allSearchResults.reduce(
-    (acc, current) => {
-      const isDuplicate = acc.some(
-        (item) =>
-          item.metadata.title === current.metadata.title &&
-          item.metadata.page === current.metadata.page
-      );
-      if (!isDuplicate) {
-        acc.push(current);
-      }
-      return acc;
-    },
-    [] as typeof allSearchResults
-  );
-
-  const searchResults = uniqueResults.sort(
-    (a, b) => b.metadata.similarity - a.metadata.similarity
-  );
-
   (async () => {
     uiStream.update(
       <Box
+        display="flex"
+        flexDirection="column"
+        justifyContent="center"
+        alignItems="center"
+        mb={2}
+        mt={2}
+        p={2}
+        borderRadius={4}
+        bgcolor="grey.100"
         sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          mb: 2,
-          p: 2,
-          borderRadius: 4,
-          bgcolor: 'grey.100',
-          backgroundImage: 'linear-gradient(45deg, #e0eaFC #cfdef3)',
+          backgroundImage: 'linear-gradient(45deg, #e0eaFC, #cfdef3)',
           boxShadow: '0 3px 5px 2px rgba(0, 0, 0, .1)',
           transition: 'background-color 0.3s ease',
-
           ':hover': {
             bgcolor: 'grey.200'
           }
         }}
       >
-        <Typography
-          variant="body1"
-          sx={{
-            color: 'textSecondary',
-            fontStyle: 'italic'
-          }}
-        >
-          Relevant data is found. Generating response...
+        <Typography variant="h6" color="primary" gutterBottom>
+          I&apos;ve identified these optimized search variations to better
+          understand your query:
         </Typography>
+
+        <List sx={{ width: '100%' }}>
+          {queries.map((query, index) => (
+            <ListItem key={index}>
+              <ListItemIcon>
+                <SearchIcon color="primary" />
+              </ListItemIcon>
+              <ListItemText primary={query} sx={{ fontStyle: 'italic' }} />
+            </ListItem>
+          ))}
+        </List>
+
+        <Box display="flex" alignItems="center" mt={2}>
+          <Typography variant="body1" color="textSecondary" fontStyle="italic">
+            Analyzing results to provide a comprehensive response...
+          </Typography>
+          <CircularProgress size={20} sx={{ marginLeft: 2 }} />
+        </Box>
       </Box>
+    );
+    const embeddings = await Promise.all(
+      queries.map((query) => embedQuery(query))
+    );
+
+    // Create array of promises for vector searches
+    const searchResultsPromises = await Promise.all(
+      embeddings.map(
+        (embedding) =>
+          querySupabaseVectors(
+            embedding,
+            userInfo.id,
+            sanitizedFilenames,
+            40, // Adjust topK as needed. There is a hard limit of 200 results included in the RPC.
+            0.5
+          ) // Adjust similarity threshold as needed. Usually do not set it higher than 0.7 since it may not find any results.
+        // You can optimize the systemprompt for the new queries to improve the results.
+      )
+    );
+
+    // Flatten and deduplicate results
+    const allSearchResults = searchResultsPromises.flat();
+
+    // Deduplicate results based on content and page number
+    const uniqueResults = allSearchResults.reduce(
+      (acc, current) => {
+        const isDuplicate = acc.some(
+          (item) =>
+            item.metadata.title === current.metadata.title &&
+            item.metadata.page === current.metadata.page
+        );
+        if (!isDuplicate) {
+          acc.push(current);
+        }
+        return acc;
+      },
+      [] as typeof allSearchResults
+    );
+
+    const searchResults = uniqueResults.sort(
+      (a, b) => b.metadata.similarity - a.metadata.similarity
     );
 
     const formattedSearchResults = (() => {
@@ -733,7 +754,7 @@ Keep the variations focused on the content available in the provided documents.`
           (result) =>
             `[${result.metadata.title}, s.${result.metadata.page}](<?pdf=${result.metadata.title.replace(/ /g, '_').trim()}&p=${result.metadata.page}>)`
         )
-        .join(' og ');
+        .join(' and ');
       return `
 <instructions>
 Based on the content in the search results extracted from the uploaded files, please provide an answer to the question. The search results contain information relevant to the query.
@@ -1019,7 +1040,50 @@ async function SearchTool(
       object.variation2,
       object.variation3
     ].filter((query) => query !== undefined && query.trim() !== '');
+    stream.update(
+      <Box
+        display="flex"
+        flexDirection="column"
+        justifyContent="center"
+        alignItems="center"
+        mb={2}
+        mt={2}
+        p={2}
+        borderRadius={4}
+        bgcolor="grey.100"
+        sx={{
+          backgroundImage: 'linear-gradient(45deg, #e0eaFC, #cfdef3)',
+          boxShadow: '0 3px 5px 2px rgba(0, 0, 0, .1)',
+          transition: 'background-color 0.3s ease',
+          ':hover': {
+            bgcolor: 'grey.200'
+          }
+        }}
+      >
+        <Typography variant="h6" color="primary" gutterBottom>
+          I&apos;ve identified these optimized search variations to better
+          understand your query:
+        </Typography>
 
+        <List sx={{ width: '100%' }}>
+          {searchQueries.map((query, index) => (
+            <ListItem key={index}>
+              <ListItemIcon>
+                <SearchIcon color="primary" />
+              </ListItemIcon>
+              <ListItemText primary={query} sx={{ fontStyle: 'italic' }} />
+            </ListItem>
+          ))}
+        </List>
+
+        <Box display="flex" alignItems="center" mt={2}>
+          <Typography variant="body1" color="textSecondary" fontStyle="italic">
+            Analyzing results to provide a comprehensive response...
+          </Typography>
+          <CircularProgress size={20} sx={{ marginLeft: 2 }} />
+        </Box>
+      </Box>
+    );
     // Perform Tavily search for each query variation
     // Note: This approach uses multiple queries, which can provide better results but is more expensive.
     // Consider your monthly API limit when using this method.
