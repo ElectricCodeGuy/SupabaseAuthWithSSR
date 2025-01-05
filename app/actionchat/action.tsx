@@ -1182,7 +1182,12 @@ async function SearchTool(
     // Update UI with search results and preparation message
     stream.update(
       <>
-        <InternetSearchToolResults searchResults={searchResults} />
+        <InternetSearchToolResults
+          searchResults={searchResults.map((result) => ({
+            title: result.title,
+            url: result.url
+          }))}
+        />
         <Box
           display="flex"
           justifyContent="center"
