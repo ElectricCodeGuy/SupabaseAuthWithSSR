@@ -1,5 +1,6 @@
 'use client';
 import React, { useState } from 'react';
+import { StreamableValue, useStreamableValue } from 'ai/rsc';
 import {
   Box,
   Typography,
@@ -89,11 +90,19 @@ export function UserMessage({
 
 export function BotMessage({
   children,
+  textStream,
   className
 }: {
-  children: React.ReactNode;
+  children?: React.ReactNode;
+  textStream?: StreamableValue;
   className?: string;
 }) {
+  const [text] = useStreamableValue(textStream);
+  const content = text
+    ? text
+    : typeof children === 'string'
+      ? children
+      : children;
   const [isCopied, setIsCopied] = useState(false);
 
   const copyToClipboard = (str: string): void => {
@@ -169,7 +178,7 @@ export function BotMessage({
           width: 24,
           height: 24
         }}
-        onClick={() => handleCopy(children?.toString() || '')}
+        onClick={() => handleCopy(content || '')}
       >
         {isCopied ? (
           <CheckCircleIcon fontSize="inherit" />
@@ -321,7 +330,7 @@ export function BotMessage({
           remarkPlugins={[remarkGfm, remarkMath]}
           rehypePlugins={[[rehypeHighlight, highlightOptionsAI]]}
         >
-          {children?.toString()}
+          {content}
         </ReactMarkdown>
       </Box>
     </Box>

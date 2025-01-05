@@ -7,13 +7,7 @@ import {
   createStreamableValue,
   type StreamableValue
 } from 'ai/rsc';
-import {
-  streamText,
-  generateId,
-  smoothStream,
-  embed,
-  generateObject
-} from 'ai';
+import { streamText, generateId, embed, generateObject } from 'ai';
 import {
   Box,
   Typography,
@@ -138,7 +132,7 @@ async function submitMessage(
       </Typography>
     </Box>
   );
-
+  const dataStream = createStreamableValue();
   (async () => {
     await new Promise((resolve) => setTimeout(resolve, 2000)); // Simulate a delay
 
@@ -248,7 +242,6 @@ async function submitMessage(
       temperature: 0,
       frequencyPenalty: 0.5,
       system: SYSTEM_TEMPLATE,
-      experimental_transform: smoothStream({ delayInMs: 20 }),
       messages: [
         ...aiState
           .get()
@@ -272,10 +265,7 @@ async function submitMessage(
           text
         );
 
-        aiState.done([
-          ...aiState.get(),
-          { role: 'assistant', content: fullResponse }
-        ]);
+        aiState.done([...aiState.get(), { role: 'assistant', content: text }]);
         /*  If you want to track the usage of the AI model, you can use the following code:'
       import { track } from '@vercel/analytics/server';
         track('ailoven', {
@@ -292,12 +282,20 @@ async function submitMessage(
       }
     });
 
-    let fullResponse = '';
+    let isFirstChunk = true;
+
     for await (const textDelta of textStream) {
-      fullResponse += textDelta;
-      uiStream.update(<BotMessage>{fullResponse}</BotMessage>);
+      if (isFirstChunk) {
+        // Only create the UI stream when we receive the first chunk
+        uiStream.update(<BotMessage textStream={dataStream.value} />);
+        isFirstChunk = false;
+      }
+      dataStream.append(textDelta);
     }
 
+    // Final update with isStreaming set to false
+    uiStream.update(<BotMessage textStream={dataStream.value} />);
+    dataStream.done();
     uiStream.done();
     status.done('done');
   })().catch((e) => {
@@ -602,6 +600,7 @@ Keep the variations focused on the content available in the provided documents.`
   // Process each query variation
   const queries = [object.variation1, object.variation2, object.variation3];
   console.log('Optimized queries:', queries);
+  const dataStream = createStreamableValue();
   (async () => {
     uiStream.update(
       <Box
@@ -788,7 +787,6 @@ ${formattedSearchResults}
     const { textStream } = streamText({
       model: getModel(model_select),
       system: systemPromptTemplate,
-      experimental_transform: smoothStream({ delayInMs: 20 }),
       messages: [
         ...aiState
           .get()
@@ -812,18 +810,24 @@ ${formattedSearchResults}
           text
         );
 
-        aiState.done([
-          ...aiState.get(),
-          { role: 'assistant', content: fullResponse }
-        ]);
+        aiState.done([...aiState.get(), { role: 'assistant', content: text }]);
       }
     });
 
-    let fullResponse = '';
+    let isFirstChunk = true;
+
     for await (const textDelta of textStream) {
-      fullResponse += textDelta;
-      uiStream.update(<BotMessage>{fullResponse}</BotMessage>);
+      if (isFirstChunk) {
+        // Only create the UI stream when we receive the first chunk
+        uiStream.update(<BotMessage textStream={dataStream.value} />);
+        isFirstChunk = false;
+      }
+      dataStream.append(textDelta);
     }
+
+    // Final update with isStreaming set to false
+    uiStream.update(<BotMessage textStream={dataStream.value} />);
+    dataStream.done();
     uiStream.done();
     status.done('done');
   })().catch((e) => {
@@ -999,6 +1003,7 @@ async function SearchTool(
   let searchResults: SearchResult[] = [];
 
   const nhm = new NodeHtmlMarkdown();
+  const dataStream = createStreamableValue();
   (async () => {
     // Prompt to generate search query variations
     const contextualizeQSystemPrompt = `
@@ -1249,7 +1254,6 @@ Remember to maintain a professional yet conversational tone throughout the respo
     const { textStream } = streamText({
       model: getModel(model_select),
       system: systemPromptTemplate,
-      experimental_transform: smoothStream({ delayInMs: 20 }),
       messages: [
         ...aiState
           .get()
@@ -1279,24 +1283,42 @@ Remember to maintain a professional yet conversational tone throughout the respo
           formattedSources // Pass the formatted sources
         );
 
-        aiState.done([
-          ...aiState.get(),
-          { role: 'assistant', content: fullResponse }
-        ]);
+        aiState.done([...aiState.get(), { role: 'assistant', content: text }]);
       }
     });
 
-    // Stream AI response to UI
-    let fullResponse = '';
+    let isFirstChunk = true;
     for await (const textDelta of textStream) {
-      fullResponse += textDelta;
-      stream.update(
-        <>
-          <BotMessage>{fullResponse}</BotMessage>
-          <InternetSearchToolResults searchResults={searchResults} />
-        </>
-      );
+      if (isFirstChunk) {
+        // Initialize the UI stream with the first chunk
+        stream.update(
+          <>
+            <BotMessage textStream={dataStream.value} />
+            <InternetSearchToolResults
+              searchResults={searchResults.map((result) => ({
+                title: result.title,
+                url: result.url
+              }))}
+            />
+          </>
+        );
+        isFirstChunk = false;
+      }
+
+      dataStream.append(textDelta);
     }
+    stream.update(
+      <>
+        <BotMessage textStream={dataStream.value} />
+        <InternetSearchToolResults
+          searchResults={searchResults.map((result) => ({
+            title: result.title,
+            url: result.url
+          }))}
+        />
+      </>
+    );
+    dataStream.done();
     status.done('done');
     stream.done();
   })().catch((e) => {
