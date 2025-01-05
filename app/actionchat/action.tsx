@@ -373,6 +373,8 @@ async function submitMessage(
         console.log('Prompt Tokens:', promptTokens);
         console.log('Completion Tokens:', completionTokens);
         console.log('Total Tokens:', totalTokens);
+        aiState.done([...aiState.get(), { role: 'assistant', content: text }]);
+
         await saveChatToSupbabase(
           CurrentChatSessionId,
           userInfo.id,
@@ -380,7 +382,13 @@ async function submitMessage(
           text
         );
 
-        aiState.done([...aiState.get(), { role: 'assistant', content: text }]);
+        // Only cache the very first message
+        if (!chatId) {
+          await redis.set(`text_${currentUserMessage}`, text, {
+            ex: 60 * 60 * 24 * 90 // 90 days in seconds (3 month)
+          });
+        }
+
         /*  If you want to track the usage of the AI model, you can use the following code:'
       import { track } from '@vercel/analytics/server';
         track('ailoven', {
