@@ -101,7 +101,122 @@ async function submitMessage(
       content: currentUserMessage
     }
   ]);
+  // We only check on the very first message if we have a cached result.
+  // We don't want to check on every message since the user could ask questions like: "Tell me more"
+  // and we don't want to check the cache on those.
+  if (!chatId) {
+    const cachedResult: string | null = await redis.get(
+      `text_${currentUserMessage}`
+    );
+    if (cachedResult) {
+      const uiStream = createStreamableUI(
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            mb: 2,
+            p: 2,
+            borderRadius: 4,
+            bgcolor: 'grey.100',
+            backgroundImage: 'linear-gradient(45deg, #e0eaFC #cfdef3)',
+            boxShadow: '0 3px 5px 2px rgba(0, 0, 0, .1)',
+            transition: 'background-color 0.3s ease',
 
+            ':hover': {
+              bgcolor: 'grey.200'
+            }
+          }}
+        >
+          <Typography
+            variant="body1"
+            sx={{
+              color: 'textSecondary',
+              fontStyle: 'italic'
+            }}
+          >
+            Found relevant website. Scraping data...
+          </Typography>
+        </Box>
+      );
+
+      aiState.done([
+        ...aiState.get(),
+        { role: 'assistant', content: cachedResult }
+      ]);
+
+      const chunkSize = 10;
+      const baseDelay = 100;
+      const variation = 5;
+      const textStream = createStreamableValue();
+
+      (async () => {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+
+        // Update UI to show BotMessage with streaming content
+        uiStream.update(<BotMessage textStream={textStream.value} />);
+        status.update('generating');
+        for (let i = 0; i < cachedResult.length; i += chunkSize) {
+          const chunk = cachedResult.slice(i, i + chunkSize);
+
+          textStream.append(chunk);
+
+          await new Promise((resolve) =>
+            setTimeout(
+              resolve,
+              baseDelay + (Math.random() * (variation * 2) - variation)
+            )
+          );
+        }
+        uiStream.update(<BotMessage textStream={textStream.value} />);
+        if (userInfo?.id) {
+          await saveChatToSupbabase(
+            CurrentChatSessionId,
+            userInfo.id,
+            currentUserMessage,
+            cachedResult
+          );
+        }
+        textStream.done();
+        status.done('done');
+        uiStream.done();
+      })().catch((e) => {
+        console.error('Error in chat handler:', e);
+        uiStream.error(
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              mb: 2,
+              p: 2,
+              borderRadius: 4,
+              bgcolor: 'error.light',
+              color: 'error.contrastText',
+              backgroundImage: 'linear-gradient(45deg, #FFCCCB, #FFB6C1)',
+              boxShadow: '0 3px 5px 2px rgba(255, 0, 0, .1)',
+              transition: 'background-color 0.3s ease',
+              ':hover': {
+                bgcolor: 'error.main'
+              }
+            }}
+          >
+            <Typography variant="body1">
+              An error occurred while processing your request. Please try again
+            </Typography>
+          </Box>
+        );
+        status.done('done');
+      });
+
+      return {
+        id: generateId(),
+        display: uiStream.value,
+        chatId: CurrentChatSessionId,
+        status: status.value
+      };
+    }
+  }
   const uiStream = createStreamableUI(
     <Box
       sx={{
