@@ -407,9 +407,9 @@ async function submitMessage(
       }
       dataStream.append(textDelta);
     }
-
-    // Final update with isStreaming set to false
+    // We update here to prevent the UI from flickering
     uiStream.update(<BotMessage textStream={dataStream.value} />);
+
     dataStream.done();
     uiStream.done();
     status.done('done');
@@ -939,9 +939,9 @@ ${formattedSearchResults}
       }
       dataStream.append(textDelta);
     }
-
-    // Final update with isStreaming set to false
+    // We update here to prevent the UI from flickering
     uiStream.update(<BotMessage textStream={dataStream.value} />);
+
     dataStream.done();
     uiStream.done();
     status.done('done');
@@ -1038,7 +1038,7 @@ async function SearchTool(
   currentUserMessage: string,
   model_select: 'claude3' | 'chatgpt4',
   chatId: string
-): Promise<SearchToolResult> {
+): Promise<SubmitMessageResult> {
   'use server';
 
   const status = createStreamableValue('searching');
@@ -1472,7 +1472,7 @@ Remember to maintain a professional yet conversational tone throughout the respo
   });
 
   return {
-    id: Date.now(),
+    id: generateId(),
     display: stream.value,
     chatId: CurrentChatSessionId,
     status: status.value
@@ -1494,18 +1494,6 @@ export type ClientMessage = {
   role: 'user' | 'assistant';
   display: React.ReactNode;
   chatId?: string | null;
-};
-
-export type SearchToolResult = {
-  success?: boolean;
-  message?: string;
-  limit?: number;
-  remaining?: number;
-  reset?: number;
-  id?: number;
-  display?: React.ReactNode;
-  chatId?: string;
-  status: StreamableValue<string, any>;
 };
 
 const initialAIState: ServerMessage[] = [];
@@ -1539,7 +1527,7 @@ type Actions = {
     currentUserMessage: string,
     model_select: 'claude3' | 'chatgpt4',
     chatId: string
-  ) => Promise<SearchToolResult>;
+  ) => Promise<SubmitMessageResult>;
   resetMessages: () => Promise<ResetResult>;
 };
 
