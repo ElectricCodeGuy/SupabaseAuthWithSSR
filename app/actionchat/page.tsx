@@ -30,15 +30,13 @@ export default async function Page(props: PageProps) {
       </Box>
 
       {searchParams.pdf ? (
-        <DocumentViewerSuspended
-          fileName={decodeURIComponent(searchParams.pdf)}
-        />
+        <DocumentComponent fileName={decodeURIComponent(searchParams.pdf)} />
       ) : null}
     </Box>
   );
 }
 
-async function DocumentViewerSuspended({ fileName }: { fileName: string }) {
+async function DocumentComponent({ fileName }: { fileName: string }) {
   const session = await getUserInfo();
   const userId = session?.id;
 

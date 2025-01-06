@@ -4,7 +4,6 @@ import { getSession } from '@/lib/server/supabase';
 import { z } from 'zod';
 import { createServerSupabaseClient } from '@/lib/server/server';
 import { createAdminClient } from '@/lib/server/admin';
-import { revalidateTag } from 'next/cache';
 
 export async function fetchChatPreviews(offset: number, limit: number) {
   const supabase = await createServerSupabaseClient();
@@ -66,7 +65,6 @@ export async function deleteChatData(chatId: string) {
       .eq('id', chatId);
 
     if (sessionError) throw sessionError;
-    revalidateTag('chat-history');
     return { message: 'Chat data and references deleted successfully' };
   } catch (error) {
     console.error('Error during deletion:', error);

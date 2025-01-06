@@ -1249,27 +1249,58 @@ async function SearchTool(
               });
 
               if (!contentResponse.ok) {
-                // If fetch fails, fall back to Tavily content
                 return {
                   title: result.title,
                   url: result.url,
-                  content: result.content // Use Tavily's content as fallback
+                  content: result.content
                 };
               }
 
               const contentHtml = await contentResponse.text();
               const $ = load(contentHtml);
-              const contentRAW = $('body')
+
+              // First get the full body content with basic cleaning
+              const bodyContent = $('body')
                 .clone()
                 .find('script, style, nav, header, footer, iframe, noscript')
                 .remove()
-                .end()
-                .text()
-                .replace(/\s+/g, ' ')
-                .trim();
+                .end();
+
+              // Then try to identify main content area within the body
+              const mainSelectors = [
+                'article',
+                'main',
+                '.main-content',
+                '#main-content',
+                '.post-content',
+                '.article-content',
+                '.entry-content',
+                '.content'
+              ];
+
+              let mainContent = null;
+              for (const selector of mainSelectors) {
+                const found = bodyContent.find(selector);
+                if (found.length) {
+                  console.log('Found main content:', selector);
+                  mainContent = found;
+                  break;
+                }
+              }
+
+              // Use main content if found, otherwise use cleaned body
+              const contentRAW = mainContent
+                ? mainContent.html()
+                : bodyContent
+                    .find(
+                      'button, .button, [role="button"], .menu, .navigation, .cookie-notice, .popup, .modal, .banner, .advertisement, .newsletter, .widget'
+                    )
+                    .remove()
+                    .end()
+                    .html();
 
               // Convert to markdown with proper sanitization
-              const content = nhm.translate(contentRAW);
+              const content = nhm.translate(contentRAW || '');
 
               return {
                 title: result.title,

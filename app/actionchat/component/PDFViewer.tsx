@@ -99,8 +99,7 @@ export default function DocumentViewer({
         }}
       >
         <Typography>
-          Du skal være logget ind og have et aktivt abonnement for at se dette
-          dokument.
+          You need to be logged in with an active subscription to view this
         </Typography>
         <Button
           component={Link}
@@ -108,7 +107,7 @@ export default function DocumentViewer({
           variant="contained"
           sx={{ mt: 2 }}
         >
-          Gå til login
+          Sign in
         </Button>
       </Box>
     );
@@ -128,7 +127,7 @@ export default function DocumentViewer({
         }}
       >
         <Typography>
-          Fejl ved indlæsning af dokument. Prøv venligst igen senere.
+          There was an error loading the document. Please try again later.
         </Typography>
       </Box>
     );
@@ -168,7 +167,7 @@ export default function DocumentViewer({
           textAlign: 'center'
         }}
       >
-        <Typography>Ingen fil tilgængelig.</Typography>
+        <Typography>No file available.</Typography>
       </Box>
     );
   }
@@ -239,7 +238,7 @@ export default function DocumentViewer({
           aria-label={`Office document: ${decodedFileName}`}
         />
       ) : (
-        <Typography>Denne filtype understøttes ikke.</Typography>
+        <Typography>This file is not supported.</Typography>
       )}
     </Box>
   );
