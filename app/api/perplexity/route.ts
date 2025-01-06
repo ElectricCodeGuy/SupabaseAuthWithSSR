@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createOpenAI } from '@ai-sdk/openai';
 import { streamText, CoreMessage, Message } from 'ai';
 import { saveChatToSupbabase } from './SaveToDb';
 import { v4 as uuidv4 } from 'uuid';
 import { Redis } from '@upstash/redis';
 import { Ratelimit } from '@upstash/ratelimit';
 import { revalidatePath } from 'next/cache';
-
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { getSession } from '@/lib/server/supabase';
 
-const perplexity = createOpenAI({
-  apiKey: process.env.PERPLEXITY_API_KEY ?? '',
+const perplexity = createOpenAICompatible({
+  name: 'perplexity',
+  headers: {
+    Authorization: `Bearer ${process.env.PERPLEXITY_API_KEY}`
+  },
   baseURL: 'https://api.perplexity.ai/'
 });
 
@@ -73,8 +75,8 @@ export async function POST(req: NextRequest) {
   ];
 
   try {
-    const result = await streamText({
-      model: perplexity('llama-3-sonar-large-32k-online'),
+    const result = streamText({
+      model: perplexity('llama-3.1-sonar-small-128k-online'),
       messages: fullMessages,
       onFinish: async (event) => {
         await saveChatToSupbabase(
@@ -84,7 +86,7 @@ export async function POST(req: NextRequest) {
           event.text
         );
         if (isNewChat) {
-          revalidatePath('/aichat[id]', 'page');
+          revalidatePath('/aichat[id]', 'layout');
         }
       }
     });
@@ -92,7 +94,8 @@ export async function POST(req: NextRequest) {
     // Return the streaming response
     return result.toDataStreamResponse({
       headers: {
-        'x-chat-id': chatSessionId
+        'x-chat-id': chatSessionId,
+        'x-new-chat': isNewChat ? 'true' : 'false'
       }
     });
   } catch (error) {

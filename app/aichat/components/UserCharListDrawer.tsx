@@ -323,45 +323,31 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
             }
           }}
         >
-          <Box
-            sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              height: '100%'
-            }}
+          <ListItem
+            component={Link}
+            href={`/aichat?modeltype=${searchParams.get('modeltype') ?? 'standart'}&modelselected=${searchParams.get('modelselected') ?? 'gpt-3.5-turbo-1106'}`}
+            prefetch={false}
+            key="newChat"
+            disablePadding
+            sx={{ padding: 1, alignContent: 'center' }}
           >
-            <Box sx={{ overflow: 'auto', flexGrow: 1 }}>
-              <ListItem
-                component={Link}
-                href={`/aichat?modeltype=${searchParams.get('modeltype') ?? 'standart'}&modelselected=${searchParams.get('modelselected') ?? 'gpt-3.5-turbo-1106'}`}
-                prefetch={false}
-                key="newChat"
-                disablePadding
-                sx={{ padding: 1, alignContent: 'center' }}
-              >
-                <ListItemButton
-                  sx={{
-                    alignContent: 'center'
-                  }}
-                >
-                  New Chat
-                </ListItemButton>
-              </ListItem>
-              <Divider />
-              <List>{chatListItems}</List>
-              {allChatPreviews.length % 30 === 0 && (
-                <ListItem component="form" action={handleLoadMore}>
-                  <Button type="submit" fullWidth disabled={isValidating}>
-                    {isValidating ? (
-                      <CircularProgress size={24} />
-                    ) : (
-                      'Load More'
-                    )}
-                  </Button>
-                </ListItem>
-              )}
-            </Box>
-          </Box>
+            <ListItemButton
+              sx={{
+                alignContent: 'center'
+              }}
+            >
+              New Chat
+            </ListItemButton>
+          </ListItem>
+          <Divider />
+          <List>{chatListItems}</List>
+          {allChatPreviews.length % 30 === 0 && (
+            <ListItem component="form" action={handleLoadMore}>
+              <Button type="submit" fullWidth disabled={isValidating}>
+                {isValidating ? <CircularProgress size={24} /> : 'Load More'}
+              </Button>
+            </ListItem>
+          )}
         </SwipeableDrawer>
       </Box>
       <Dialog

@@ -1435,6 +1435,7 @@ Remember to maintain a professional yet conversational tone throughout the respo
 
       dataStream.append(textDelta);
     }
+    // We update here to prevent the UI from flickering
     stream.update(
       <>
         <BotMessage textStream={dataStream.value} />

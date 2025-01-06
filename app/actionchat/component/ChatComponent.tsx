@@ -475,7 +475,7 @@ export default function ChatComponentPage({
                           <SendIcon />
                         </IconButton>
                         {messages.length > 0 && (
-                          <Tooltip title="Ryd alle beskeder">
+                          <Tooltip title="Clear all messages">
                             <IconButton
                               aria-label="clear messages"
                               color="primary"
@@ -494,7 +494,7 @@ export default function ChatComponentPage({
           />
           {messages.length > 0 && (
             <>
-              <Tooltip title="Skift mode" arrow placement="top">
+              <Tooltip title="Change mode" arrow placement="top">
                 <IconButton
                   onClick={handleClick}
                   sx={{
@@ -747,7 +747,7 @@ export default function ChatComponentPage({
       if (currentSearchParams.toString()) {
         newUrl += `?${currentSearchParams.toString()}`;
       }
-
+      // Refresh the chat previews to show the new chat in the list of chats
       mutate((key) => Array.isArray(key) && key[0] === 'chatPreviews');
       router.replace(newUrl, { scroll: false });
       router.refresh();

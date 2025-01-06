@@ -12,6 +12,7 @@
   "dependencies": {
     "@ai-sdk/anthropic": "^1.0.5",
     "@ai-sdk/openai": "^1.0.9",
+    "@ai-sdk/openai-compatible": "^0.0.13",
     "@date-fns/tz": "^1.2.0",
     "@emotion/cache": "^11.13.1",
     "@emotion/react": "^11.13.3",

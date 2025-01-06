@@ -50,6 +50,7 @@ import {
   KeyboardArrowUp as KeyboardArrowUpIcon
 } from '@mui/icons-material';
 import { Tables } from '@/types/database';
+import Link from 'next/link';
 
 const highlightOptionsAI: HighlightOptions = {
   detect: true,
@@ -78,7 +79,6 @@ const messageStyles: Record<string, SxProps<Theme>> = {
     background: '#daf8cb',
     color: '#203728',
     position: 'relative',
-    pt: 2,
     borderRadius: '8px',
     margin: '8px 0',
     alignSelf: 'flex-start',
@@ -92,7 +92,6 @@ const messageStyles: Record<string, SxProps<Theme>> = {
     position: 'relative',
     background: '#f0f0f0',
     color: '#2c3e50',
-    pt: 2,
     borderRadius: '8px',
     margin: '8px 0',
     alignSelf: 'flex-start',
@@ -110,22 +109,14 @@ interface ChatMessageProps {
 
 const MessageComponent = ({ message }: { message: Message }) => {
   const [isCopied, setIsCopied] = useState(false);
-  const router = useRouter();
 
   const componentsAI: Partial<Components> = {
     a: ({ href, children }) => (
-      <a
-        href={href}
-        onClick={(e) => {
-          e.preventDefault();
-          if (href) {
-            router.push(href);
-          }
-        }}
-      >
+      <MuiLink component={Link} href={href} target="_blank" rel="noopener">
         {children}
-      </a>
+      </MuiLink>
     ),
+
     code({ className, children, ...props }) {
       const match = /language-(\w+)/.exec(className || '');
       const language = match && match[1] ? match[1] : '';
@@ -143,9 +134,8 @@ const MessageComponent = ({ message }: { message: Message }) => {
           style={{
             position: 'relative',
             borderRadius: '5px',
-            padding: '20px',
-            marginTop: '20px',
-            maxWidth: '100%'
+            paddingTop: '20px',
+            width: '100%'
           }}
         >
           <span
@@ -159,37 +149,15 @@ const MessageComponent = ({ message }: { message: Message }) => {
           >
             {language}
           </span>
-          <div
-            style={{
-              overflowX: 'auto',
-              maxWidth: '1100px'
-            }}
-          >
-            <pre style={{ margin: '0' }}>
-              <code className={className} {...props}>
-                {children}
-              </code>
-            </pre>
-          </div>
+
+          <pre style={{ margin: '0', overflowX: 'auto' }}>
+            <code className={className} {...props}>
+              {children}
+            </code>
+          </pre>
         </div>
       );
     }
-  };
-
-  const componentsUser: Partial<Components> = {
-    a: ({ href, children }) => (
-      <a
-        href={href}
-        onClick={(e) => {
-          e.preventDefault();
-          if (href) {
-            router.push(href);
-          }
-        }}
-      >
-        {children}
-      </a>
-    )
   };
 
   const copyToClipboard = (str: string): void => {
@@ -213,8 +181,8 @@ const MessageComponent = ({ message }: { message: Message }) => {
       <Box
         sx={{
           position: 'absolute',
-          top: '10px',
-          left: '10px'
+          top: '2px',
+          left: '2px'
         }}
       >
         {message.role === 'user' ? (
@@ -245,25 +213,23 @@ const MessageComponent = ({ message }: { message: Message }) => {
           )}
         </Box>
       )}
-      <Box sx={{ overflowWrap: 'break-word' }}>
-        {message.role === 'user' ? (
-          <ReactMarkdown
-            components={componentsUser}
-            remarkPlugins={[remarkGfm, remarkMath]}
-            rehypePlugins={[rehypeHighlight]}
-          >
-            {message.content}
-          </ReactMarkdown>
-        ) : (
-          <ReactMarkdown
-            components={componentsAI}
-            remarkPlugins={[remarkGfm, remarkMath]}
-            rehypePlugins={[[rehypeHighlight, highlightOptionsAI]]}
-          >
-            {message.content}
-          </ReactMarkdown>
-        )}
-      </Box>
+
+      {message.role === 'user' ? (
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm, remarkMath]}
+          rehypePlugins={[rehypeHighlight]}
+        >
+          {message.content}
+        </ReactMarkdown>
+      ) : (
+        <ReactMarkdown
+          components={componentsAI}
+          remarkPlugins={[remarkGfm, remarkMath]}
+          rehypePlugins={[[rehypeHighlight, highlightOptionsAI]]}
+        >
+          {message.content}
+        </ReactMarkdown>
+      )}
     </ListItem>
   );
 };
@@ -495,6 +461,8 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
         <Box sx={{ flex: 1, overflowY: 'auto' }}>
           <List
             sx={{
+              flex: 1,
+              overflowY: 'auto',
               width: '100%',
               mx: 'auto',
               maxWidth: '1000px',
@@ -539,8 +507,7 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
           elevation={4}
           sx={{
             backgroundColor: 'lightgray',
-            pr: 0.5,
-            pl: 0.5,
+
             maxWidth: 1000,
             borderRadius: '20px',
             height: 'auto',
@@ -701,7 +668,7 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
                 xl: 4
               }}
             >
-              <FormControl component="fieldset" sx={{ width: '100%' }}>
+              <FormControl component="fieldset" sx={{ width: '100%', pl: 2 }}>
                 <RadioGroup
                   aria-label="model-type"
                   name="model-type"

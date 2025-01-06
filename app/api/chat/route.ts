@@ -71,6 +71,7 @@ export async function POST(req: NextRequest) {
       system: SYSTEM_TEMPLATE,
       messages: messages,
       abortSignal: signal,
+
       onFinish: async (event) => {
         try {
           const lastMessage = messages[messages.length - 1];
@@ -83,7 +84,7 @@ export async function POST(req: NextRequest) {
             event.text
           );
           if (isNewChat) {
-            revalidatePath('/aichat[id]', 'page');
+            revalidatePath('/aichat[id]', 'layout');
           }
           console.log('Chat saved to Supabase:', chatSessionId);
         } catch (error) {
