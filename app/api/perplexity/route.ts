@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { streamText, CoreMessage, Message } from 'ai';
 import { saveChatToSupbabase } from './SaveToDb';
-import { v4 as uuidv4 } from 'uuid';
 import { Redis } from '@upstash/redis';
 import { Ratelimit } from '@upstash/ratelimit';
-import { revalidatePath } from 'next/cache';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { getSession } from '@/lib/server/supabase';
 
@@ -56,10 +54,15 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
   const messages: Message[] = body.messages ?? [];
-  const chatSessionId =
-    body.chatId && body.chatId.trim() !== '' ? body.chatId : uuidv4();
-  const isNewChat = !body.chatId || body.chatId.trim() === '';
-
+  const chatSessionId = body.chatId;
+  if (!chatSessionId) {
+    return new NextResponse('Chat session ID is empty.', {
+      status: 400,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+  }
   const fullMessages: CoreMessage[] = [
     {
       role: 'system',
@@ -85,19 +88,11 @@ export async function POST(req: NextRequest) {
           messages[messages.length - 1].content,
           event.text
         );
-        if (isNewChat) {
-          revalidatePath('/aichat[id]', 'layout');
-        }
       }
     });
 
     // Return the streaming response
-    return result.toDataStreamResponse({
-      headers: {
-        'x-chat-id': chatSessionId,
-        'x-new-chat': isNewChat ? 'true' : 'false'
-      }
-    });
+    return result.toDataStreamResponse();
   } catch (error) {
     console.error('Error processing Perplexity response:', error);
     return new NextResponse('Internal Server Error', { status: 500 });

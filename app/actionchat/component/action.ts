@@ -5,16 +5,23 @@ import { z } from 'zod';
 import { createServerSupabaseClient } from '@/lib/server/server';
 import { createAdminClient } from '@/lib/server/admin';
 
-export async function fetchChatPreviews(offset: number, limit: number) {
-  const supabase = await createServerSupabaseClient();
-  const session = await getSession();
+export type ChatPreview = {
+  id: string;
+  firstMessage: string;
+  created_at: string;
+};
 
+export async function fetchMoreChatPreviews(offset: number) {
+  const session = await getSession();
   if (!session) {
     throw new Error('User not authenticated');
   }
 
+  const supabase = await createServerSupabaseClient();
+  const limit = 30;
+
   try {
-    const query = supabase
+    const { data, error } = await supabase
       .from('chat_sessions')
       .select(
         `
@@ -25,26 +32,18 @@ export async function fetchChatPreviews(offset: number, limit: number) {
         )
       `
       )
-      .eq('chat_messages.is_user_message', true)
       .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1)
-      .order('created_at', {
-        referencedTable: 'chat_messages',
-        ascending: true
-      })
-      .limit(1, { foreignTable: 'chat_messages' });
-
-    const { data, error } = await query;
+      .range(offset, offset + limit - 1);
 
     if (error) throw error;
 
-    // Truncate the content after fetching
-    return data.map((chat) => ({
-      ...chat,
-      chat_messages: chat.chat_messages.map((message) => ({
-        content: message.content ? message.content.substring(0, 50) : ''
-      }))
+    const chatPreviews: ChatPreview[] = data.map((session) => ({
+      id: session.id,
+      firstMessage: session.chat_messages[0]?.content || 'No messages yet',
+      created_at: session.created_at
     }));
+
+    return chatPreviews;
   } catch (error) {
     console.error('Error fetching chat previews:', error);
     return [];

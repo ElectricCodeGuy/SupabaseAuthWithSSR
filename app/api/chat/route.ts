@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { streamText, CoreMessage } from 'ai';
-import { v4 as uuidv4 } from 'uuid';
 import { saveChatToSupbabase } from './SaveToDb';
 import { Ratelimit } from '@upstash/ratelimit';
 import { openai } from '@ai-sdk/openai';
 import { anthropic } from '@ai-sdk/anthropic';
 import { redis } from '@/lib/server/server';
 import { getSession } from '@/lib/server/supabase';
-import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -55,9 +53,15 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
   const messages: CoreMessage[] = body.messages ?? [];
-  const chatSessionId =
-    body.chatId && body.chatId.trim() !== '' ? body.chatId : uuidv4();
-  const isNewChat = !body.chatId || body.chatId.trim() === '';
+  const chatSessionId = body.chatId;
+  if (!chatSessionId) {
+    return new NextResponse('Chat session ID is empty.', {
+      status: 400,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+  }
   const selectedModel = body.option ?? 'gpt-3.5-turbo-1106';
 
   const abortController = new AbortController();
@@ -83,9 +87,6 @@ export async function POST(req: NextRequest) {
             lastMessageContent,
             event.text
           );
-          if (isNewChat) {
-            revalidatePath('/aichat[id]', 'layout');
-          }
           console.log('Chat saved to Supabase:', chatSessionId);
         } catch (error) {
           console.error('Error saving chat to Redis:', error);
@@ -93,12 +94,7 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    return result.toDataStreamResponse({
-      headers: {
-        'x-chat-id': chatSessionId,
-        'x-new-chat': isNewChat ? 'true' : 'false'
-      }
-    });
+    return result.toDataStreamResponse();
   } catch (e) {
     if (e instanceof Error && e.message === 'InvalidToken') {
       return new NextResponse('Autentifikationstokenet fejlede.', {

@@ -5,7 +5,6 @@ import React, {
   useMemo,
   useState,
   FC,
-  FormEvent,
   KeyboardEvent,
   useCallback
 } from 'react';
@@ -15,6 +14,7 @@ import ReactMarkdown, { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeHighlight, { Options as HighlightOptions } from 'rehype-highlight';
+import { v4 as uuidv4 } from 'uuid';
 import 'highlight.js/styles/github-dark.css';
 import {
   Box,
@@ -51,7 +51,7 @@ import {
 } from '@mui/icons-material';
 import { Tables } from '@/types/database';
 import Link from 'next/link';
-
+import { useSWRConfig } from 'swr';
 const highlightOptionsAI: HighlightOptions = {
   detect: true,
   prefix: 'hljs-'
@@ -112,7 +112,12 @@ const MessageComponent = ({ message }: { message: Message }) => {
 
   const componentsAI: Partial<Components> = {
     a: ({ href, children }) => (
-      <MuiLink component={Link} href={href} target="_blank" rel="noopener">
+      <MuiLink
+        component={Link}
+        href={href || '#'}
+        target="_blank"
+        rel="noopener"
+      >
         {children}
       </MuiLink>
     ),
@@ -252,9 +257,9 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
 
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [showScrollToTop, setShowScrollToTop] = useState(false);
-  const [chatIdToAppend, setChatIdToAppend] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
 
+  const { mutate } = useSWRConfig();
   const handleScrollToTop = () => {
     window.scrollTo({
       top: 0,
@@ -293,7 +298,7 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
     searchParams.get('modelselected') || 'gpt-3.5-turbo-1106';
 
   const apiEndpoint = modelType === 'perplex' ? '/api/perplexity' : '/api/chat';
-
+  const createChatId = uuidv4();
   const {
     messages,
     input,
@@ -305,27 +310,20 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
   } = useChat({
     api: apiEndpoint,
     body: {
-      chatId: chatId === '1' ? '' : chatId,
+      chatId: chatId || createChatId,
       option: selectedOption
     },
-    experimental_throttle: 50,
+    experimental_throttle: 100,
     initialMessages: initialMessages,
-    onResponse: (res) => {
-      if (res.status === 200) {
-        const chatIdHeader = res.headers.get('x-chat-id');
-        const isNewChat = res.headers.get('x-new-chat');
-        if (chatIdHeader && isNewChat === 'true') {
-          setChatIdToAppend(chatIdHeader);
-        }
-      } else {
-        res.json().then((data) => {
-          let message = 'En fejl opstod, prøv venligst igen';
-          if (data.message) {
-            message = data.message;
-          }
-          setErrorMessage(message);
-          setSnackbarOpen(true);
+    onFinish: async () => {
+      if (!chatId) {
+        // Only redirect if it's a new chat
+        const existingParams = searchParams.toString();
+        const newUrl = `${pathname}/${createChatId}${existingParams ? `?${existingParams}` : ''}`;
+        router.replace(newUrl, {
+          scroll: false
         });
+        mutate((key) => Array.isArray(key) && key[0] === 'chatPreviews');
       }
     },
     onError: (error) => {
@@ -338,36 +336,13 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
     }
   });
 
-  useEffect(() => {
-    if (chatIdToAppend && !isLoading && !chatId) {
-      const newQueryParams = new URLSearchParams();
-      if (searchParams.has('modeltype')) {
-        newQueryParams.set(
-          'modeltype',
-          searchParams.get('modeltype') ?? 'standart'
-        );
-      }
-      if (searchParams.has('modelselected')) {
-        newQueryParams.set(
-          'modelselected',
-          searchParams.get('modelselected') ?? 'gpt-3.5-turbo-1106'
-        );
-      }
-      const newUrl = `${pathname}/${chatIdToAppend}?${newQueryParams.toString()}`;
-      router.replace(newUrl, {
-        scroll: false
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chatIdToAppend, isLoading, pathname, router, chatId]);
-
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Enter' && event.shiftKey) {
       // Allow newline on Shift + Enter
     } else if (event.key === 'Enter') {
       // Prevent default behavior and submit form on Enter only
       event.preventDefault();
-      handleSubmit(event as unknown as FormEvent<HTMLFormElement>);
+      handleSubmit(event);
     }
   };
 
@@ -388,7 +363,7 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
 
   const handleModelTypeChange = (newValue: string | null) => {
     const queryString = createQueryString('modeltype', newValue || 'standart');
-    router.replace(`${pathname}?${queryString}`, {
+    router.replace(`?${queryString}`, {
       scroll: false
     });
   };
@@ -398,7 +373,7 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
       'modelselected',
       newValue || 'gpt-3.5-turbo-1106'
     );
-    router.replace(`${pathname}?${queryString}`, {
+    router.replace(`?${queryString}`, {
       scroll: false
     });
   };

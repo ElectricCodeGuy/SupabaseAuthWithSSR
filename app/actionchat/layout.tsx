@@ -12,56 +12,45 @@ import { UploadProvider } from './context/uploadContext';
 
 export const maxDuration = 60; // Incrase the lambda duration to 60 seconds
 
-async function fetchChatPreviews(
-  offset: number,
-  limit: number,
-  supabase: SupabaseClient<Database>
+async function fetchData(
+  supabase: SupabaseClient<Database>,
+  limit: number = 30,
+  offset: number = 0
 ) {
   noStore();
   try {
-    const query = supabase
+    const { data, error } = await supabase
       .from('chat_sessions')
       .select(
         `
-        id,
-        created_at,
-        chat_messages (
-          content
-        )
-      `
+          id,
+          created_at,
+          chat_messages (
+            content
+          )
+        `
       )
-      .eq('chat_messages.is_user_message', true)
       .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1)
-      .order('created_at', {
-        referencedTable: 'chat_messages',
-        ascending: true
-      })
-      .limit(1, { foreignTable: 'chat_messages' });
-
-    const { data, error } = await query;
+      .range(offset, offset + limit - 1);
 
     if (error) throw error;
 
-    // Truncate the content after fetching with null check
-    return data.map((chat) => ({
-      ...chat,
-      chat_messages: chat.chat_messages.map((message) => ({
-        content: message.content ? message.content.substring(0, 50) : ''
-      }))
+    return data.map((session) => ({
+      id: session.id,
+      firstMessage: session.chat_messages[0]?.content || 'No messages yet',
+      created_at: session.created_at
     }));
   } catch (error) {
     console.error('Error fetching chat previews:', error);
     return [];
   }
 }
+
 type UserInfo = Pick<Tables<'users'>, 'full_name' | 'email' | 'id'>;
 type ChatPreview = {
-  id: Tables<'chat_sessions'>['id'];
-  created_at: Tables<'chat_sessions'>['created_at'];
-  chat_messages: {
-    content: Tables<'chat_messages'>['content'];
-  }[];
+  id: string;
+  firstMessage: string;
+  created_at: string;
 };
 
 export default async function Layout(props: { children: React.ReactNode }) {
@@ -73,7 +62,7 @@ export default async function Layout(props: { children: React.ReactNode }) {
 
   if (userData) {
     userInfo = userData;
-    initialChatPreviews = await fetchChatPreviews(0, 25, supabase);
+    initialChatPreviews = await fetchData(supabase, 30, 0);
   } else {
     userInfo = {
       id: '',

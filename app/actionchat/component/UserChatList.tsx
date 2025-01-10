@@ -2,7 +2,7 @@
 import React, { type FC, useState, memo, useCallback, useMemo } from 'react';
 import {
   deleteChatData,
-  fetchChatPreviews,
+  fetchMoreChatPreviews,
   deleteFilterTagAndDocumentChunks
 } from './action';
 import {
@@ -49,11 +49,9 @@ import { useFormStatus } from 'react-dom';
 type UserInfo = Pick<Tables<'users'>, 'full_name' | 'email' | 'id'>;
 
 type ChatPreview = {
-  id: Tables<'chat_sessions'>['id'];
-  created_at: Tables<'chat_sessions'>['created_at'];
-  chat_messages: {
-    content: Tables<'chat_messages'>['content'];
-  }[];
+  id: string;
+  firstMessage: string;
+  created_at: string;
 };
 
 interface CombinedDrawerProps {
@@ -164,7 +162,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
     (index) => [`chatPreviews`, index],
     async ([_, index]) => {
       const offset = index * 25;
-      const newChatPreviews = await fetchChatPreviews(offset, 25);
+      const newChatPreviews = await fetchMoreChatPreviews(offset);
       return newChatPreviews;
     },
     {
@@ -178,7 +176,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
   );
 
   const hasMore =
-    chatPreviews && chatPreviews[chatPreviews.length - 1]?.length === 25;
+    chatPreviews && chatPreviews[chatPreviews.length - 1]?.length === 30;
 
   const loadMoreChats = useCallback(() => {
     if (!isLoadingMore) {
@@ -638,8 +636,8 @@ const RenderChatSection: FC<RenderChatSectionProps> = memo(
     return (
       <>
         <Divider sx={{ color: 'textSecondary', px: 1, mb: 2 }}>{title}</Divider>
-        {chats.map(({ id, chat_messages, created_at }) => {
-          const firstMessage = chat_messages[0]?.content || 'No messages yet';
+        {chats.map(({ id, firstMessage = [], created_at }) => {
+          // Add default empty array here
           const currentParams = new URLSearchParams(searchParams.toString());
           const href = `/actionchat/${id}${
             currentParams.toString() ? '?' + currentParams.toString() : ''

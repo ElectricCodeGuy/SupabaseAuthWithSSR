@@ -1,6 +1,5 @@
 'use server';
 
-import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 import { cookies } from 'next/headers';
 
@@ -53,9 +52,6 @@ export async function deleteChatData(chatId: string) {
       .eq('id', chatId);
 
     if (sessionError) throw sessionError;
-
-    // Revalidate the 'datafetch' tag to update the UI
-    revalidateTag('datafetch');
 
     return { message: 'Chat data and references deleted successfully' };
   } catch (error) {

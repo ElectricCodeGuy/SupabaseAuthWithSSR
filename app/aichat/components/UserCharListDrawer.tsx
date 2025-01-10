@@ -2,7 +2,7 @@
 import React, { type FC, useState } from 'react';
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import { deleteChatData } from '../actions';
-import useSWRImmutable from 'swr/immutable';
+import useSWRInfinite from 'swr/infinite';
 import {
   Box,
   List,
@@ -44,42 +44,33 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
   const [chatToDelete, setChatToDelete] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [offset, setOffset] = useState(60);
-  const [allChatPreviews, setAllChatPreviews] =
-    useState<ChatPreview[]>(initialChatPreviews);
+
   // Fetches more chat previews when the offset changes
   const {
-    data: moreChatPreviews,
+    data: allChatPreviews,
     isValidating,
-    mutate
-  } = useSWRImmutable(
-    offset > 30 ? [offset] : null,
-    ([offset]) => fetchMoreChatPreviews(offset),
+    mutate: mutateChatPreviews,
+    size,
+    setSize
+  } = useSWRInfinite(
+    (index) => [`chatPreviews`, index],
+    async ([_, index]) => {
+      const newOffset = index * 30;
+      return fetchMoreChatPreviews(newOffset);
+    },
     {
+      fallbackData: [initialChatPreviews],
       revalidateOnFocus: false,
-      revalidateOnReconnect: false
+      revalidateOnReconnect: false,
+      revalidateFirstPage: false
     }
   );
-  // Handles loading more chat previews
-  const handleLoadMore = async () => {
-    const newOffset = offset + 30;
-    setOffset(newOffset);
-    await mutate();
-    if (moreChatPreviews) {
-      setAllChatPreviews((prevPreviews) => [
-        ...prevPreviews,
-        ...moreChatPreviews
-      ]);
+
+  const loadMore = () => {
+    if (!isValidating) {
+      setSize(size + 1);
     }
   };
-
-  const truncateMessage = (message: string, length: number) => {
-    return message.length > length
-      ? `${message.substring(0, length)}...`
-      : message;
-  };
-
-  const isSelected = (id: string) => id === currentChatId;
 
   const handleDeleteClick = (id: string) => {
     setChatToDelete(id);
@@ -90,6 +81,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
     if (chatToDelete) {
       try {
         await deleteChatData(chatToDelete);
+        await mutateChatPreviews();
         if (chatToDelete === currentChatId) {
           const newHref = '/aichat';
           router.replace(newHref, { scroll: false });
@@ -106,81 +98,106 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
   const modelType = searchParams.get('modeltype') || 'standart';
   const selectedOption =
     searchParams.get('modelselected') || 'gpt-3.5-turbo-1106';
+  const formatDate = (dateString: string) => {
+    return format(new Date(dateString), 'PP');
+  };
 
   // Renders the list of chat previews
-  const chatListItems = allChatPreviews.map(
-    ({ id, firstMessage, created_at }) => {
+  const chatListItems = (allChatPreviews ?? []).flatMap((page) =>
+    page.map(({ id, firstMessage, created_at }) => {
       const tooltipTitle = firstMessage || 'No messages yet';
-      const truncatedMessage = truncateMessage(
-        firstMessage || `Chat ID: ${id}`,
-        24
-      );
-      const formattedDate = format(new Date(created_at), 'yyyy-MM-dd');
-
-      const selectedStyle = isSelected(id)
-        ? {
-            backgroundColor: theme.palette.action.selected,
-            borderLeft: `4px solid ${theme.palette.primary.main}`,
-            borderRadius: '0 4px 4px 0'
-          }
-        : {};
 
       return (
         <React.Fragment key={id}>
-          <Tooltip title={tooltipTitle} placement="left" arrow>
-            <ListItem disablePadding>
-              <ListItemButton
-                component={Link}
-                href={`/aichat/${id}?modeltype=${modelType}&modelselected=${selectedOption}`}
-                prefetch={false}
-                onMouseEnter={() => {
-                  router.prefetch(
-                    `/aichat/${id}?modeltype=${modelType}&modelselected=${selectedOption}`
-                  );
-                }}
+          <Tooltip
+            title={tooltipTitle}
+            placement="left"
+            arrow
+            sx={{ maxHeight: 100 }}
+          >
+            <ListItemButton
+              component={Link}
+              href={`/aichat/${id}?modeltype=${modelType}&modelselected=${selectedOption}`}
+              prefetch={false}
+              onMouseEnter={() => {
+                router.prefetch(
+                  `/aichat/${id}?modeltype=${modelType}&modelselected=${selectedOption}`
+                );
+              }}
+              sx={{
+                fontSize: '0.95rem',
+                backgroundColor:
+                  currentChatId === id ? 'rgba(0, 0, 0, 0.1)' : 'inherit',
+                paddingRight: '25px',
+                position: 'relative',
+                '&::after': {
+                  content: 'attr(data-truncated-message)',
+                  display: 'block',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  '@media (max-width: 600px)': {
+                    maxWidth: 'calc(100% - 50px)'
+                  },
+                  '@media (min-width: 601px)': {
+                    maxWidth: 'calc(100% - 70px)'
+                  }
+                },
+                // Show delete button on hover
+                '& .delete-button': {
+                  display: 'none'
+                },
+                '&:hover .delete-button': {
+                  display: 'flex'
+                }
+              }}
+              data-truncated-message={firstMessage}
+            >
+              <Chip
+                label={formatDate(created_at)}
+                size="small"
                 sx={{
-                  fontSize: '0.9rem',
-                  ...selectedStyle,
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  position: 'relative'
+                  position: 'absolute',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  right: {
+                    xs: '4px',
+                    sm: '4px',
+                    md: '20px'
+                  },
+                  fontSize: '0.6rem',
+                  backgroundColor: 'rgba(0, 0, 0, 0.05)',
+                  height: '20px'
+                }}
+              />
+              <IconButton
+                className="delete-button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleDeleteClick(id);
+                }}
+                size="small"
+                sx={{
+                  padding: '2px',
+                  position: 'absolute',
+                  right: 0,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: 'error.main',
+                  '&:hover': {
+                    backgroundColor: 'error.light',
+                    color: 'error.contrastText'
+                  }
                 }}
               >
-                {truncatedMessage}
-                <Chip
-                  label={formattedDate}
-                  size="small"
-                  sx={{
-                    fontSize: '0.7rem'
-                  }}
-                />
-                {isSelected(id) && (
-                  <IconButton
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleDeleteClick(id);
-                    }}
-                    size="small"
-                    sx={{
-                      padding: '2px',
-                      position: 'absolute',
-                      right: 0,
-                      top: '50%',
-                      transform: 'translateY(-50%)'
-                    }}
-                  >
-                    <DeleteIcon fontSize="inherit" />
-                  </IconButton>
-                )}
-              </ListItemButton>
-            </ListItem>
+                <DeleteIcon fontSize="inherit" />
+              </IconButton>
+            </ListItemButton>
           </Tooltip>
           <Divider />
         </React.Fragment>
       );
-    }
+    })
   );
 
   return (
@@ -238,30 +255,27 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
             }}
           >
             <Box sx={{ overflow: 'auto', flexGrow: 1 }}>
-              <ListItem
+              <Button
+                fullWidth
                 component={Link}
                 href={`/aichat?modeltype=${searchParams.get('modeltype') ?? 'standart'}&modelselected=${searchParams.get('modelselected') ?? 'gpt-3.5-turbo-1106'}`}
                 prefetch={false}
                 key="newChat"
                 aria-label="New Chat"
-                disablePadding
-                sx={{ padding: 0.2 }}
+                sx={{
+                  fontSize: '1rem',
+                  p: 0.75,
+                  borderBottom: '1px solid rgba(0, 0, 0, 0.12)'
+                }}
               >
-                <ListItemButton
-                  sx={{
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    textAlign: 'center'
-                  }}
-                >
-                  New Chat
-                </ListItemButton>
-              </ListItem>
-              <Divider />
+                New Chat
+              </Button>
+
               <List>{chatListItems}</List>
-              {allChatPreviews.length % 30 === 0 && (
-                <ListItem component="form" action={handleLoadMore}>
-                  <Button type="submit" fullWidth disabled={isValidating}>
+              {(allChatPreviews?.[allChatPreviews.length - 1]?.length ?? 0) ===
+                30 && (
+                <ListItem component="div">
+                  <Button onClick={loadMore} disabled={isValidating}>
                     {isValidating ? (
                       <CircularProgress size={24} />
                     ) : (
@@ -271,30 +285,32 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
                 </ListItem>
               )}
             </Box>
-            <Box>
-              <Divider />
-              <List>
-                {[
-                  { href: '/', label: 'Home' },
-                  { href: '/protected', label: 'Account' }
-                ].map((item, index) => (
-                  <React.Fragment key={index}>
-                    <ListItem disablePadding>
-                      <Link
-                        href={item.href}
-                        prefetch={false}
-                        onMouseEnter={() => {
-                          router.prefetch(item.href);
-                        }}
-                      >
-                        <ListItemButton>{item.label}</ListItemButton>
-                      </Link>
-                    </ListItem>
-                    <Divider />
-                  </React.Fragment>
-                ))}
-              </List>
-            </Box>
+
+            <Divider />
+
+            {[
+              { href: '/', label: 'Home' },
+              { href: '/protected', label: 'Account' }
+            ].map((item, index) => (
+              <React.Fragment key={index}>
+                <Button
+                  fullWidth
+                  component={Link}
+                  href={item.href}
+                  prefetch={false}
+                  onMouseEnter={() => {
+                    router.prefetch(item.href);
+                  }}
+                  sx={{
+                    p: 1
+                  }}
+                >
+                  {item.label}
+                </Button>
+
+                <Divider />
+              </React.Fragment>
+            ))}
           </Box>
         </Drawer>
       </Box>
@@ -341,9 +357,10 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
           </ListItem>
           <Divider />
           <List>{chatListItems}</List>
-          {allChatPreviews.length % 30 === 0 && (
-            <ListItem component="form" action={handleLoadMore}>
-              <Button type="submit" fullWidth disabled={isValidating}>
+          {(allChatPreviews?.[allChatPreviews.length - 1]?.length ?? 0) ===
+            30 && (
+            <ListItem component="div">
+              <Button onClick={loadMore} disabled={isValidating}>
                 {isValidating ? <CircularProgress size={24} /> : 'Load More'}
               </Button>
             </ListItem>
