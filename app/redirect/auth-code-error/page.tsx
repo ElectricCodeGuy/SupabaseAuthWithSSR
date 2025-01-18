@@ -35,17 +35,25 @@ const AuthCodeErrorPage: React.FC = () => {
         options:
       </Typography>
 
-      <Link href="/auth/signup" passHref>
-        <Button variant="outlined" color="primary" sx={{ m: 1 }}>
-          Try again
-        </Button>
-      </Link>
+      <Button
+        component={Link}
+        href="/auth/signup"
+        variant="outlined"
+        color="primary"
+        sx={{ m: 1 }}
+      >
+        Try again
+      </Button>
 
-      <Link href="/" passHref>
-        <Button variant="contained" color="primary" sx={{ m: 1 }}>
-          Go to Home
-        </Button>
-      </Link>
+      <Button
+        component={Link}
+        href="/"
+        variant="contained"
+        color="primary"
+        sx={{ m: 1 }}
+      >
+        Go to Home
+      </Button>
 
       <Typography variant="body2" color="textSecondary">
         Need further assistance? Contact our{' '}
