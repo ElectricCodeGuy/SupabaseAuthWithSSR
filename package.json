@@ -12,7 +12,7 @@
   "dependencies": {
     "@ai-sdk/anthropic": "^1.0.5",
     "@ai-sdk/openai": "^1.0.9",
-    "@ai-sdk/openai-compatible": "^0.0.16",
+    "@ai-sdk/openai-compatible": "^0.0.17",
     "@date-fns/tz": "^1.2.0",
     "@emotion/cache": "^11.13.1",
     "@emotion/react": "^11.13.3",
@@ -56,7 +56,7 @@
     "@typescript-eslint/parser": "^8.10.0",
     "eslint": "^9.16.0",
     "eslint-config-next": "^15.1.0",
-    "eslint-config-prettier": "^9.1.0",
+    "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.1",
     "eslint-plugin-react": "^7.37.1",
     "eslint-plugin-react-hooks": "^5.0.0",

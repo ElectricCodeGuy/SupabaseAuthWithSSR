@@ -13,8 +13,8 @@ export const maxDuration = 60;
 const SYSTEM_TEMPLATE = `You are a helpful assistant. Answer all questions to the best of your ability. Helpfull answers in markdown`;
 
 const getModel = (selectedModel: string) => {
-  if (selectedModel === 'claude3-opus') {
-    return anthropic('claude-3-5-sonnet-202410220');
+  if (selectedModel === 'sonnet-3-5') {
+    return anthropic('claude-3-5-sonnet-20241022');
   } else {
     return openai(selectedModel);
   }

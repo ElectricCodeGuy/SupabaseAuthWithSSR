@@ -1,7 +1,6 @@
 'use client';
 
 import React, {
-  useEffect,
   useMemo,
   useState,
   FC,
@@ -30,7 +29,6 @@ import {
   CircularProgress,
   Grid2,
   InputAdornment,
-  Fab,
   Radio,
   RadioGroup,
   FormControlLabel,
@@ -46,12 +44,13 @@ import {
   Replay as RetryIcon,
   Stop as StopIcon,
   ContentCopy as ContentCopyIcon,
-  CheckCircle as CheckCircleIcon,
-  KeyboardArrowUp as KeyboardArrowUpIcon
+  CheckCircle as CheckCircleIcon
 } from '@mui/icons-material';
 import { Tables } from '@/types/database';
 import Link from 'next/link';
 import { useSWRConfig } from 'swr';
+import { ChatScrollAnchor } from '../hooks/chat-scroll-anchor';
+
 const highlightOptionsAI: HighlightOptions = {
   detect: true,
   prefix: 'hljs-'
@@ -256,29 +255,9 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
   const pathname = usePathname();
 
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [showScrollToTop, setShowScrollToTop] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
   const { mutate } = useSWRConfig();
-  const handleScrollToTop = () => {
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
-  };
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollTop = window.scrollY || document.documentElement.scrollTop;
-      setShowScrollToTop(scrollTop > 0);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, []);
 
   const initialMessages = useMemo(() => {
     if (currentChat && currentChat.chat_messages) {
@@ -403,34 +382,36 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
             textAlign: 'center'
           }}
         >
-          <Typography variant="h3" color="textSecondary" paragraph>
+          <Typography variant="h3" color="textSecondary" sx={{ pb: 2 }}>
             Chat with our AI Assistant
           </Typography>
-          <>
-            <Typography variant="body1" color="textSecondary" paragraph>
-              Experience the power of AI-driven conversations with our chat
-              template. Ask questions on any topic and get informative responses
-              instantly.
-            </Typography>
-            <Typography variant="body1" color="textSecondary" paragraph>
-              <strong>
-                Check out{' '}
-                <MuiLink
-                  href="https://www.lovguiden.dk/"
-                  target="_blank"
-                  rel="noopener"
-                  style={{ fontSize: '1.2rem', color: 'blue' }}
-                >
-                  Lovguiden
-                </MuiLink>
-                , a Danish legal AI platform, for a real-world example of AI in
-                action.
-              </strong>
-            </Typography>
-            <Typography variant="h4" color="textSecondary">
-              Start chatting now and enjoy the AI experience!
-            </Typography>
-          </>
+
+          <Typography variant="body1" color="textSecondary" sx={{ pb: 2 }}>
+            Experience the power of AI-driven conversations with our chat
+            template. Ask questions on any topic and get informative responses
+            instantly.
+          </Typography>
+          <Typography
+            variant="body1"
+            color="textSecondary"
+            fontWeight="bold"
+            sx={{ pb: 2 }}
+          >
+            Check out{' '}
+            <MuiLink
+              href="https://www.lovguiden.dk/"
+              target="_blank"
+              rel="noopener"
+              style={{ fontSize: '1.2rem', color: 'blue' }}
+            >
+              Lovguiden
+            </MuiLink>
+            , a Danish legal AI platform, for a real-world example of AI in
+            action.
+          </Typography>
+          <Typography variant="h4" color="textSecondary">
+            Start chatting now and enjoy the AI experience!
+          </Typography>
         </Box>
       ) : (
         <Box sx={{ flex: 1, overflowY: 'auto' }}>
@@ -445,12 +426,13 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
                 xs: '0px',
                 sm: '0px',
                 md: '2px',
-                lg: '1px',
-                xl: '1px'
+                lg: '4px',
+                xl: '8px'
               }
             }}
           >
             <ChatMessage messages={messages} />
+            <ChatScrollAnchor trackVisibility />
           </List>
         </Box>
       )}
@@ -520,15 +502,17 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
               input: {
                 endAdornment: (
                   <InputAdornment position="end">
-                    <IconButton
-                      onClick={async () => {
-                        reload();
-                      }}
-                      disabled={isLoading}
-                      color="primary"
-                    >
-                      <RetryIcon />
-                    </IconButton>
+                    {messages.length > 0 && (
+                      <IconButton
+                        onClick={async () => {
+                          reload();
+                        }}
+                        disabled={isLoading}
+                        color="primary"
+                      >
+                        <RetryIcon />
+                      </IconButton>
+                    )}
                     {isLoading ? (
                       <IconButton
                         onClick={stop}
@@ -602,7 +586,7 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
                     'gpt-4-0125-preview',
                     'gpt-4-1106-preview',
                     'gpt-4',
-                    'claude3-opus'
+                    'sonnet-3-5'
                   ]}
                   size="small"
                   value={selectedOption}
@@ -616,12 +600,16 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
                       slotProps={{
                         input: {
                           ...params.InputProps,
-                          style: { borderRadius: 20, backgroundColor: 'white' }
+                          style: {
+                            borderRadius: 8,
+                            backgroundColor: 'white'
+                          }
                         }
                       }}
                     />
                   )}
                   sx={{
+                    ml: 1,
                     width: '100%',
                     '.MuiAutocomplete-root .MuiOutlinedInput-root': {
                       padding: '8px',
@@ -679,21 +667,6 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
           {errorMessage}
         </Alert>
       </Snackbar>
-      {showScrollToTop && (
-        <Fab
-          color="primary"
-          size="small"
-          onClick={handleScrollToTop}
-          sx={{
-            position: 'fixed',
-            bottom: 16,
-            right: 64,
-            zIndex: 1000
-          }}
-        >
-          <KeyboardArrowUpIcon />
-        </Fab>
-      )}
     </Box>
   );
 };

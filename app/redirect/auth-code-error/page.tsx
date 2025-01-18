@@ -23,12 +23,12 @@ const AuthCodeErrorPage: React.FC = () => {
         Authentication Error
       </Typography>
 
-      <Typography variant="body1" paragraph>
+      <Typography variant="body1">
         Oops! There seems to be an issue with the authentication code you
         provided.
       </Typography>
 
-      <Typography variant="body2" paragraph>
+      <Typography variant="body2">
         This could be due to an expired code, a typographical error, or an
         invalid request. Please ensure you&apos;ve used the most recent code
         sent to your email. If the issue persists, consider the following

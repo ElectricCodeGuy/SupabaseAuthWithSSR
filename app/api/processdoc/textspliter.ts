@@ -1,3 +1,4 @@
+import 'server-only';
 import { encodingForModel } from 'js-tiktoken';
 
 export function recursiveTextSplitter(

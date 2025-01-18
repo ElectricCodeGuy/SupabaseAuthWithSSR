@@ -27,7 +27,7 @@ const Custom404: React.FC = () => {
       <Typography variant="h4" gutterBottom>
         Oops! We couldn&apos;t find that page.
       </Typography>
-      <Typography variant="body1" paragraph>
+      <Typography variant="body1">
         It looks like the page you&apos;re looking for doesn&apos;t exist or has
         been moved.
       </Typography>
