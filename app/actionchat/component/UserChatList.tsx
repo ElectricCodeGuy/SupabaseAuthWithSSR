@@ -18,7 +18,6 @@ import {
   DialogActions,
   DialogContentText,
   Skeleton,
-  Chip,
   Divider,
   Typography,
   CircularProgress,
@@ -29,7 +28,6 @@ import { Delete as DeleteIcon } from '@mui/icons-material';
 import { format, isToday, isYesterday, subDays } from 'date-fns';
 import { Tables } from '@/types/database';
 import useSWRInfinite from 'swr/infinite';
-import { da } from 'date-fns/locale';
 import { TZDate } from '@date-fns/tz';
 import Link from 'next/link';
 import {
@@ -207,10 +205,6 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
     setChatToDelete(null);
   };
 
-  const formatDate = (dateString: string) => {
-    return format(new Date(dateString), 'PP', { locale: da });
-  };
-
   const categorizedChats = useCategorizedChats(chatPreviews);
 
   const handleChatSelect = useCallback(() => {
@@ -292,7 +286,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
                   }
                 }}
                 sx={{
-                  py: 0.5,
+                  py: 0,
                   px: 1,
                   backgroundColor: isCurrentFile
                     ? 'rgba(0, 0, 0, 0.04)'
@@ -306,9 +300,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
               >
                 <ListItemText
                   primary={file.name.replace(/_/g, ' ')}
-                  secondary={format(new Date(file.created_at), 'PP', {
-                    locale: da
-                  })}
+                  secondary={format(new Date(file.created_at), 'PPP')}
                   sx={{
                     '& .MuiListItemText-primary': {
                       overflow: 'hidden',
@@ -445,12 +437,12 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
                   alignItems: 'center',
                   justifyContent: 'center',
                   position: 'relative',
-                  pt: 2,
+                  pt: 1,
                   pr: 2
                 }}
               >
                 <Typography
-                  variant="h3"
+                  variant="h5"
                   sx={{
                     textAlign: 'center'
                   }}
@@ -463,7 +455,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
                   sx={{
                     display: 'flex',
                     flexDirection: 'column',
-                    height: 'calc(100vh - 42px)'
+                    height: 'calc(100vh - 50px)'
                   }}
                 >
                   <Box
@@ -512,7 +504,6 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
                         chats={categorizedChats.today || []}
                         currentChatId={currentChatId}
                         handleDeleteClick={handleDeleteClick}
-                        formatDate={formatDate}
                         onChatSelect={handleChatSelect}
                       />
                       <RenderChatSection
@@ -520,7 +511,6 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
                         chats={categorizedChats.yesterday || []}
                         currentChatId={currentChatId}
                         handleDeleteClick={handleDeleteClick}
-                        formatDate={formatDate}
                         onChatSelect={handleChatSelect}
                       />
                       <RenderChatSection
@@ -528,7 +518,6 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
                         chats={categorizedChats.last7Days || []}
                         currentChatId={currentChatId}
                         handleDeleteClick={handleDeleteClick}
-                        formatDate={formatDate}
                         onChatSelect={handleChatSelect}
                       />
                       <RenderChatSection
@@ -536,7 +525,6 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
                         chats={categorizedChats.last30Days || []}
                         currentChatId={currentChatId}
                         handleDeleteClick={handleDeleteClick}
-                        formatDate={formatDate}
                         onChatSelect={handleChatSelect}
                       />
                       <RenderChatSection
@@ -544,7 +532,6 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
                         chats={categorizedChats.last2Months || []}
                         currentChatId={currentChatId}
                         handleDeleteClick={handleDeleteClick}
-                        formatDate={formatDate}
                         onChatSelect={handleChatSelect}
                       />
                       <RenderChatSection
@@ -552,7 +539,6 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
                         chats={categorizedChats.older || []}
                         currentChatId={currentChatId}
                         handleDeleteClick={handleDeleteClick}
-                        formatDate={formatDate}
                         onChatSelect={handleChatSelect}
                       />
                       {hasMore && (
@@ -617,18 +603,10 @@ type RenderChatSectionProps = {
   chats: ChatPreview[];
   currentChatId: string | null | undefined;
   handleDeleteClick: (_id: string) => void;
-  formatDate: (_dateString: string) => string;
   onChatSelect: (id: string) => void; // Add this prop
 };
 const RenderChatSection: FC<RenderChatSectionProps> = memo(
-  ({
-    title,
-    chats,
-    currentChatId,
-    handleDeleteClick,
-    formatDate,
-    onChatSelect
-  }) => {
+  ({ title, chats, currentChatId, handleDeleteClick, onChatSelect }) => {
     const searchParams = useSearchParams();
     const router = useRouter();
     if (chats.length === 0) return null;
@@ -636,7 +614,7 @@ const RenderChatSection: FC<RenderChatSectionProps> = memo(
     return (
       <>
         <Divider sx={{ color: 'textSecondary', px: 1, mb: 2 }}>{title}</Divider>
-        {chats.map(({ id, firstMessage = [], created_at }) => {
+        {chats.map(({ id, firstMessage = [] }) => {
           // Add default empty array here
           const currentParams = new URLSearchParams(searchParams.toString());
           const href = `/actionchat/${id}${
@@ -652,20 +630,13 @@ const RenderChatSection: FC<RenderChatSectionProps> = memo(
                 fontSize: '0.95rem',
                 backgroundColor:
                   currentChatId === id ? 'rgba(0, 0, 0, 0.1)' : 'inherit',
-                paddingRight: '25px',
                 position: 'relative',
                 '&::after': {
                   content: 'attr(data-truncated-message)',
                   display: 'block',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  '@media (max-width: 600px)': {
-                    maxWidth: 'calc(100% - 50px)'
-                  },
-                  '@media (min-width: 601px)': {
-                    maxWidth: 'calc(100% - 70px)'
-                  }
+                  whiteSpace: 'nowrap'
                 },
                 // Show delete button on hover
                 '& .delete-button': {
@@ -680,23 +651,6 @@ const RenderChatSection: FC<RenderChatSectionProps> = memo(
               prefetch={false}
               href={href}
             >
-              <Chip
-                label={formatDate(created_at)}
-                size="small"
-                sx={{
-                  position: 'absolute',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  right: {
-                    xs: '4px',
-                    sm: '4px',
-                    md: '20px'
-                  },
-                  fontSize: '0.6rem',
-                  backgroundColor: 'rgba(0, 0, 0, 0.05)',
-                  height: '20px'
-                }}
-              />
               <IconButton
                 className="delete-button"
                 onClick={(e) => {

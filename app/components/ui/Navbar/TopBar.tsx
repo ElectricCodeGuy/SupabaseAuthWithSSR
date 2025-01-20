@@ -14,8 +14,6 @@ import {
   List,
   ListItemButton,
   ListItemText,
-  type SxProps,
-  type Theme,
   Avatar,
   Menu,
   MenuItem
@@ -27,26 +25,6 @@ import useScrollTrigger from '@mui/material/useScrollTrigger';
 import CloseIcon from '@mui/icons-material/Close';
 import Sitemark from './SitemarkIcon';
 import SignOutButton from './SignOut';
-
-const linkStyleDesktop: SxProps<Theme> = {
-  fontWeight: 500,
-  fontSize: '1.05rem',
-  margin: '0 0.5rem',
-  borderRadius: '999px',
-  transition: 'color 0.3s, background-color 0.3s',
-  color: 'black',
-  textDecoration: 'none',
-  whiteSpace: 'nowrap',
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  '&:hover': {
-    textDecoration: 'underline'
-  },
-  '&.active': {
-    fontWeight: 700,
-    textDecoration: 'underline'
-  }
-};
 
 interface AppBarProps {
   session: boolean | null;
@@ -267,15 +245,13 @@ const AppBarComponent: React.FC<AppBarProps> = ({ session }) => {
         >
           <Sitemark />
         </MuiLink>
-        <Box sx={{ display: { xs: 'none', sm: 'flex', md: 'flex' } }}>
+        <Box sx={{ display: { xs: 'none', sm: 'flex', md: 'flex' }, gap: 2 }}>
           <MuiLink
             component={Link}
             prefetch
             title="Protected"
             href="/protected"
-            color="inherit"
             className={isActive('/protected') ? 'active' : ''}
-            sx={linkStyleDesktop}
           >
             Protected
           </MuiLink>
@@ -284,9 +260,7 @@ const AppBarComponent: React.FC<AppBarProps> = ({ session }) => {
             prefetch
             title="AI Chat"
             href="/aichat"
-            color="inherit"
             className={isActive('/aichat') ? 'active' : ''}
-            sx={linkStyleDesktop}
           >
             AI Chat
           </MuiLink>
@@ -295,9 +269,7 @@ const AppBarComponent: React.FC<AppBarProps> = ({ session }) => {
             prefetch
             title="Action Chat"
             href="/actionchat"
-            color="inherit"
             className={isActive('/actionchat') ? 'active' : ''}
-            sx={linkStyleDesktop}
           >
             Action Chat
           </MuiLink>

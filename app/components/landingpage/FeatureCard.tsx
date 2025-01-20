@@ -1,12 +1,5 @@
 import React from 'react';
-import {
-  Box,
-  Container,
-  Grid2,
-  Typography,
-  Paper,
-  Divider
-} from '@mui/material';
+import { Box, Grid2, Typography, Paper, Divider } from '@mui/material';
 import Link from 'next/link';
 type Feature = {
   title: string;
@@ -113,61 +106,64 @@ export default function Component() {
   return (
     <Box
       id="models"
-      sx={{ width: '100%', pt: [1, 2, 3, 6], pb: [4, 6, 8, 12] }}
+      sx={{
+        pt: [1, 2, 3, 6],
+        pb: [4, 6, 8, 12],
+        maxWidth: '1800px',
+        mx: 'auto'
+      }}
     >
-      <Container maxWidth="xl">
-        <Box
+      <Box
+        sx={{
+          textAlign: 'center',
+          mb: 10
+        }}
+      >
+        <Typography
+          variant="h2"
           sx={{
-            textAlign: 'center',
-            mb: 10
+            fontWeight: 'bold',
+            fontFamily: 'Monospace',
+            letterSpacing: '0.1em',
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            backgroundGradient: 'linear(to r, white, grey.500)'
           }}
         >
-          <Typography
-            variant="h2"
-            sx={{
-              fontWeight: 'bold',
-              fontFamily: 'Monospace',
-              letterSpacing: '0.1em',
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              backgroundGradient: 'linear(to r, white, grey.500)'
+          Discover Our Features
+        </Typography>
+        <Typography
+          variant="body1"
+          sx={{
+            fontWeight: 'bold',
+            maxWidth: 800,
+            mx: 'auto',
+            fontFamily: 'Monospace',
+            letterSpacing: '0.05em'
+          }}
+        >
+          Harnessing Advanced AI for Better Insights and Efficient Operations
+        </Typography>
+      </Box>
+      <Grid2 container spacing={10}>
+        {features.map((feature, index) => (
+          <Grid2
+            key={index}
+            style={{ display: 'flex' }}
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 4
             }}
           >
-            Discover Our Features
-          </Typography>
-          <Typography
-            variant="h3"
-            sx={{
-              fontWeight: 'bold',
-              maxWidth: 800,
-              mx: 'auto',
-              fontFamily: 'Monospace',
-              letterSpacing: '0.05em'
-            }}
-          >
-            Harnessing Advanced AI for Better Insights and Efficient Operations
-          </Typography>
-        </Box>
-        <Grid2 container spacing={10}>
-          {features.map((feature, index) => (
-            <Grid2
-              key={index}
-              style={{ display: 'flex' }}
-              size={{
-                xs: 12,
-                sm: 6,
-                md: 4
-              }}
-            >
-              <FeatureCard
-                title={feature.title}
-                description={feature.description}
-                Icon={feature.Icon}
-              />
-            </Grid2>
-          ))}
-        </Grid2>
-      </Container>
+            <FeatureCard
+              title={feature.title}
+              description={feature.description}
+              Icon={feature.Icon}
+            />
+          </Grid2>
+        ))}
+      </Grid2>
     </Box>
   );
 }

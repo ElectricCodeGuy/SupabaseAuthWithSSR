@@ -1,12 +1,5 @@
 import React from 'react';
-import {
-  Box,
-  Container,
-  Grid2,
-  Typography,
-  Paper,
-  Avatar
-} from '@mui/material';
+import { Box, Grid2, Typography, Paper, Avatar } from '@mui/material';
 import ChikenImage from '@/public/images/chiken image.jpg';
 
 interface Testimonial {
@@ -71,8 +64,8 @@ const TestimonialCard: React.FC<Testimonial> = ({
     <Paper
       elevation={3}
       sx={{
-        p: 3,
-        borderRadius: '12px',
+        p: 2,
+        borderRadius: '8px',
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
@@ -108,57 +101,59 @@ const Testimonials: React.FC = () => {
   return (
     <Box
       id="testimonials"
-      sx={{ width: '100%', pt: [1, 2, 3, 6], pb: [4, 6, 8, 12] }}
+      sx={{
+        maxWidth: '1800px',
+        mx: 'auto',
+        my: 4
+      }}
     >
-      <Container maxWidth="xl">
-        <Box
+      <Box
+        sx={{
+          textAlign: 'center',
+          mb: 10
+        }}
+      >
+        <Typography
+          variant="h3"
           sx={{
-            textAlign: 'center',
-            mb: 10
+            fontWeight: 'bold',
+            fontFamily: 'Monospace',
+            letterSpacing: '0.1em',
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            backgroundGradient: 'linear(to r, white, grey.500)'
           }}
         >
-          <Typography
-            variant="h2"
-            sx={{
-              fontWeight: 'bold',
-              fontFamily: 'Monospace',
-              letterSpacing: '0.1em',
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              backgroundGradient: 'linear(to r, white, grey.500)'
+          What Our Users Say
+        </Typography>
+        <Typography
+          variant="body1"
+          sx={{
+            fontWeight: 'bold',
+            maxWidth: 800,
+            mx: 'auto',
+            fontFamily: 'Monospace',
+            letterSpacing: '0.05em'
+          }}
+        >
+          Real Experiences from Satisfied Customers
+        </Typography>
+      </Box>
+      <Grid2 container spacing={4}>
+        {testimonials.map((testimonial, index) => (
+          <Grid2
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 4
             }}
+            key={index}
+            sx={{ display: 'flex' }}
           >
-            What Our Users Say
-          </Typography>
-          <Typography
-            variant="h3"
-            sx={{
-              fontWeight: 'bold',
-              maxWidth: 800,
-              mx: 'auto',
-              fontFamily: 'Monospace',
-              letterSpacing: '0.05em'
-            }}
-          >
-            Real Experiences from Satisfied Customers
-          </Typography>
-        </Box>
-        <Grid2 container spacing={4}>
-          {testimonials.map((testimonial, index) => (
-            <Grid2
-              size={{
-                xs: 12,
-                sm: 6,
-                md: 4
-              }}
-              key={index}
-              sx={{ display: 'flex' }}
-            >
-              <TestimonialCard {...testimonial} />
-            </Grid2>
-          ))}
-        </Grid2>
-      </Container>
+            <TestimonialCard {...testimonial} />
+          </Grid2>
+        ))}
+      </Grid2>
     </Box>
   );
 };

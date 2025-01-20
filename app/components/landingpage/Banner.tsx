@@ -34,100 +34,96 @@ const Feature: React.FC<FeatureProps> = ({ Icon, title, description }) => (
 
 const BannerComponent: React.FC<BannerProps> = ({ session, userEmail }) => {
   return (
-    <Box
+    <Grid2
+      container
+      spacing={2}
       sx={{
+        alignItems: 'center',
         padding: '4rem',
         backgroundColor: '#f5f5f5' // Background color for contrast
       }}
     >
+      {/* Image Grid */}
       <Grid2
-        container
-        spacing={2}
-        sx={{
-          alignItems: 'center'
+        size={{
+          xs: 12,
+          md: 8
         }}
       >
-        {/* Image Grid */}
-        <Grid2
-          size={{
-            xs: 12,
-            md: 8
+        <Box
+          sx={{
+            width: '60%',
+            height: '600px', // Fixed height, you can adjust as needed
+            position: 'relative',
+            borderRadius: '12px',
+            overflow: 'hidden'
           }}
         >
-          <Box
-            sx={{
-              width: '60%',
-              height: '600px', // Fixed height, you can adjust as needed
-              position: 'relative',
-              borderRadius: '12px',
-              overflow: 'hidden'
-            }}
-          >
-            <Image
-              src={FrontPageImage}
-              fill
-              alt="Background"
-              style={{ objectFit: 'cover', objectPosition: 'center' }}
-            />
-          </Box>
-        </Grid2>
-
-        <Grid2
-          size={{
-            xs: 12,
-            md: 4
-          }}
-        >
-          <Typography variant="h4" sx={{ mb: 1, color: 'primary.main' }}>
-            {session
-              ? `Welcome back, ${userEmail || 'User'}!`
-              : 'Empower Your Next.js App with Supabase Auth'}
-          </Typography>
-          <Typography variant="body1" sx={{ mb: 2 }}>
-            {session
-              ? 'Dive into the enhanced features and capabilities tailored for your development.'
-              : 'Our library seamlessly integrates with Next.js 14, offering server-side rendering support and efficient data fetching with React Server Components.'}
-          </Typography>
-
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <Feature
-              Icon={SecurityIcon}
-              title="Enhanced Security"
-              description="State-of-the-art security for your apps."
-            />
-            <Feature
-              Icon={SpeedIcon}
-              title="Blazing Fast"
-              description="Optimized for speed, making your apps run smoother."
-            />
-            <Feature
-              Icon={CodeIcon}
-              title="Developer Friendly"
-              description="Easy to use API and thorough documentation."
-            />
-            <Feature
-              Icon={CloudIcon}
-              title="Cloud Integration"
-              description="Seamless cloud capabilities with Supabase."
-            />
-            <Feature
-              Icon={IntegrationInstructionsIcon}
-              title="Easy Integration"
-              description="Simple steps to integrate with your Next.js app."
-            />
-          </Box>
-
-          <Link
-            href={session ? '/dashboard' : '#get-started'}
-            style={{ textDecoration: 'none' }}
-          >
-            <Button variant="contained" color="primary" sx={{ mt: 2 }}>
-              {session ? 'Explore Dashboard' : 'Get Started Now'}
-            </Button>
-          </Link>
-        </Grid2>
+          <Image
+            src={FrontPageImage}
+            fill
+            alt="Background"
+            style={{ objectFit: 'cover', objectPosition: 'center' }}
+          />
+        </Box>
       </Grid2>
-    </Box>
+
+      <Grid2
+        size={{
+          xs: 12,
+          md: 4
+        }}
+      >
+        <Typography variant="h4" sx={{ mb: 1, color: 'primary.main' }}>
+          {session
+            ? `Welcome back, ${userEmail || 'User'}!`
+            : 'Empower Your Next.js App with Supabase Auth'}
+        </Typography>
+        <Typography variant="body1" sx={{ mb: 2 }}>
+          {session
+            ? 'Dive into the enhanced features and capabilities tailored for your development.'
+            : 'Our library seamlessly integrates with Next.js 14, offering server-side rendering support and efficient data fetching with React Server Components.'}
+        </Typography>
+
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <Feature
+            Icon={SecurityIcon}
+            title="Enhanced Security"
+            description="State-of-the-art security for your apps."
+          />
+          <Feature
+            Icon={SpeedIcon}
+            title="Blazing Fast"
+            description="Optimized for speed, making your apps run smoother."
+          />
+          <Feature
+            Icon={CodeIcon}
+            title="Developer Friendly"
+            description="Easy to use API and thorough documentation."
+          />
+          <Feature
+            Icon={CloudIcon}
+            title="Cloud Integration"
+            description="Seamless cloud capabilities with Supabase."
+          />
+          <Feature
+            Icon={IntegrationInstructionsIcon}
+            title="Easy Integration"
+            description="Simple steps to integrate with your Next.js app."
+          />
+        </Box>
+
+        <Button
+          component={Link}
+          href={session ? '/dashboard' : '#get-started'}
+          variant="contained"
+          color="primary"
+          sx={{ mt: 2 }}
+        >
+          {session ? 'Explore Dashboard' : 'Get Started Now'}
+        </Button>
+      </Grid2>
+    </Grid2>
   );
 };
 
