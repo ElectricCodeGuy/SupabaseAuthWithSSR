@@ -40,7 +40,7 @@ async function getChatMessages(chatId: string) {
       .select(
         `
         user_id,
-        chat_messages (
+        chat_messages!inner (
           is_user_message,
           content,
           created_at,

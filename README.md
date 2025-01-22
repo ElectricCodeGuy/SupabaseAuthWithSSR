@@ -294,6 +294,7 @@ For more information about implementing vector similarity search with pgvector, 
       user_id uuid not null,
       created_at timestamp with time zone not null default current_timestamp,
       updated_at timestamp with time zone not null default current_timestamp,
+      chat_title null,
       constraint chat_sessions_pkey primary key (id),
       constraint chat_sessions_user_id_fkey foreign key (user_id) references users (id)
     ) tablespace pg_default;
@@ -536,6 +537,7 @@ This SQL statement creates a trigger named `on_auth_user_created` that executes 
       user_id uuid not null,
       created_at timestamp with time zone not null default current_timestamp,
       updated_at timestamp with time zone not null default current_timestamp,
+      chat_title null,
       constraint chat_sessions_pkey primary key (id),
       constraint chat_sessions_user_id_fkey foreign key (user_id) references users (id)
     ) tablespace pg_default;

@@ -22,19 +22,18 @@ async function fetchData(
         `
           id,
           created_at,
-          chat_messages (
-            content
-          )
+          first_message:chat_messages!inner(content)
         `
       )
       .order('created_at', { ascending: false })
+      .limit(1, { foreignTable: 'chat_messages' }) // Limit to only first message
       .range(offset, offset + limit - 1);
 
     if (error) throw error;
 
     return data.map((session) => ({
       id: session.id,
-      firstMessage: session.chat_messages[0]?.content || 'No messages yet',
+      firstMessage: session.first_message[0]?.content || 'No messages yet',
       created_at: session.created_at
     }));
   } catch (error) {

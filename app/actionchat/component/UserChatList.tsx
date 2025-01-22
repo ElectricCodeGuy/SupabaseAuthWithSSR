@@ -1,9 +1,18 @@
 'use client';
-import React, { type FC, useState, memo, useCallback, useMemo } from 'react';
+import React, {
+  type FC,
+  useState,
+  memo,
+  useCallback,
+  useMemo,
+  useOptimistic,
+  startTransition
+} from 'react';
 import {
   deleteChatData,
   fetchMoreChatPreviews,
-  deleteFilterTagAndDocumentChunks
+  deleteFilterTagAndDocumentChunks,
+  updateChatTitle
 } from './action';
 import {
   Drawer,
@@ -22,9 +31,18 @@ import {
   Typography,
   CircularProgress,
   ListItemText,
-  Checkbox
+  Checkbox,
+  Tooltip,
+  Menu,
+  MenuItem,
+  TextField
 } from '@mui/material';
-import { Delete as DeleteIcon } from '@mui/icons-material';
+import {
+  Delete as DeleteIcon,
+  MoreHoriz as MoreHorizIcon,
+  Share as ShareIcon,
+  Edit as EditIcon
+} from '@mui/icons-material';
 import { format, isToday, isYesterday, subDays } from 'date-fns';
 import { Tables } from '@/types/database';
 import useSWRInfinite from 'swr/infinite';
@@ -602,84 +620,266 @@ type RenderChatSectionProps = {
   title: string;
   chats: ChatPreview[];
   currentChatId: string | null | undefined;
-  handleDeleteClick: (_id: string) => void;
+  handleDeleteClick: (id: string) => void;
   onChatSelect: (id: string) => void; // Add this prop
 };
 const RenderChatSection: FC<RenderChatSectionProps> = memo(
   ({ title, chats, currentChatId, handleDeleteClick, onChatSelect }) => {
     const searchParams = useSearchParams();
     const router = useRouter();
-    if (chats.length === 0) return null;
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
+    const [menuChatId, setMenuChatId] = useState<string | null>(null); // For menu
+    const [editingChatId, setEditingChatId] = useState<string | null>(null); // For editing
+    const [newTitle, setNewTitle] = useState('');
+
+    const [optimisticChats, addOptimisticChat] = useOptimistic(
+      chats,
+      (
+        currentChats: ChatPreview[],
+        optimisticUpdate: { id: string; newTitle: string }
+      ) =>
+        currentChats.map((chat) =>
+          chat.id === optimisticUpdate.id
+            ? {
+                ...chat,
+                chat_messages: [
+                  { content: optimisticUpdate.newTitle },
+                  ...chat.firstMessage.slice(1)
+                ]
+              }
+            : chat
+        )
+    );
+
+    const handleMenuClick = (
+      event: React.MouseEvent<HTMLElement>,
+      chatId: string
+    ) => {
+      event.preventDefault();
+      setAnchorEl(event.currentTarget);
+      setMenuChatId(chatId);
+    };
+
+    const handleMenuClose = () => {
+      setAnchorEl(null);
+      setMenuChatId(null);
+    };
+
+    const handleOpenRename = (chatId: string) => {
+      setEditingChatId(chatId);
+      setEditDialogOpen(true);
+      handleMenuClose();
+    };
+
+    const handleCloseDialog = () => {
+      setEditDialogOpen(false);
+      setEditingChatId(null);
+      setNewTitle('');
+    };
+    if (optimisticChats.length === 0) return null;
 
     return (
       <>
-        <Divider sx={{ color: 'textSecondary', px: 1, mb: 2 }}>{title}</Divider>
-        {chats.map(({ id, firstMessage = [] }) => {
-          // Add default empty array here
+        <Divider sx={{ color: 'textSecondary', px: 1, mt: 2.5, mb: 1 }}>
+          {title}
+        </Divider>
+        {optimisticChats.map(({ id, firstMessage }) => {
           const currentParams = new URLSearchParams(searchParams.toString());
           const href = `/actionchat/${id}${
             currentParams.toString() ? '?' + currentParams.toString() : ''
           }`;
 
           return (
-            <ListItemButton
-              key={id}
-              onMouseEnter={() => router.prefetch(href)}
-              onClick={() => onChatSelect(id)}
-              sx={{
-                fontSize: '0.95rem',
-                backgroundColor:
-                  currentChatId === id ? 'rgba(0, 0, 0, 0.1)' : 'inherit',
-                position: 'relative',
-                '&::after': {
-                  content: 'attr(data-truncated-message)',
-                  display: 'block',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap'
-                },
-                // Show delete button on hover
-                '& .delete-button': {
-                  display: 'none'
-                },
-                '&:hover .delete-button': {
-                  display: 'flex'
-                }
-              }}
-              data-truncated-message={firstMessage}
-              component={Link}
-              prefetch={false}
-              href={href}
-            >
-              <IconButton
-                className="delete-button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleDeleteClick(id);
-                }}
-                size="small"
+            <Box key={id}>
+              <ListItemButton
+                component={Link}
+                prefetch={false}
+                scroll={false}
+                href={href}
+                onMouseEnter={() => router.prefetch(href)}
+                onClick={() => onChatSelect(id)}
                 sx={{
-                  padding: '2px',
-                  position: 'absolute',
-                  right: 0,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: 'error.main',
-                  '&:hover': {
-                    backgroundColor: 'error.light',
-                    color: 'error.contrastText'
+                  fontSize: '0.95rem',
+                  backgroundColor:
+                    currentChatId === id ? 'rgba(0, 0, 0, 0.1)' : 'inherit',
+                  paddingRight: '25px',
+                  position: 'relative',
+                  '& .menu-button': {
+                    display: currentChatId === id ? 'flex' : 'none'
+                  },
+                  '&:hover .menu-button': {
+                    display: 'flex'
                   }
                 }}
               >
-                <DeleteIcon fontSize="inherit" />
-              </IconButton>
-            </ListItemButton>
+                {/* Tooltip for the chat title */}
+                <Tooltip
+                  title={firstMessage}
+                  placement="top-end"
+                  enterDelay={500}
+                  enterNextDelay={500}
+                >
+                  <Box
+                    sx={{
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      flex: 1
+                    }}
+                  >
+                    {firstMessage}
+                  </Box>
+                </Tooltip>
+
+                {/* Separate tooltip for the menu button */}
+                <Tooltip title="Options" placement="top">
+                  <IconButton
+                    className="menu-button"
+                    onClick={(e) => handleMenuClick(e, id)}
+                    size="small"
+                    sx={{
+                      padding: '2px',
+                      position: 'absolute',
+                      right: 4,
+                      top: '50%',
+                      transform: 'translateY(-50%)'
+                    }}
+                  >
+                    <MoreHorizIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </ListItemButton>
+
+              <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl) && menuChatId === id}
+                onClose={handleMenuClose}
+                sx={{ borderRadius: '8px' }}
+              >
+                <MenuItem onClick={() => handleMenuClose()} disabled>
+                  <ShareIcon fontSize="small" sx={{ mr: 1 }} />
+                  Share
+                </MenuItem>
+                <MenuItem onClick={() => handleOpenRename(id)}>
+                  <EditIcon fontSize="small" sx={{ mr: 1 }} />
+                  Rename
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    handleDeleteClick(id);
+                    handleMenuClose();
+                  }}
+                  sx={{
+                    color: 'error.main'
+                  }}
+                >
+                  <DeleteIcon
+                    fontSize="small"
+                    sx={{ mr: 1, color: 'error.main' }}
+                  />
+                  Delete
+                </MenuItem>
+              </Menu>
+            </Box>
           );
         })}
+
+        <Dialog open={editDialogOpen} onClose={handleCloseDialog}>
+          <Box
+            component="form"
+            onSubmit={async (e: React.FormEvent<HTMLFormElement>) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const chatId = formData.get('chatId') as string;
+              const title = formData.get('title') as string;
+
+              startTransition(async () => {
+                // Apply optimistic update immediately
+                addOptimisticChat({
+                  id: chatId,
+                  newTitle: title
+                });
+
+                try {
+                  const result = await updateChatTitle(formData);
+
+                  if (!result.success) {
+                    // If the server action failed, revert the optimistic update
+                    const originalChat = chats.find(
+                      (chat) => chat.id === chatId
+                    );
+                    if (originalChat) {
+                      addOptimisticChat({
+                        id: chatId,
+                        newTitle: originalChat.firstMessage
+                      });
+                    }
+                    console.error('Failed to update chat title');
+                  }
+                } catch (error) {
+                  // If there's an error, revert the optimistic update
+                  const originalChat = chats.find((chat) => chat.id === chatId);
+                  if (originalChat) {
+                    addOptimisticChat({
+                      id: chatId,
+                      newTitle: originalChat.firstMessage
+                    });
+                  }
+                  console.error('Error updating chat title:', error);
+                }
+              });
+
+              handleCloseDialog();
+            }}
+            sx={{ p: 1, minWidth: '400px' }}
+          >
+            <input type="hidden" name="chatId" value={editingChatId || ''} />
+            <TextField
+              autoFocus
+              margin="dense"
+              name="title"
+              label="New name"
+              type="text"
+              fullWidth
+              required
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+            />
+
+            <DialogActions>
+              <Button
+                variant="outlined"
+                onClick={handleCloseDialog}
+                color="error"
+                sx={{ mr: 1 }}
+              >
+                Cancel
+              </Button>
+              <Button variant="outlined" type="submit">
+                Save
+              </Button>
+            </DialogActions>
+          </Box>
+        </Dialog>
       </>
+    );
+  },
+  (prevProps, nextProps) => {
+    return (
+      prevProps.title === nextProps.title &&
+      prevProps.currentChatId === nextProps.currentChatId &&
+      prevProps.chats.length === nextProps.chats.length &&
+      prevProps.chats.every((chat, index) => {
+        const nextChat = nextProps.chats[index];
+        return (
+          chat.id === nextChat.id && chat.firstMessage === nextChat.firstMessage
+        );
+      })
     );
   }
 );
+
 RenderChatSection.displayName = 'RenderChatSection';
 
 export default CombinedDrawer;

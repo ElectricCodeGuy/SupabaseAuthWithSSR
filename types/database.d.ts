@@ -71,18 +71,21 @@ export type Database = {
       };
       chat_sessions: {
         Row: {
+          chat_title: string | null;
           created_at: string;
           id: string;
           updated_at: string;
           user_id: string;
         };
         Insert: {
+          chat_title?: string | null;
           created_at?: string;
           id?: string;
           updated_at?: string;
           user_id: string;
         };
         Update: {
+          chat_title?: string | null;
           created_at?: string;
           id?: string;
           updated_at?: string;
