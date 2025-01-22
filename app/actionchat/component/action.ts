@@ -26,21 +26,24 @@ export async function fetchMoreChatPreviews(offset: number) {
       .from('chat_sessions')
       .select(
         `
-        id,
-        created_at,
-        chat_messages (
-          content
-        )
-      `
+          id,
+          created_at,
+          chat_title,
+          first_message:chat_messages!inner(content)
+        `
       )
       .order('created_at', { ascending: false })
+      .limit(1, { foreignTable: 'chat_messages' })
       .range(offset, offset + limit - 1);
 
     if (error) throw error;
 
     const chatPreviews: ChatPreview[] = data.map((session) => ({
       id: session.id,
-      firstMessage: session.chat_messages[0]?.content || 'No messages yet',
+      firstMessage:
+        session.chat_title ||
+        session.first_message[0]?.content ||
+        'No messages yet',
       created_at: session.created_at
     }));
 
