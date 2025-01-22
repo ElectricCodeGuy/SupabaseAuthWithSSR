@@ -5,6 +5,8 @@ import { cookies } from 'next/headers';
 
 import { getSession } from '@/lib/server/supabase';
 import { createServerSupabaseClient } from '@/lib/server/server';
+import { revalidatePath } from 'next/cache';
+import { createAdminClient } from '@/lib/server/admin';
 
 const AutoScrollEnabledSchema = z.object({
   autoScrollEnabled: z.boolean()
@@ -103,4 +105,53 @@ export async function fetchMoreChatPreviews(offset: number) {
     console.error('Error fetching chat previews:', error);
     return [];
   }
+}
+
+const updateChatTitleSchema = z.object({
+  title: z.string().min(1, 'Title cannot be empty'),
+  chatId: z.string().uuid('Invalid chat ID format')
+});
+
+export async function updateChatTitle(formData: FormData) {
+  // Create an object from FormData
+  const data = {
+    title: formData.get('title'),
+    chatId: formData.get('chatId')
+  };
+
+  // Validate the input
+  const result = updateChatTitleSchema.safeParse(data);
+  if (!result.success) {
+    console.error('Invalid input:', result.error);
+    return {
+      success: false,
+      error: 'Invalid input data'
+    };
+  }
+
+  // Continue with the validated data
+  const { title, chatId } = result.data;
+
+  const userId = await getSession();
+  if (!userId) {
+    throw new Error('User not authenticated');
+  }
+
+  const supabaseAdmin = createAdminClient();
+  const { error: updateError } = await supabaseAdmin
+    .from('chat_sessions')
+    .update({ chat_title: title })
+    .eq('id', chatId)
+    .eq('user_id', userId.id);
+
+  if (updateError) {
+    return {
+      success: false,
+      error: 'Error updating chat title'
+    };
+  }
+
+  revalidatePath(`/actionchat/[id]`, 'layout');
+
+  return { success: true };
 }

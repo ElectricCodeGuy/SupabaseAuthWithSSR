@@ -2,10 +2,12 @@
 import React from 'react';
 import { Box } from '@mui/material';
 import { createServerSupabaseClient } from '@/lib/server/server';
-import UserCharListDrawer from './components/UserCharListDrawer';
+import ChatHistoryDrawer from './components/UserCharListDrawer';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '@/types/database';
 import { unstable_noStore as noStore } from 'next/cache';
+import { Tables } from '@/types/database';
+import { getUserInfo } from '@/lib/server/supabase';
 
 export const maxDuration = 120;
 
@@ -22,18 +24,22 @@ async function fetchData(
         `
           id,
           created_at,
+          chat_title,
           first_message:chat_messages!inner(content)
         `
       )
       .order('created_at', { ascending: false })
-      .limit(1, { foreignTable: 'chat_messages' }) // Limit to only first message
+      .limit(1, { foreignTable: 'chat_messages' })
       .range(offset, offset + limit - 1);
 
     if (error) throw error;
 
     return data.map((session) => ({
       id: session.id,
-      firstMessage: session.first_message[0]?.content || 'No messages yet',
+      firstMessage:
+        session.chat_title ||
+        session.first_message[0]?.content ||
+        'No messages yet',
       created_at: session.created_at
     }));
   } catch (error) {
@@ -41,15 +47,36 @@ async function fetchData(
     return [];
   }
 }
+type UserInfo = Pick<Tables<'users'>, 'full_name' | 'email' | 'id'>;
+type ChatPreview = {
+  id: string;
+  firstMessage: string;
+  created_at: string;
+};
 
 export default async function Layout(props: { children: React.ReactNode }) {
   const supabase = await createServerSupabaseClient();
+  const userData = await getUserInfo();
 
-  const initialChatPreviews = await fetchData(supabase, 30, 0);
+  let userInfo: UserInfo;
+  let initialChatPreviews: ChatPreview[] = [];
 
+  if (userData) {
+    userInfo = userData;
+    initialChatPreviews = await fetchData(supabase, 30, 0);
+  } else {
+    userInfo = {
+      id: '',
+      full_name: '',
+      email: ''
+    };
+  }
   return (
     <Box sx={{ display: 'flex' }}>
-      <UserCharListDrawer chatPreviews={initialChatPreviews} />
+      <ChatHistoryDrawer
+        userInfo={userInfo}
+        initialChatPreviews={initialChatPreviews}
+      />
       {props.children}
     </Box>
   );

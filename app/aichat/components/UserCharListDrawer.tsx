@@ -1,76 +1,161 @@
 'use client';
-import React, { type FC, useState } from 'react';
-import { useRouter, useSearchParams, useParams } from 'next/navigation';
-import { deleteChatData } from '../actions';
-import useSWRInfinite from 'swr/infinite';
+import React, {
+  type FC,
+  useState,
+  memo,
+  useCallback,
+  useMemo,
+  useOptimistic,
+  startTransition
+} from 'react';
 import {
+  deleteChatData,
+  fetchMoreChatPreviews,
+  updateChatTitle
+} from '../actions';
+import {
+  Drawer,
   Box,
   List,
   ListItem,
   ListItemButton,
-  Tooltip,
-  Divider,
   Button,
-  useTheme,
   IconButton,
   Dialog,
-  DialogTitle,
   DialogContent,
   DialogActions,
   DialogContentText,
-  Chip,
-  SwipeableDrawer,
-  Drawer,
-  CircularProgress
+  Skeleton,
+  Divider,
+  Typography,
+  CircularProgress,
+  Tooltip,
+  Menu,
+  MenuItem,
+  TextField
 } from '@mui/material';
-import { Delete as DeleteIcon, Menu as MenuIcon } from '@mui/icons-material';
-import { format } from 'date-fns';
-import { fetchMoreChatPreviews, ChatPreview } from '../actions';
+import {
+  Delete as DeleteIcon,
+  MoreHoriz as MoreHorizIcon,
+  Share as ShareIcon,
+  Edit as EditIcon
+} from '@mui/icons-material';
+import { isToday, isYesterday, subDays } from 'date-fns';
+import { Tables } from '@/types/database';
+import useSWRInfinite from 'swr/infinite';
+import { TZDate } from '@date-fns/tz';
 import Link from 'next/link';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
+import ChatIcon from '@mui/icons-material/Chat';
 
-type CombinedDrawerProps = {
-  chatPreviews: ChatPreview[];
+type UserInfo = Pick<Tables<'users'>, 'full_name' | 'email' | 'id'>;
+
+type ChatPreview = {
+  id: string;
+  firstMessage: string;
+  created_at: string;
+};
+
+interface CombinedDrawerProps {
+  userInfo: UserInfo;
+  initialChatPreviews: ChatPreview[];
+}
+
+const useCategorizedChats = (chatPreviews: ChatPreview[][] | undefined) => {
+  return useMemo(() => {
+    const chatPreviewsFlat = chatPreviews ? chatPreviews.flat() : [];
+    const getZonedDate = (date: string) =>
+      new TZDate(new Date(date), 'Europe/Copenhagen');
+
+    const today = chatPreviewsFlat.filter((chat) =>
+      isToday(getZonedDate(chat.created_at))
+    );
+
+    const yesterday = chatPreviewsFlat.filter((chat) =>
+      isYesterday(getZonedDate(chat.created_at))
+    );
+
+    const last7Days = chatPreviewsFlat.filter((chat) => {
+      const chatDate = getZonedDate(chat.created_at);
+      const sevenDaysAgo = subDays(new Date(), 7);
+      return (
+        chatDate > sevenDaysAgo && !isToday(chatDate) && !isYesterday(chatDate)
+      );
+    });
+
+    const last30Days = chatPreviewsFlat.filter((chat) => {
+      const chatDate = getZonedDate(chat.created_at);
+      const thirtyDaysAgo = subDays(new Date(), 30);
+      const sevenDaysAgo = subDays(new Date(), 7);
+      return chatDate > thirtyDaysAgo && chatDate <= sevenDaysAgo;
+    });
+
+    const last2Months = chatPreviewsFlat.filter((chat) => {
+      const chatDate = getZonedDate(chat.created_at);
+      const sixtyDaysAgo = subDays(new Date(), 60);
+      const thirtyDaysAgo = subDays(new Date(), 30);
+      return chatDate > sixtyDaysAgo && chatDate <= thirtyDaysAgo;
+    });
+
+    const older = chatPreviewsFlat.filter((chat) => {
+      const sixtyDaysAgo = subDays(new Date(), 60);
+      return getZonedDate(chat.created_at) <= sixtyDaysAgo;
+    });
+
+    return { today, yesterday, last7Days, last30Days, last2Months, older };
+  }, [chatPreviews]); // Only recalculate when chatPreviews changes
 };
 
 const CombinedDrawer: FC<CombinedDrawerProps> = ({
-  chatPreviews: initialChatPreviews
+  userInfo,
+  initialChatPreviews
 }) => {
-  const router = useRouter();
-  const searchParams = useSearchParams();
   const params = useParams();
-  const currentChatId = (params?.id as string) || ''; // Extract and type cast id from params
-  const theme = useTheme();
+  const router = useRouter();
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+  // Add toggle function
+  const toggleMobileDrawer = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    setIsMobileOpen(!isMobileOpen);
+  };
+
+  const currentChatId = typeof params.id === 'string' ? params.id : undefined;
 
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
   const [chatToDelete, setChatToDelete] = useState<string | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
 
-  // Fetches more chat previews when the offset changes
   const {
-    data: allChatPreviews,
-    isValidating,
+    data: chatPreviews,
     mutate: mutateChatPreviews,
+    isValidating: isLoadingMore,
     size,
     setSize
   } = useSWRInfinite(
     (index) => [`chatPreviews`, index],
     async ([_, index]) => {
-      const newOffset = index * 30;
-      return fetchMoreChatPreviews(newOffset);
+      const offset = index * 25;
+      const newChatPreviews = await fetchMoreChatPreviews(offset);
+      return newChatPreviews;
     },
     {
       fallbackData: [initialChatPreviews],
-      revalidateOnFocus: false,
+      revalidateFirstPage: false,
+      revalidateOnFocus: false, // Add these options
       revalidateOnReconnect: false,
-      revalidateFirstPage: false
+      revalidateIfStale: false,
+      revalidateOnMount: false
     }
   );
 
-  const loadMore = () => {
-    if (!isValidating) {
+  const hasMore =
+    chatPreviews && chatPreviews[chatPreviews.length - 1]?.length === 30;
+
+  const loadMoreChats = useCallback(() => {
+    if (!isLoadingMore) {
       setSize(size + 1);
     }
-  };
+  }, [isLoadingMore, setSize, size]);
 
   const handleDeleteClick = (id: string) => {
     setChatToDelete(id);
@@ -82,9 +167,10 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
       try {
         await deleteChatData(chatToDelete);
         await mutateChatPreviews();
+
+        // If the deleted chat is the current one, redirect to /aichat while preserving pdf parameter
         if (chatToDelete === currentChatId) {
-          const newHref = '/aichat';
-          router.replace(newHref, { scroll: false });
+          router.push('/aichat');
         }
       } catch (error) {
         console.error('Failed to delete the chat:', error);
@@ -94,300 +180,505 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
     setChatToDelete(null);
   };
 
-  const drawerWidth = 350;
-  const modelType = searchParams.get('modeltype') || 'standart';
-  const selectedOption =
-    searchParams.get('modelselected') || 'gpt-3.5-turbo-1106';
-  const formatDate = (dateString: string) => {
-    return format(new Date(dateString), 'PP');
-  };
+  const categorizedChats = useCategorizedChats(chatPreviews);
 
-  // Renders the list of chat previews
-  const chatListItems = (allChatPreviews ?? []).flatMap((page) =>
-    page.map(({ id, firstMessage, created_at }) => {
-      const tooltipTitle = firstMessage || 'No messages yet';
-
-      return (
-        <React.Fragment key={id}>
-          <Tooltip
-            title={tooltipTitle}
-            placement="left"
-            arrow
-            sx={{ maxHeight: 100 }}
-          >
-            <ListItemButton
-              component={Link}
-              href={`/aichat/${id}?modeltype=${modelType}&modelselected=${selectedOption}`}
-              prefetch={false}
-              onMouseEnter={() => {
-                router.prefetch(
-                  `/aichat/${id}?modeltype=${modelType}&modelselected=${selectedOption}`
-                );
-              }}
-              sx={{
-                fontSize: '0.95rem',
-                backgroundColor:
-                  currentChatId === id ? 'rgba(0, 0, 0, 0.1)' : 'inherit',
-                paddingRight: '25px',
-                position: 'relative',
-                '&::after': {
-                  content: 'attr(data-truncated-message)',
-                  display: 'block',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  '@media (max-width: 600px)': {
-                    maxWidth: 'calc(100% - 50px)'
-                  },
-                  '@media (min-width: 601px)': {
-                    maxWidth: 'calc(100% - 70px)'
-                  }
-                },
-                // Show delete button on hover
-                '& .delete-button': {
-                  display: 'none'
-                },
-                '&:hover .delete-button': {
-                  display: 'flex'
-                }
-              }}
-              data-truncated-message={firstMessage}
-            >
-              <Chip
-                label={formatDate(created_at)}
-                size="small"
-                sx={{
-                  position: 'absolute',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  right: {
-                    xs: '4px',
-                    sm: '4px',
-                    md: '20px'
-                  },
-                  fontSize: '0.6rem',
-                  backgroundColor: 'rgba(0, 0, 0, 0.05)',
-                  height: '20px'
-                }}
-              />
-              <IconButton
-                className="delete-button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleDeleteClick(id);
-                }}
-                size="small"
-                sx={{
-                  padding: '2px',
-                  position: 'absolute',
-                  right: 0,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  color: 'error.main',
-                  '&:hover': {
-                    backgroundColor: 'error.light',
-                    color: 'error.contrastText'
-                  }
-                }}
-              >
-                <DeleteIcon fontSize="inherit" />
-              </IconButton>
-            </ListItemButton>
-          </Tooltip>
-          <Divider />
-        </React.Fragment>
-      );
-    })
-  );
+  const handleChatSelect = useCallback(() => {
+    // Close drawer on mobile screens
+    if (window.innerWidth < 800) {
+      // 600px is MUI's sm breakpoint
+      setIsMobileOpen(false);
+    }
+  }, []);
 
   return (
     <>
       <IconButton
-        edge="start"
-        color="inherit"
-        aria-label="menu"
-        onClick={() => setDrawerOpen(true)}
+        onClick={toggleMobileDrawer}
+        size="small"
         sx={{
+          display: { xs: 'block', sm: 'block', md: 'none' },
           position: 'fixed',
-          top: 16,
-          right: 16,
-          zIndex: theme.zIndex.drawer + 2,
-          display: {
-            xs: 'block',
-            sm: 'block',
-            md: 'none',
-            lg: 'none',
-            xl: 'none'
-          }
+          left: 4,
+          bottom: 42,
+          zIndex: 1200
         }}
       >
-        <MenuIcon />
+        <ChatIcon sx={{ color: 'blue' }} />
       </IconButton>
-      <Box
+      <Drawer
+        variant="persistent"
+        anchor="left"
+        open
+        SlideProps={{ direction: 'left', timeout: 300 }}
+        ModalProps={{
+          slotProps: {
+            backdrop: {
+              style: { backgroundColor: 'transparent' }
+            }
+          }
+        }}
         sx={{
-          display: {
-            xs: 'none',
-            sm: 'none',
-            md: 'block',
-            lg: 'block',
-            xl: 'block'
+          width: {
+            xs: isMobileOpen ? '100%' : '0%',
+            sm: isMobileOpen ? '40%' : '0%',
+            md: '200px',
+            lg: '250px',
+            xl: '300px'
+          },
+          '@media (min-width: 2000px)': {
+            width: '350px'
+          },
+          '& .MuiDrawer-paper': {
+            boxShadow: 'none',
+            width: {
+              xs: isMobileOpen ? '100%' : '0%', // Set width to 0 when closed on mobile
+              sm: isMobileOpen ? '40%' : '0%',
+              md: '200px',
+              lg: '250px',
+              xl: '300px'
+            },
+            '@media (min-width: 2000px)': {
+              width: '350px'
+            },
+            visibility: {
+              xs: isMobileOpen ? 'visible' : 'hidden', // Hide completely when closed on mobile
+              sm: 'visible'
+            },
+            backgroundColor: 'rgba(240, 247, 255, 0.9)',
+            border: '1px solid rgba(0, 0, 0, 0.1)',
+            transition: 'width 0.3s ease-in-out'
           }
         }}
       >
-        <Drawer
-          variant="permanent"
-          anchor="left"
-          sx={{
-            width: drawerWidth,
-            overflowx: 'hidden',
-            flexShrink: 0,
-            '& .MuiDrawer-paper': {
-              width: drawerWidth,
-              boxSizing: 'border-box'
-            }
-          }}
-        >
-          <Box
-            sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              height: '100%'
-            }}
-          >
-            <Box sx={{ overflow: 'auto', flexGrow: 1 }}>
-              <Button
-                fullWidth
-                component={Link}
-                href={`/aichat?modeltype=${searchParams.get('modeltype') ?? 'standart'}&modelselected=${searchParams.get('modelselected') ?? 'gpt-3.5-turbo-1106'}`}
-                prefetch={false}
-                key="newChat"
-                aria-label="New Chat"
-                sx={{
-                  fontSize: '1rem',
-                  p: 0.75,
-                  borderBottom: '1px solid rgba(0, 0, 0, 0.12)'
-                }}
-              >
-                New Chat
-              </Button>
-
-              <List>{chatListItems}</List>
-              {(allChatPreviews?.[allChatPreviews.length - 1]?.length ?? 0) ===
-                30 && (
-                <ListItem component="div">
-                  <Button onClick={loadMore} disabled={isValidating}>
-                    {isValidating ? (
-                      <CircularProgress size={24} />
-                    ) : (
-                      'Load More'
-                    )}
-                  </Button>
-                </ListItem>
-              )}
-            </Box>
-
-            <Divider />
-
-            {[
-              { href: '/', label: 'Home' },
-              { href: '/protected', label: 'Account' }
-            ].map((item, index) => (
-              <React.Fragment key={index}>
-                <Button
-                  fullWidth
-                  component={Link}
-                  href={item.href}
-                  prefetch={false}
-                  onMouseEnter={() => {
-                    router.prefetch(item.href);
-                  }}
-                  sx={{
-                    p: 1
-                  }}
-                >
-                  {item.label}
-                </Button>
-
-                <Divider />
-              </React.Fragment>
-            ))}
-          </Box>
-        </Drawer>
-      </Box>
-      <Box
-        sx={{
-          display: {
-            xs: 'block',
-            sm: 'block',
-            md: 'none',
-            lg: 'none',
-            xl: 'none'
-          }
-        }}
-      >
-        <SwipeableDrawer
-          anchor="left"
-          open={drawerOpen}
-          onClose={() => setDrawerOpen(false)}
-          onOpen={() => setDrawerOpen(true)}
-          sx={{
-            width: drawerWidth,
-            flexShrink: 0,
-            '& .MuiDrawer-paper': {
-              width: drawerWidth,
-              boxSizing: 'border-box'
-            }
-          }}
-        >
-          <ListItem
-            component={Link}
-            href={`/aichat?modeltype=${searchParams.get('modeltype') ?? 'standart'}&modelselected=${searchParams.get('modelselected') ?? 'gpt-3.5-turbo-1106'}`}
-            prefetch={false}
-            key="newChat"
-            disablePadding
-            sx={{ padding: 1, alignContent: 'center' }}
-          >
-            <ListItemButton
+        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+          {!userInfo.email ? (
+            // Show sign-in message when no user
+            <Box
               sx={{
-                alignContent: 'center'
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '90vh',
+                textAlign: 'center',
+                p: 2,
+                gap: 2
               }}
             >
-              New Chat
-            </ListItemButton>
-          </ListItem>
-          <Divider />
-          <List>{chatListItems}</List>
-          {(allChatPreviews?.[allChatPreviews.length - 1]?.length ?? 0) ===
-            30 && (
-            <ListItem component="div">
-              <Button onClick={loadMore} disabled={isValidating}>
-                {isValidating ? <CircularProgress size={24} /> : 'Load More'}
+              <Typography variant="h6" gutterBottom>
+                Sign in to save and view your chats
+              </Typography>
+
+              <Button
+                component={Link}
+                href="/signin"
+                variant="contained"
+                color="primary"
+                sx={{
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  px: 4,
+                  py: 1
+                }}
+              >
+                Sign in
               </Button>
-            </ListItem>
+            </Box>
+          ) : (
+            <>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  position: 'relative',
+                  pt: 1,
+                  pr: 2
+                }}
+              >
+                <Typography
+                  variant="h5"
+                  sx={{
+                    textAlign: 'center'
+                  }}
+                >
+                  Chathistorik
+                </Typography>
+              </Box>
+
+              <List sx={{ overflow: 'auto' }}>
+                {!chatPreviews ? (
+                  Array.from({ length: 5 }).map((_, index) => (
+                    <ListItem key={index} disablePadding>
+                      <ListItemButton>
+                        <Skeleton variant="text" width="100%" />
+                      </ListItemButton>
+                    </ListItem>
+                  ))
+                ) : (
+                  <>
+                    <RenderChatSection
+                      title="Today"
+                      chats={categorizedChats.today || []}
+                      currentChatId={currentChatId}
+                      handleDeleteClick={handleDeleteClick}
+                      onChatSelect={handleChatSelect}
+                    />
+                    <RenderChatSection
+                      title="Yesterday"
+                      chats={categorizedChats.yesterday || []}
+                      currentChatId={currentChatId}
+                      handleDeleteClick={handleDeleteClick}
+                      onChatSelect={handleChatSelect}
+                    />
+                    <RenderChatSection
+                      title="Last 7 days"
+                      chats={categorizedChats.last7Days || []}
+                      currentChatId={currentChatId}
+                      handleDeleteClick={handleDeleteClick}
+                      onChatSelect={handleChatSelect}
+                    />
+                    <RenderChatSection
+                      title="Last 30 days"
+                      chats={categorizedChats.last30Days || []}
+                      currentChatId={currentChatId}
+                      handleDeleteClick={handleDeleteClick}
+                      onChatSelect={handleChatSelect}
+                    />
+                    <RenderChatSection
+                      title="Last 2 month"
+                      chats={categorizedChats.last2Months || []}
+                      currentChatId={currentChatId}
+                      handleDeleteClick={handleDeleteClick}
+                      onChatSelect={handleChatSelect}
+                    />
+                    <RenderChatSection
+                      title="Older"
+                      chats={categorizedChats.older || []}
+                      currentChatId={currentChatId}
+                      handleDeleteClick={handleDeleteClick}
+                      onChatSelect={handleChatSelect}
+                    />
+                    {hasMore && (
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          justifyContent: 'center',
+                          mt: 2,
+                          mb: 2
+                        }}
+                      >
+                        <Button
+                          onClick={loadMoreChats}
+                          disabled={isLoadingMore}
+                          size="small"
+                          variant="outlined"
+                          sx={{
+                            borderRadius: '8px',
+                            minWidth: '120px'
+                          }}
+                        >
+                          {isLoadingMore ? (
+                            <CircularProgress size={20} sx={{ mr: 1 }} />
+                          ) : (
+                            'Hent flere'
+                          )}
+                        </Button>
+                      </Box>
+                    )}
+                  </>
+                )}
+              </List>
+            </>
           )}
-        </SwipeableDrawer>
-      </Box>
-      <Dialog
-        open={deleteConfirmationOpen}
-        onClose={() => setDeleteConfirmationOpen(false)}
-      >
-        <DialogTitle>Confirm Deletion</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Are you sure you want to delete this chat?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteConfirmationOpen(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleDeleteConfirmation} color="error">
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
+        </Box>
+        <Dialog
+          open={deleteConfirmationOpen}
+          onClose={() => setDeleteConfirmationOpen(false)}
+        >
+          <DialogContent sx={{ p: 2 }}>
+            <DialogContentText>
+              Are you sure you want to delete this chat?
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDeleteConfirmationOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleDeleteConfirmation} color="error">
+              Delete
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Drawer>
     </>
   );
 };
+
+type RenderChatSectionProps = {
+  title: string;
+  chats: ChatPreview[];
+  currentChatId: string | null | undefined;
+  handleDeleteClick: (id: string) => void;
+  onChatSelect: (id: string) => void; // Add this prop
+};
+const RenderChatSection: FC<RenderChatSectionProps> = memo(
+  ({ title, chats, currentChatId, handleDeleteClick, onChatSelect }) => {
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
+    const [menuChatId, setMenuChatId] = useState<string | null>(null); // For menu
+    const [editingChatId, setEditingChatId] = useState<string | null>(null); // For editing
+    const [newTitle, setNewTitle] = useState('');
+
+    const [optimisticChats, addOptimisticChat] = useOptimistic(
+      chats,
+      (
+        currentChats: ChatPreview[],
+        optimisticUpdate: { id: string; newTitle: string }
+      ) =>
+        currentChats.map((chat) =>
+          chat.id === optimisticUpdate.id
+            ? {
+                ...chat,
+                chat_messages: [
+                  { content: optimisticUpdate.newTitle },
+                  ...chat.firstMessage.slice(1)
+                ]
+              }
+            : chat
+        )
+    );
+
+    const handleMenuClick = (
+      event: React.MouseEvent<HTMLElement>,
+      chatId: string
+    ) => {
+      event.preventDefault();
+      setAnchorEl(event.currentTarget);
+      setMenuChatId(chatId);
+    };
+
+    const handleMenuClose = () => {
+      setAnchorEl(null);
+      setMenuChatId(null);
+    };
+
+    const handleOpenRename = (chatId: string) => {
+      setEditingChatId(chatId);
+      setEditDialogOpen(true);
+      handleMenuClose();
+    };
+
+    const handleCloseDialog = () => {
+      setEditDialogOpen(false);
+      setEditingChatId(null);
+      setNewTitle('');
+    };
+    if (optimisticChats.length === 0) return null;
+
+    return (
+      <>
+        <Divider sx={{ color: 'textSecondary', px: 1, mt: 2.5, mb: 1 }}>
+          {title}
+        </Divider>
+        {optimisticChats.map(({ id, firstMessage }) => {
+          const currentParams = new URLSearchParams(searchParams.toString());
+          const href = `/aichat/${id}${
+            currentParams.toString() ? '?' + currentParams.toString() : ''
+          }`;
+
+          return (
+            <Box key={id}>
+              <ListItemButton
+                component={Link}
+                prefetch={false}
+                scroll={false}
+                href={href}
+                onMouseEnter={() => router.prefetch(href)}
+                onClick={() => onChatSelect(id)}
+                sx={{
+                  fontSize: '0.95rem',
+                  backgroundColor:
+                    currentChatId === id ? 'rgba(0, 0, 0, 0.1)' : 'inherit',
+                  paddingRight: '25px',
+                  position: 'relative',
+                  '& .menu-button': {
+                    display: currentChatId === id ? 'flex' : 'none'
+                  },
+                  '&:hover .menu-button': {
+                    display: 'flex'
+                  }
+                }}
+              >
+                {/* Tooltip for the chat title */}
+                <Tooltip
+                  title={firstMessage}
+                  placement="top-end"
+                  enterDelay={500}
+                  enterNextDelay={500}
+                >
+                  <Box
+                    sx={{
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      flex: 1
+                    }}
+                  >
+                    {firstMessage}
+                  </Box>
+                </Tooltip>
+
+                {/* Separate tooltip for the menu button */}
+                <Tooltip title="Options" placement="top">
+                  <IconButton
+                    className="menu-button"
+                    onClick={(e) => handleMenuClick(e, id)}
+                    size="small"
+                    sx={{
+                      padding: '2px',
+                      position: 'absolute',
+                      right: 4,
+                      top: '50%',
+                      transform: 'translateY(-50%)'
+                    }}
+                  >
+                    <MoreHorizIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </ListItemButton>
+
+              <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl) && menuChatId === id}
+                onClose={handleMenuClose}
+                sx={{ borderRadius: '8px' }}
+              >
+                <MenuItem onClick={() => handleMenuClose()} disabled>
+                  <ShareIcon fontSize="small" sx={{ mr: 1 }} />
+                  Share
+                </MenuItem>
+                <MenuItem onClick={() => handleOpenRename(id)}>
+                  <EditIcon fontSize="small" sx={{ mr: 1 }} />
+                  Rename
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    handleDeleteClick(id);
+                    handleMenuClose();
+                  }}
+                  sx={{
+                    color: 'error.main'
+                  }}
+                >
+                  <DeleteIcon
+                    fontSize="small"
+                    sx={{ mr: 1, color: 'error.main' }}
+                  />
+                  Delete
+                </MenuItem>
+              </Menu>
+            </Box>
+          );
+        })}
+
+        <Dialog open={editDialogOpen} onClose={handleCloseDialog}>
+          <Box
+            component="form"
+            onSubmit={async (e: React.FormEvent<HTMLFormElement>) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const chatId = formData.get('chatId') as string;
+              const title = formData.get('title') as string;
+
+              startTransition(async () => {
+                // Apply optimistic update immediately
+                addOptimisticChat({
+                  id: chatId,
+                  newTitle: title
+                });
+
+                try {
+                  const result = await updateChatTitle(formData);
+
+                  if (!result.success) {
+                    // If the server action failed, revert the optimistic update
+                    const originalChat = chats.find(
+                      (chat) => chat.id === chatId
+                    );
+                    if (originalChat) {
+                      addOptimisticChat({
+                        id: chatId,
+                        newTitle: originalChat.firstMessage
+                      });
+                    }
+                    console.error('Failed to update chat title');
+                  }
+                } catch (error) {
+                  // If there's an error, revert the optimistic update
+                  const originalChat = chats.find((chat) => chat.id === chatId);
+                  if (originalChat) {
+                    addOptimisticChat({
+                      id: chatId,
+                      newTitle: originalChat.firstMessage
+                    });
+                  }
+                  console.error('Error updating chat title:', error);
+                }
+              });
+
+              handleCloseDialog();
+            }}
+            sx={{ p: 1, minWidth: '400px' }}
+          >
+            <input type="hidden" name="chatId" value={editingChatId || ''} />
+            <TextField
+              autoFocus
+              margin="dense"
+              name="title"
+              label="New name"
+              type="text"
+              fullWidth
+              required
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+            />
+
+            <DialogActions>
+              <Button
+                variant="outlined"
+                onClick={handleCloseDialog}
+                color="error"
+                sx={{ mr: 1 }}
+              >
+                Cancel
+              </Button>
+              <Button variant="outlined" type="submit">
+                Save
+              </Button>
+            </DialogActions>
+          </Box>
+        </Dialog>
+      </>
+    );
+  },
+  (prevProps, nextProps) => {
+    return (
+      prevProps.title === nextProps.title &&
+      prevProps.currentChatId === nextProps.currentChatId &&
+      prevProps.chats.length === nextProps.chats.length &&
+      prevProps.chats.every((chat, index) => {
+        const nextChat = nextProps.chats[index];
+        return (
+          chat.id === nextChat.id && chat.firstMessage === nextChat.firstMessage
+        );
+      })
+    );
+  }
+);
+
+RenderChatSection.displayName = 'RenderChatSection';
 
 export default CombinedDrawer;
