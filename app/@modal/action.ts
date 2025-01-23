@@ -2,16 +2,19 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
-
 import { createServerSupabaseClient as createClient } from '@/lib/server/server';
+
+type AuthResponse = {
+  success: boolean;
+  message: string;
+};
 
 const formDataSchemaSignin = z.object({
   email: z.string().email(),
   password: z.string().min(6)
 });
 
-export async function login(formData: FormData) {
+export async function login(formData: FormData): Promise<AuthResponse> {
   const supabase = await createClient();
 
   const result = formDataSchemaSignin.safeParse({
@@ -20,7 +23,10 @@ export async function login(formData: FormData) {
   });
 
   if (!result.success) {
-    redirect('/error?message=' + encodeURIComponent('Invalid Input'));
+    return {
+      success: false,
+      message: 'Invalid input credentials'
+    };
   }
 
   const { email, password } = result.data;
@@ -31,11 +37,17 @@ export async function login(formData: FormData) {
   });
 
   if (error) {
-    redirect('/auth/signin?&error=' + encodeURIComponent('Login Error'));
+    return {
+      success: false,
+      message: 'Invalid email or password'
+    };
   }
 
   revalidatePath('/', 'layout');
-  redirect('/');
+  return {
+    success: true,
+    message: 'Successfully logged in'
+  };
 }
 
 const formDataSchemaSignup = z.object({
@@ -44,7 +56,7 @@ const formDataSchemaSignup = z.object({
   fullName: z.string().optional()
 });
 
-export async function signup(formData: FormData) {
+export async function signup(formData: FormData): Promise<AuthResponse> {
   const supabase = await createClient();
 
   const result = formDataSchemaSignup.safeParse({
@@ -56,7 +68,10 @@ export async function signup(formData: FormData) {
   });
 
   if (!result.success) {
-    redirect('/auth/signup?error=' + encodeURIComponent('Invalid Input'));
+    return {
+      success: false,
+      message: 'Invalid input data'
+    };
   }
 
   const { email, password, fullName } = result.data;
@@ -68,58 +83,69 @@ export async function signup(formData: FormData) {
       data: { full_name: fullName || 'default_user' }
     }
   });
+
   if (error) {
     console.error('Error:', error);
-    redirect('/auth/signup?error=' + encodeURIComponent('Invalid input'));
+    return {
+      success: false,
+      message: 'Failed to create account'
+    };
   }
 
-  redirect(
-    '/auth/signin?message=' +
-      encodeURIComponent('Check your email to confirm your account')
-  );
+  return {
+    success: true,
+    message: 'Check your email to confirm your account'
+  };
 }
 
 const formDataSchemaReset = z.object({
   email: z.string().email()
 });
 
-export async function resetPasswordForEmail(formData: FormData) {
+export async function resetPasswordForEmail(
+  formData: FormData
+): Promise<AuthResponse> {
   const supabase = await createClient();
   const email = formData.get('email') ? String(formData.get('email')) : '';
 
   const result = formDataSchemaReset.safeParse({ email: email });
 
   if (!result.success) {
-    redirect(
-      '/auth/signin?error=' +
-        encodeURIComponent('Failed to send password reset email')
-    );
+    return {
+      success: false,
+      message: 'Invalid email address'
+    };
   }
+
   const { error } = await supabase.auth.resetPasswordForEmail(email);
 
   if (error) {
-    redirect(
-      '/auth/signin?error=' +
-        encodeURIComponent('Failed to send password reset email')
-    );
+    return {
+      success: false,
+      message: 'Failed to send password reset email'
+    };
   }
 
-  redirect(
-    '/auth/signin?message=' +
-      encodeURIComponent(
-        'Check your email to continue the password reset process'
-      )
-  );
+  return {
+    success: true,
+    message: 'Check your email to continue the password reset process'
+  };
 }
 
-export async function signout() {
+export async function signout(): Promise<AuthResponse> {
   const supabase = await createClient();
 
-  const signOutResult = await supabase.auth.signOut();
+  const { error } = await supabase.auth.signOut();
 
-  if (signOutResult?.error) {
-    redirect('/?error=' + encodeURIComponent('Logout error'));
-  } else {
-    redirect('/');
+  if (error) {
+    return {
+      success: false,
+      message: 'Failed to sign out'
+    };
   }
+
+  return {
+    success: true,
+    message: 'Successfully signed out'
+  };
 }

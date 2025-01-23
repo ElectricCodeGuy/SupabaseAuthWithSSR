@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
           encodeURIComponent('You can now sign in.')
         );
       } else {
-        redirectTo.pathname = '/auth/signin';
+        redirectTo.pathname = '/signin';
         redirectTo.searchParams.set(
           'message',
           encodeURIComponent('You can now sign in.')

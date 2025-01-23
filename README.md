@@ -416,7 +416,7 @@ For more information about implementing vector similarity search with pgvector, 
 - **Langchain Upgrade**: Updated to the newest version of Langchain, enhancing the integration and communication between the application and AI models.
 - **Chat History Feature**: Introduced chat history feature, enabling users to easily access and reference their previous conversations.
 - **Mobile-Friendly Chat**: Implemented a responsive chat interface that dynamically adapts its width and size based on the user's screen size, ensuring optimal usability across various devices.
-- **Modern Authentication Pages**: Revamped the `/auth` page with a sleek and professional design for sign-in, sign-up, and password reset flows, elevating the overall user experience and visual appeal.
+- **Modern Authentication Pages**: Revamped the `/signup` page with a sleek and professional design for sign-in, sign-up, and password reset flows, elevating the overall user experience and visual appeal.
 
 ## Table of Contents
 
@@ -517,7 +517,7 @@ This SQL statement creates a trigger named `on_auth_user_created` that executes 
 
 4. **Sign Up for an Account**
 
-- Navigate to `http://localhost:3000/auth` in your web browser.
+- Navigate to `http://localhost:3000/signup` in your web browser.
 - Use the sign-up form to create an account. Ensure you use a valid email address that you have access to, as you'll need to verify it in the next step.
 
 5. **Verify Your Email**

@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
   // if "next" is in param, use it as the redirect URL
-  const next = searchParams.get('next') ?? '/auth/signin';
+  const next = searchParams.get('next') ?? '/signin';
 
   if (code) {
     const supabase = await createClient();
@@ -23,8 +23,7 @@ export async function GET(request: Request) {
     }
   }
 
-  // If there's an error or no code, redirect to the "/auth" route with an error message
-  const redirectTo = new URL('/auth/signin', origin);
+  const redirectTo = new URL('/signin', origin);
   redirectTo.searchParams.set(
     'message',
     encodeURIComponent('An error have occoured')

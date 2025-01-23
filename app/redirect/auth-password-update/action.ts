@@ -54,7 +54,6 @@ export async function resetPassword(formData: FormData) {
   }
 
   redirect(
-    '/auth/signin?message=' +
-      encodeURIComponent('Your password has been updated')
+    '/signin?message=' + encodeURIComponent('Your password has been updated')
   );
 }

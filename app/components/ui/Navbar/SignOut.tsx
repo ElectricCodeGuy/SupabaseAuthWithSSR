@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button, Box, CircularProgress } from '@mui/material';
-import { signout } from '@/app/auth/action';
+import { signout } from '@/app/(auth)/action';
 import { useFormStatus } from 'react-dom';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 

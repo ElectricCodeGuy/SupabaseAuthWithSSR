@@ -39,13 +39,13 @@ export async function middleware(request: NextRequest) {
   const currentRoute = request.nextUrl.pathname;
   if (currentRoute.startsWith('/protected') && !session) {
     const redirectUrl = new URL(request.url);
-    redirectUrl.pathname = '/auth/signin';
+    redirectUrl.pathname = '/signin';
     return NextResponse.redirect(redirectUrl);
   }
 
   if (currentRoute.startsWith('/aichat') && !session) {
     const redirectUrl = new URL(request.url);
-    redirectUrl.pathname = '/auth/signin';
+    redirectUrl.pathname = '/signin';
     return NextResponse.redirect(redirectUrl);
   }
 

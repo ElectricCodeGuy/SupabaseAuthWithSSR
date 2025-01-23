@@ -25,7 +25,7 @@ async function fetchChat(supabase: SupabaseClient<Database>, chatId: string) {
         user_id,
         created_at,
         updated_at,
-        chat_messages (
+        chat_messages!inner (
           id,
           is_user_message,
           content,

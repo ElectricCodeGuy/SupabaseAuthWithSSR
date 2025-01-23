@@ -1,3 +1,4 @@
+import 'server-only';
 import { createServerSupabaseClient } from '@/lib/server/server';
 
 export type Source = {

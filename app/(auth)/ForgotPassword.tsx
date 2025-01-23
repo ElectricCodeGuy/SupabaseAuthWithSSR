@@ -9,7 +9,7 @@ import {
   Typography
 } from '@mui/material';
 import { useFormStatus } from 'react-dom';
-import { resetPasswordForEmail } from '../action';
+import { resetPasswordForEmail } from './action';
 import { usePathname } from 'next/navigation';
 
 interface ForgotPasswordProps {

@@ -9,14 +9,15 @@ import {
   FormControl,
   TextField,
   Typography,
-  CircularProgress
+  CircularProgress,
+  Alert
 } from '@mui/material';
-import ForgotPassword from '../signin/ForgotPassword';
+import ForgotPassword from '../ForgotPassword';
 import { GoogleIcon } from '../CustomIcons';
 import { signup } from '../action';
-import { useRouter } from 'next/navigation';
 import { useFormStatus } from 'react-dom';
-import { signInWithGoogle } from '../signin/OAuth';
+import { signInWithGoogle } from '../OAuth';
+import Link from 'next/link';
 
 export default function SignInCard() {
   const [email, setEmail] = useState('');
@@ -41,11 +42,25 @@ export default function SignInCard() {
   const handleClose = () => {
     setOpen(false);
   };
-  const router = useRouter();
+
+  const [alertMessage, setAlertMessage] = useState<{
+    type: 'error' | 'success' | null;
+    message: string;
+  }>({ type: null, message: '' });
 
   const handleSubmit = async (formData: FormData) => {
     if (validateInputs()) {
-      await signup(formData);
+      const result = await signup(formData);
+
+      setAlertMessage({
+        type: result.success ? 'success' : 'error',
+        message: result.message
+      });
+
+      // Clear message after 5 seconds
+      setTimeout(() => {
+        setAlertMessage({ type: null, message: '' });
+      }, 5000);
     }
   };
 
@@ -217,10 +232,17 @@ export default function SignInCard() {
             />
           </FormControl>
           <SubmitButton />
+          {alertMessage.type && (
+            <Box sx={{ width: '100%', mt: 2, mb: 2 }}>
+              <Alert severity={alertMessage.type}>{alertMessage.message}</Alert>
+            </Box>
+          )}
           <Button
+            component={Link}
+            href="/signin"
+            replace
             variant="outlined"
             sx={{ alignSelf: 'center' }}
-            onClick={() => router.push('/auth/signin')}
           >
             Already have an account?
           </Button>

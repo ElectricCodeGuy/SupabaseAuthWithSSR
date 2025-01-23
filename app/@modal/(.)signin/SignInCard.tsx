@@ -11,14 +11,15 @@ import {
   FormControlLabel,
   TextField,
   Typography,
-  CircularProgress
+  CircularProgress,
+  Alert
 } from '@mui/material';
-import ForgotPassword from './ForgotPassword';
+import ForgotPassword from '../ForgotPassword';
 import { GoogleIcon } from '../CustomIcons';
 import { login } from '../action';
-import { signInWithGoogle } from './OAuth';
-import { useRouter } from 'next/navigation';
+import { signInWithGoogle } from '../OAuth';
 import { useFormStatus } from 'react-dom';
+import Link from 'next/link';
 
 export default function SignInCard() {
   const [email, setEmail] = useState(
@@ -35,7 +36,6 @@ export default function SignInCard() {
   const [passwordError, setPasswordError] = useState(false);
   const [passwordErrorMessage, setPasswordErrorMessage] = useState('');
   const [open, setOpen] = useState(false);
-  const router = useRouter();
 
   const handleClickOpen = () => {
     setOpen(true);
@@ -45,13 +45,26 @@ export default function SignInCard() {
     setOpen(false);
   };
 
+  const [alertMessage, setAlertMessage] = useState<{
+    type: 'error' | 'success' | null;
+    message: string;
+  }>({ type: null, message: '' });
+
   const handleSubmit = async (formData: FormData) => {
     if (validateInputs()) {
-      await login(formData);
-      if (rememberMe) {
-        localStorage.setItem('rememberedEmail', email);
-      } else {
-        localStorage.removeItem('rememberedEmail');
+      const result = await login(formData);
+
+      setAlertMessage({
+        type: result.success ? 'success' : 'error',
+        message: result.message
+      });
+
+      if (result.success) {
+        if (rememberMe) {
+          localStorage.setItem('rememberedEmail', email);
+        } else {
+          localStorage.removeItem('rememberedEmail');
+        }
       }
     }
   };
@@ -171,10 +184,27 @@ export default function SignInCard() {
         />
         <ForgotPassword open={open} handleClose={handleClose} />
         <SubmitButton />
+        {alertMessage.type && (
+          <Box sx={{ width: '100%', mb: 1 }}>
+            <Alert
+              severity={alertMessage.type}
+              sx={{
+                width: '100%',
+                '& .MuiAlert-message': {
+                  width: '100%'
+                }
+              }}
+            >
+              {alertMessage.message}
+            </Alert>
+          </Box>
+        )}
         <Button
+          component={Link}
+          href="/signup"
+          replace
           variant="outlined"
           sx={{ alignSelf: 'center' }}
-          onClick={() => router.push('/auth/signup')}
         >
           Don&apos;t have an account? Sign up
         </Button>

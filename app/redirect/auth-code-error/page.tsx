@@ -37,7 +37,7 @@ const AuthCodeErrorPage: React.FC = () => {
 
       <Button
         component={Link}
-        href="/auth/signup"
+        href="/signup"
         variant="outlined"
         color="primary"
         sx={{ m: 1 }}

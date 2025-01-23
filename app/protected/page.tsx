@@ -21,7 +21,7 @@ import { redirect } from 'next/navigation';
 export default async function ProtectedPage() {
   const userInfo = await getUserInfo();
   if (!userInfo) {
-    redirect('/auth/signin');
+    redirect('/signin');
   }
 
   // Hypothetical user attributes (example)
