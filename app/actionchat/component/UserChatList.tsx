@@ -8,6 +8,8 @@ import React, {
   useOptimistic,
   startTransition
 } from 'react';
+import { useActions } from 'ai/rsc';
+import { type AI } from '../action';
 import {
   deleteChatData,
   fetchMoreChatPreviews,
@@ -41,7 +43,8 @@ import {
   Delete as DeleteIcon,
   MoreHoriz as MoreHorizIcon,
   Share as ShareIcon,
-  Edit as EditIcon
+  Edit as EditIcon,
+  NoteAdd as NoteAddIcon
 } from '@mui/icons-material';
 import { format, isToday, isYesterday, subDays } from 'date-fns';
 import { Tables } from '@/types/database';
@@ -247,7 +250,16 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
   }, [userFiles]);
-
+  const { resetMessages } = useActions<typeof AI>();
+  const handleClearMessages = async () => {
+    const result = await resetMessages();
+    if (result.success) {
+      router.refresh();
+    } else {
+      // Handle the error, maybe show an error message to the user
+      console.error('Failed to reset messages:', result.message);
+    }
+  };
   // Add file list rendering
   const renderFileList = () => {
     const handleSelectBlob = (fileName: string, createdAt: string) => {
@@ -453,20 +465,23 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  position: 'relative',
+                  justifyContent: 'flex-end', // Aligns items to the end
+                  width: '100%',
                   pt: 1,
-                  pr: 2
+                  pr: 1,
+                  gap: 1 // Adds consistent spacing between buttons
                 }}
               >
-                <Typography
-                  variant="h5"
-                  sx={{
-                    textAlign: 'center'
-                  }}
-                >
-                  Chathistorik
-                </Typography>
+                <Tooltip title="Create a new conversation" arrow>
+                  <IconButton
+                    aria-label="clear messages"
+                    color="primary"
+                    size="small"
+                    onClick={handleClearMessages}
+                  >
+                    <NoteAddIcon />
+                  </IconButton>
+                </Tooltip>
               </Box>
               {selectedMode === 'pdf' ? (
                 <Box
@@ -681,9 +696,7 @@ const RenderChatSection: FC<RenderChatSectionProps> = memo(
 
     return (
       <>
-        <Divider sx={{ color: 'textSecondary', px: 1, mt: 2.5, mb: 1 }}>
-          {title}
-        </Divider>
+        <Divider sx={{ color: 'textSecondary', px: 1, mb: 1 }}>{title}</Divider>
         {optimisticChats.map(({ id, firstMessage }) => {
           const currentParams = new URLSearchParams(searchParams.toString());
           const href = `/actionchat/${id}${

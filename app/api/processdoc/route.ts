@@ -15,7 +15,8 @@ import { backOff, IBackOffOptions } from 'exponential-backoff';
 import { type LanguageModelUsage } from 'ai';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 300;
+
+export const maxDuration = 60;
 
 const embeddingBackOffOptions: IBackOffOptions = {
   numOfAttempts: 3,

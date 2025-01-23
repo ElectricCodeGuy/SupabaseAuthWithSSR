@@ -9,6 +9,7 @@ import { Database } from '@/types/database';
 import { unstable_noStore as noStore } from 'next/cache';
 import { Tables } from '@/types/database';
 import { UploadProvider } from './context/uploadContext';
+import { AI as AiProvider } from './action';
 
 export const maxDuration = 60; // Incrase the lambda duration to 60 seconds
 
@@ -77,10 +78,12 @@ export default async function Layout(props: { children: React.ReactNode }) {
   return (
     <Box sx={{ display: 'flex' }}>
       <UploadProvider>
-        <ChatHistoryDrawer
-          userInfo={userInfo}
-          initialChatPreviews={initialChatPreviews}
-        />
+        <AiProvider>
+          <ChatHistoryDrawer
+            userInfo={userInfo}
+            initialChatPreviews={initialChatPreviews}
+          />
+        </AiProvider>
         {props.children}
       </UploadProvider>
     </Box>

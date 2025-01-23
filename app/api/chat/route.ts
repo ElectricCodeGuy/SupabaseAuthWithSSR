@@ -8,6 +8,7 @@ import { redis } from '@/lib/server/server';
 import { getSession } from '@/lib/server/supabase';
 
 export const dynamic = 'force-dynamic';
+
 export const maxDuration = 60;
 
 const SYSTEM_TEMPLATE = `You are a helpful assistant. Answer all questions to the best of your ability. Helpfull answers in markdown`;

@@ -12,7 +12,6 @@ import {
   Typography,
   Tooltip,
   FormControl,
-  InputLabel,
   Select,
   Link as MuiLink,
   MenuItem,
@@ -22,7 +21,6 @@ import {
 import {
   Send as SendIcon,
   Stop as StopIcon,
-  DeleteSweep as DeleteSweepIcon,
   Chat as ChatIcon,
   PictureAsPdf as PdfIcon,
   Search as SearchIcon
@@ -52,9 +50,9 @@ export default function ChatComponentPage({
     message?: string;
     reset?: number;
   } | null>(null);
-  const { submitMessage, uploadFilesAndQuery, resetMessages, SearchTool } =
+  const { submitMessage, uploadFilesAndQuery, SearchTool } =
     useActions<typeof AI>();
-  const { selectedBlobs, selectedMode, setSelectedMode } = useUpload(); // Add this line
+  const { selectedBlobs, selectedMode, setSelectedMode } = useUpload();
 
   const [selectedModel, setSelectedModel] = useState<'claude3' | 'chatgpt4'>(
     'claude3'
@@ -84,18 +82,6 @@ export default function ChatComponentPage({
     }
   };
 
-  const handleClearMessages = async () => {
-    if (messages.length > 0) {
-      const result = await resetMessages();
-      if (result.success) {
-        setMessages([]);
-        router.refresh();
-      } else {
-        // Handle the error, maybe show an error message to the user
-        console.error('Failed to reset messages:', result.message);
-      }
-    }
-  };
   const { mutate } = useSWRConfig();
   return (
     <ErrorBoundary>
@@ -112,6 +98,42 @@ export default function ChatComponentPage({
           mx: 'auto'
         }}
       >
+        {/* Add the model selector at the top */}
+        {userInfo && (
+          <FormControl
+            size="small"
+            variant="standard"
+            sx={{
+              maxWidth: 120,
+              backgroundColor: 'white',
+              borderRadius: 1,
+              m: 1,
+              alignSelf: {
+                xs: 'flex-end',
+                sm: 'flex-end',
+                md: 'flex-start'
+              }
+            }}
+          >
+            <Select
+              labelId="model-select-label"
+              id="model-select"
+              value={selectedModel}
+              label="Model"
+              onChange={(event) =>
+                setSelectedModel(event.target.value as 'claude3' | 'chatgpt4')
+              }
+              size="small"
+            >
+              <MenuItem value="claude3" sx={{ fontSize: '0.875rem' }}>
+                Claude
+              </MenuItem>
+              <MenuItem value="chatgpt4" sx={{ fontSize: '0.875rem' }}>
+                GPT-4
+              </MenuItem>
+            </Select>
+          </FormControl>
+        )}
         {messages.length === 0 ? (
           <Box
             sx={{
@@ -466,26 +488,13 @@ export default function ChatComponentPage({
                         />
                       </IconButton>
                     ) : (
-                      <>
-                        <IconButton
-                          aria-label="send message"
-                          color="primary"
-                          onClick={handleSubmit}
-                        >
-                          <SendIcon />
-                        </IconButton>
-                        {messages.length > 0 && (
-                          <Tooltip title="Clear all messages">
-                            <IconButton
-                              aria-label="clear messages"
-                              color="primary"
-                              onClick={handleClearMessages}
-                            >
-                              <DeleteSweepIcon />
-                            </IconButton>
-                          </Tooltip>
-                        )}
-                      </>
+                      <IconButton
+                        aria-label="send message"
+                        color="primary"
+                        onClick={handleSubmit}
+                      >
+                        <SendIcon />
+                      </IconButton>
                     )}
                   </InputAdornment>
                 )
@@ -616,35 +625,6 @@ export default function ChatComponentPage({
                 </Box>
               </Popover>
             </>
-          )}
-          {userInfo && (
-            <Box>
-              <FormControl sx={{ minWidth: 100, marginLeft: '8px' }}>
-                <InputLabel id="model-select-label" size="small">
-                  Model
-                </InputLabel>
-                <Select
-                  labelId="model-select-label"
-                  id="model-select"
-                  value={selectedModel}
-                  label="Model"
-                  onChange={(event) =>
-                    setSelectedModel(
-                      event.target.value as 'claude3' | 'chatgpt4'
-                    )
-                  }
-                  size="small"
-                  sx={{ fontSize: '0.875rem' }}
-                >
-                  <MenuItem value="claude3" sx={{ fontSize: '0.875rem' }}>
-                    Claude
-                  </MenuItem>
-                  <MenuItem value="chatgpt4" sx={{ fontSize: '0.875rem' }}>
-                    GPT-4
-                  </MenuItem>
-                </Select>
-              </FormControl>
-            </Box>
           )}
         </Box>
       </Box>
