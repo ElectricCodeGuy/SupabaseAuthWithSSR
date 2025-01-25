@@ -11,7 +11,7 @@ import { Tables } from '@/types/database';
 import { UploadProvider } from './context/uploadContext';
 import { AI as AiProvider } from './action';
 
-export const maxDuration = 60; // Incrase the lambda duration to 60 seconds
+export const maxDuration = 60;
 
 async function fetchData(
   supabase: SupabaseClient<Database>,

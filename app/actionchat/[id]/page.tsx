@@ -11,7 +11,7 @@ import type { ServerMessage } from '../action';
 import DocumentViewer from '../component/PDFViewer';
 import { unstable_noStore as noStore } from 'next/cache';
 
-export const maxDuration = 60; // Incrase the lambda duration to 60 seconds
+export const maxDuration = 60;
 
 export const metadata: Metadata = {
   robots: {

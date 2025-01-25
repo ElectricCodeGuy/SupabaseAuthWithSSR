@@ -5,7 +5,7 @@ import ChatComponentPage from './component/ChatComponent';
 import { AI as AiProvider } from './action';
 import DocumentViewer from './component/PDFViewer';
 
-export const maxDuration = 60; // Incrase the lambda duration to 60 seconds
+export const maxDuration = 60;
 
 interface PageProps {
   searchParams: Promise<{ [key: string]: string | '' }>;

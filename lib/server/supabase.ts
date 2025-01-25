@@ -3,9 +3,9 @@ import { cache } from 'react';
 import { createServerSupabaseClient } from '@/lib/server/server';
 
 // React Cache: https://react.dev/reference/react/cache
-// Caches the session retrieval operation. This helps in minimizing redundant calls
-// across server components for the same session data.
-async function getSessionUser() {
+// Caches the session retrieval operation. This memoizes/dedupes the request
+// if it is called multiple times in the same render.
+export const getSession = cache(async () => {
   const supabase = await createServerSupabaseClient();
   try {
     const {
@@ -16,9 +16,7 @@ async function getSessionUser() {
     console.error('Error:', error);
     return null;
   }
-}
-
-export const getSession = cache(getSessionUser);
+});
 
 // Caches the user information retrieval operation. Similar to getSession,
 // this minimizes redundant data fetching across components for the same user data.

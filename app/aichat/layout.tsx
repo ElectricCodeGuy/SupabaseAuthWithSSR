@@ -9,7 +9,7 @@ import { unstable_noStore as noStore } from 'next/cache';
 import { Tables } from '@/types/database';
 import { getUserInfo } from '@/lib/server/supabase';
 
-export const maxDuration = 120;
+export const maxDuration = 60;
 
 async function fetchData(
   supabase: SupabaseClient<Database>,
