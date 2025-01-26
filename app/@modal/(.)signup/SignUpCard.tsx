@@ -144,7 +144,7 @@ export default function SignInCard() {
             'rgba(0, 0, 0, 0.05) 0px 5px 15px 0px, rgba(25, 28, 33, 0.05) 0px 15px 35px -5px, rgba(0, 0, 0, 0.05) 0px 0px 0px 1px'
         }}
       >
-        <Typography variant="h1" sx={{ width: '100%' }}>
+        <Typography variant="h4" sx={{ width: '100%' }}>
           Sign Up
         </Typography>
         <Box

@@ -1,7 +1,7 @@
 import React, { ReactNode } from 'react';
 import { CssBaseline, ThemeProvider, GlobalStyles } from '@mui/material';
 import theme from './theme';
-import { AppRouterCacheProvider } from '@mui/material-nextjs/v14-appRouter';
+import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
 
 const globalStyles = (
   <GlobalStyles

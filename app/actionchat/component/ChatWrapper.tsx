@@ -13,7 +13,8 @@ import {
   Link as MuiLink,
   Grid2,
   Stack,
-  IconButton
+  IconButton,
+  Popover
 } from '@mui/material';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -346,131 +347,222 @@ export const InternetSearchToolResults = ({
   searchResults
 }: {
   searchResults: SearchResult[];
-}) => (
-  <Box sx={{ my: 2 }}>
-    <Typography
-      variant="h6"
-      sx={{
-        mb: 2,
-        color: 'primary.main',
-        fontWeight: 600,
-        textAlign: 'center',
-        borderBottom: '2px solid',
-        borderColor: 'primary.light',
-        pb: 1
-      }}
-    >
-      📚 Reference Sources ({searchResults.length})
-    </Typography>
+}) => {
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>('');
+  const [isHoveringLink, setIsHoveringLink] = useState(false);
+  const [isHoveringPopover, setIsHoveringPopover] = useState(false);
 
-    <Grid2 container spacing={2} justifyContent="center">
-      {searchResults.map((result, index) => {
-        const domain = new URL(result.url).hostname.replace('www.', '');
+  const handlePopoverOpen = (
+    event: React.MouseEvent<HTMLElement>,
+    url: string
+  ) => {
+    setIsHoveringLink(true);
+    setAnchorEl(event.currentTarget);
+    setPreviewUrl(url);
+  };
 
-        return (
-          <Grid2
-            size={{ xs: 12, sm: 6, md: 6 }}
-            key={index}
-            sx={{
-              p: 2,
-              height: '100%', // Make paper fill grid height
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 2,
-              borderRadius: 2,
-              transition: 'all 0.3s ease',
-              backgroundColor: 'background.paper',
-              boxShadow: (theme) => theme.shadows[3],
-              '&:hover': {
-                transform: 'translateY(-2px)',
-                boxShadow: (theme) => theme.shadows[4],
-                '& .source-link': {
-                  color: 'primary.main'
-                }
-              }
-            }}
-          >
-            <Box sx={{ flex: 1 }}>
-              {' '}
-              {/* Flex container for title */}
-              <MuiLink
-                href={result.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="source-link"
-                sx={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: 1,
-                  fontSize: '0.95rem',
-                  fontWeight: 500,
-                  color: 'text.primary',
-                  textDecoration: 'none',
-                  lineHeight: 1.4,
-                  transition: 'color 0.2s ease'
-                }}
-              >
-                <LinkIcon
-                  sx={{
-                    color: 'primary.main',
-                    fontSize: '1.2rem',
-                    mt: 0.3,
-                    flexShrink: 0 // Prevent icon from shrinking
-                  }}
-                />
-                <Typography
-                  component="span"
-                  sx={{
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    width: '100%'
-                  }}
-                >
-                  {result.title}
-                </Typography>
-              </MuiLink>
-            </Box>
+  const handleLinkMouseLeave = () => {
+    setIsHoveringLink(false);
+    // Give a small delay to check if user moved to popover
+    setTimeout(() => {
+      if (!isHoveringPopover) {
+        setAnchorEl(null);
+        setPreviewUrl('');
+      }
+    }, 100);
+  };
 
-            <Stack
-              direction="row"
-              justifyContent="space-between"
-              alignItems="center"
+  const handlePopoverMouseEnter = () => {
+    setIsHoveringPopover(true);
+  };
+
+  const handlePopoverMouseLeave = () => {
+    setIsHoveringPopover(false);
+    if (!isHoveringLink) {
+      setAnchorEl(null);
+      setPreviewUrl('');
+    }
+  };
+
+  const open = Boolean(anchorEl);
+  // Iframe preview for the website. This can cause issues with some websites and also large content downloads aswell.
+  // Not recommended for production use.
+
+  return (
+    <>
+      <Typography
+        variant="h6"
+        sx={{
+          mb: 2,
+          color: 'primary.main',
+          fontWeight: 600,
+          textAlign: 'center',
+          borderBottom: '2px solid',
+          borderColor: 'primary.light',
+          pb: 1
+        }}
+      >
+        📚 Reference Sources ({searchResults.length})
+      </Typography>
+
+      <Grid2 container spacing={2} justifyContent="center">
+        {searchResults.map((result, index) => {
+          const domain = new URL(result.url).hostname.replace('www.', '');
+
+          return (
+            <Grid2
+              size={{ xs: 12, sm: 6, md: 6 }}
+              key={index}
               sx={{
-                pt: 1,
-                borderTop: '1px solid',
-                borderColor: 'grey.200',
-                mt: 'auto' // Push to bottom
+                p: 2,
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
+                borderRadius: 2,
+                transition: 'all 0.3s ease',
+                backgroundColor: 'background.paper',
+                boxShadow: (theme) => theme.shadows[3],
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: (theme) => theme.shadows[4],
+                  '& .source-link': {
+                    color: 'primary.main'
+                  }
+                }
               }}
             >
-              <Typography
-                variant="caption"
+              <Box sx={{ flex: 1 }}>
+                <MuiLink
+                  href={result.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="source-link"
+                  onMouseEnter={(e) => handlePopoverOpen(e, result.url)}
+                  onMouseLeave={handleLinkMouseLeave}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 1,
+                    fontSize: '0.95rem',
+                    fontWeight: 500,
+                    color: 'text.primary',
+                    textDecoration: 'none',
+                    lineHeight: 1.4,
+                    transition: 'color 0.2s ease'
+                  }}
+                >
+                  <LinkIcon
+                    sx={{
+                      color: 'primary.main',
+                      fontSize: '1.2rem',
+                      mt: 0.3,
+                      flexShrink: 0
+                    }}
+                  />
+                  <Typography
+                    component="span"
+                    sx={{
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      width: '100%'
+                    }}
+                  >
+                    {result.title}
+                  </Typography>
+                </MuiLink>
+              </Box>
+
+              {/* Rest of the component remains the same */}
+
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
                 sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 0.5,
-                  color: 'text.secondary'
+                  pt: 1,
+                  borderTop: '1px solid',
+                  borderColor: 'grey.200',
+                  mt: 'auto'
                 }}
               >
-                <PublicIcon sx={{ fontSize: '1rem' }} />
-                {domain}
-              </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                    color: 'text.secondary'
+                  }}
+                >
+                  <PublicIcon sx={{ fontSize: '1rem' }} />
+                  {domain}
+                </Typography>
 
-              <IconButton
-                size="small"
-                href={result.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                sx={{ color: 'primary.main' }}
-              >
-                <OpenInNewIcon fontSize="small" />
-              </IconButton>
-            </Stack>
-          </Grid2>
-        );
-      })}
-    </Grid2>
-  </Box>
-);
+                <IconButton
+                  size="small"
+                  href={result.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  sx={{ color: 'primary.main' }}
+                >
+                  <OpenInNewIcon fontSize="small" />
+                </IconButton>
+              </Stack>
+            </Grid2>
+          );
+        })}
+      </Grid2>
+
+      <Popover
+        sx={{
+          pointerEvents: 'auto',
+          '& .MuiPopover-paper': {
+            pointerEvents: 'auto'
+          }
+        }}
+        open={open}
+        anchorEl={anchorEl}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'left'
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'left'
+        }}
+        onClose={() => {
+          setAnchorEl(null);
+          setPreviewUrl('');
+        }}
+        disableRestoreFocus
+        onMouseEnter={handlePopoverMouseEnter}
+        onMouseLeave={handlePopoverMouseLeave}
+      >
+        <Box
+          sx={{
+            width: '800px',
+            height: '600px',
+            border: 'none',
+            p: 1
+          }}
+        >
+          <iframe
+            src={previewUrl}
+            title="Website Preview"
+            style={{
+              width: '100%',
+              height: '100%',
+              border: 'none'
+            }}
+            sandbox="allow-same-origin allow-scripts"
+          />
+        </Box>
+      </Popover>
+    </>
+  );
+};
