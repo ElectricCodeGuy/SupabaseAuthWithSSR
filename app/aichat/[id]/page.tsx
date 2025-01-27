@@ -6,6 +6,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '@/types/database';
 import { redirect } from 'next/navigation';
 import { unstable_noStore as noStore } from 'next/cache';
+import { cookies } from 'next/headers';
 
 type ChatMessage = {
   id: string;
@@ -60,6 +61,10 @@ export default async function ChatPage(props: {
   if (!chatData) {
     redirect('/aichat');
   }
+  const cookieStore = await cookies();
+  const modelType = cookieStore.get('modelType')?.value || 'standart';
+  const selectedOption =
+    cookieStore.get('selectedOption')?.value || 'gpt-3.5-turbo-1106';
 
   const formattedChatData = {
     id: chatData.id,
@@ -75,5 +80,12 @@ export default async function ChatPage(props: {
     chat_messages: chatData.chat_messages
   };
 
-  return <ChatComponent currentChat={formattedChatData} chatId={id} />;
+  return (
+    <ChatComponent
+      currentChat={formattedChatData}
+      chatId={id}
+      initialModelType={modelType}
+      initialSelectedOption={selectedOption}
+    />
+  );
 }

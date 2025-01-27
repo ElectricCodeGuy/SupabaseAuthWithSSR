@@ -1,12 +1,6 @@
 'use client';
 
-import React, {
-  useMemo,
-  useState,
-  FC,
-  KeyboardEvent,
-  useCallback
-} from 'react';
+import React, { useMemo, useState, FC, KeyboardEvent } from 'react';
 import { useChat, type Message } from 'ai/react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import ReactMarkdown, { Components } from 'react-markdown';
@@ -23,7 +17,9 @@ import {
   Snackbar,
   Alert,
   TextField,
-  Autocomplete,
+  Menu,
+  MenuItem,
+  Button,
   IconButton,
   Paper,
   CircularProgress,
@@ -44,12 +40,14 @@ import {
   Replay as RetryIcon,
   Stop as StopIcon,
   ContentCopy as ContentCopyIcon,
-  CheckCircle as CheckCircleIcon
+  CheckCircle as CheckCircleIcon,
+  KeyboardArrowDown as KeyboardArrowDownIcon
 } from '@mui/icons-material';
 import { Tables } from '@/types/database';
 import Link from 'next/link';
 import { useSWRConfig } from 'swr';
 import { ChatScrollAnchor } from '../hooks/chat-scroll-anchor';
+import { setModelSettings } from '../actions';
 
 const highlightOptionsAI: HighlightOptions = {
   detect: true,
@@ -71,6 +69,8 @@ type ChatSessionWithMessages = Pick<
 interface ChatProps {
   currentChat?: ChatSessionWithMessages | null;
   chatId?: string;
+  initialModelType: string;
+  initialSelectedOption: string;
 }
 
 const messageStyles: Record<string, SxProps<Theme>> = {
@@ -249,13 +249,28 @@ const ChatMessage: FC<ChatMessageProps> = ({ messages }) => {
 };
 
 // The rest of the ChatComponent remains unchanged.
-const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
+const ChatComponent: FC<ChatProps> = ({
+  currentChat,
+  chatId,
+  initialModelType,
+  initialSelectedOption
+}) => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
 
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+
+  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
 
   const { mutate } = useSWRConfig();
 
@@ -272,9 +287,8 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
     return [];
   }, [currentChat]);
 
-  const modelType = searchParams.get('modeltype') || 'standart';
-  const selectedOption =
-    searchParams.get('modelselected') || 'gpt-3.5-turbo-1106';
+  const [modelType, setModelType] = useState(initialModelType);
+  const [selectedOption, setSelectedOption] = useState(initialSelectedOption);
 
   const apiEndpoint = modelType === 'perplex' ? '/api/perplexity' : '/api/chat';
   const createChatId = uuidv4();
@@ -314,6 +328,17 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
       setSnackbarOpen(true);
     }
   });
+  const handleModelTypeChange = async (newValue: string | null) => {
+    const newModelType = newValue || 'standart';
+    setModelType(newModelType);
+    await setModelSettings(newModelType, selectedOption);
+  };
+
+  const handleOptionChange = async (newValue: string | null) => {
+    const newOption = newValue || 'gpt-3.5-turbo-1106';
+    setSelectedOption(newOption);
+    await setModelSettings(modelType, newOption);
+  };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Enter' && event.shiftKey) {
@@ -326,36 +351,6 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
   };
 
   const modelTypes = ['standart', 'perplex'];
-
-  const createQueryString = useCallback(
-    (name: string, value: string) => {
-      const params = new URLSearchParams(searchParams);
-      if (value) {
-        params.set(name, value);
-      } else {
-        params.delete(name);
-      }
-      return params.toString();
-    },
-    [searchParams]
-  );
-
-  const handleModelTypeChange = (newValue: string | null) => {
-    const queryString = createQueryString('modeltype', newValue || 'standart');
-    router.replace(`?${queryString}`, {
-      scroll: false
-    });
-  };
-
-  const handleOptionChange = (newValue: string | null) => {
-    const queryString = createQueryString(
-      'modelselected',
-      newValue || 'gpt-3.5-turbo-1106'
-    );
-    router.replace(`?${queryString}`, {
-      scroll: false
-    });
-  };
 
   return (
     <Box
@@ -579,47 +574,75 @@ const ChatComponent: FC<ChatProps> = ({ currentChat, chatId }) => {
                   xl: 4
                 }}
               >
-                <Autocomplete
-                  options={[
+                <Button
+                  id="model-button"
+                  aria-controls={open ? 'model-menu' : undefined}
+                  aria-haspopup="true"
+                  aria-expanded={open ? 'true' : undefined}
+                  onClick={handleClick}
+                  endIcon={<KeyboardArrowDownIcon />}
+                  sx={{
+                    ml: 1,
+                    my: 0.5,
+                    borderRadius: '20px',
+                    width: '100%',
+                    backgroundColor: 'white',
+                    textTransform: 'none',
+                    '&:hover': {
+                      backgroundColor: '#f5f5f5'
+                    },
+                    justifyContent: 'space-between',
+                    padding: '8px 14px'
+                  }}
+                >
+                  {selectedOption}
+                </Button>
+                <Menu
+                  id="model-menu"
+                  anchorEl={anchorEl}
+                  open={open}
+                  onClose={handleClose}
+                  MenuListProps={{
+                    'aria-labelledby': 'model-button'
+                  }}
+                  anchorOrigin={{
+                    vertical: 'top',
+                    horizontal: 'left'
+                  }}
+                  transformOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'left'
+                  }}
+                >
+                  {[
                     'gpt-3.5-turbo-1106',
                     'gpt-3.5-turbo-16k',
                     'gpt-4-0125-preview',
                     'gpt-4-1106-preview',
                     'gpt-4',
                     'sonnet-3-5'
-                  ]}
-                  size="small"
-                  value={selectedOption}
-                  onChange={(_, newValue) => handleOptionChange(newValue)}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label="AI Model"
-                      margin="normal"
-                      variant="outlined"
-                      slotProps={{
-                        input: {
-                          ...params.InputProps,
-                          style: {
-                            borderRadius: 8,
-                            backgroundColor: 'white'
+                  ].map((option) => (
+                    <MenuItem
+                      key={option}
+                      onClick={() => {
+                        handleOptionChange(option);
+                        handleClose();
+                      }}
+                      selected={selectedOption === option}
+                      sx={{
+                        minWidth: '200px',
+                        '&.Mui-selected': {
+                          backgroundColor: '#e3f2fd',
+                          '&:hover': {
+                            backgroundColor: '#bbdefb'
                           }
                         }
                       }}
-                    />
-                  )}
-                  sx={{
-                    ml: 1,
-                    width: '100%',
-                    '.MuiAutocomplete-root .MuiOutlinedInput-root': {
-                      padding: '8px',
-                      '.MuiInputBase-input': {
-                        padding: '10px 14px'
-                      }
-                    }
-                  }}
-                  disableClearable
-                />
+                    >
+                      {option}
+                    </MenuItem>
+                  ))}
+                </Menu>
               </Grid2>
             )}
             <Grid2
