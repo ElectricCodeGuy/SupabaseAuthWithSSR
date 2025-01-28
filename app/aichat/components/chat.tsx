@@ -3,7 +3,7 @@
 import React, { useMemo, useState, FC, KeyboardEvent } from 'react';
 import { useChat, type Message } from 'ai/react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import ReactMarkdown, { Components } from 'react-markdown';
+import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeHighlight, { Options as HighlightOptions } from 'rehype-highlight';
@@ -109,61 +109,6 @@ interface ChatMessageProps {
 const MessageComponent = ({ message }: { message: Message }) => {
   const [isCopied, setIsCopied] = useState(false);
 
-  const componentsAI: Partial<Components> = {
-    a: ({ href, children }) => (
-      <MuiLink
-        component={Link}
-        href={href || '#'}
-        target="_blank"
-        rel="noopener"
-      >
-        {children}
-      </MuiLink>
-    ),
-
-    code({ className, children, ...props }) {
-      const match = /language-(\w+)/.exec(className || '');
-      const language = match && match[1] ? match[1] : '';
-      const inline = !language;
-      if (inline) {
-        return (
-          <code className={className} {...props}>
-            {children}
-          </code>
-        );
-      }
-
-      return (
-        <div
-          style={{
-            position: 'relative',
-            borderRadius: '5px',
-            paddingTop: '20px',
-            width: '100%'
-          }}
-        >
-          <span
-            style={{
-              position: 'absolute',
-              top: '0',
-              left: '5px',
-              fontSize: '0.8em',
-              textTransform: 'uppercase'
-            }}
-          >
-            {language}
-          </span>
-
-          <pre style={{ margin: '0', overflowX: 'auto' }}>
-            <code className={className} {...props}>
-              {children}
-            </code>
-          </pre>
-        </div>
-      );
-    }
-  };
-
   const copyToClipboard = (str: string): void => {
     void window.navigator.clipboard.writeText(str);
   };
@@ -227,7 +172,60 @@ const MessageComponent = ({ message }: { message: Message }) => {
         </ReactMarkdown>
       ) : (
         <ReactMarkdown
-          components={componentsAI}
+          components={{
+            a: ({ href, children }) => (
+              <MuiLink
+                component={Link}
+                href={href || '#'}
+                target="_blank"
+                rel="noopener"
+              >
+                {children}
+              </MuiLink>
+            ),
+
+            code({ className, children, ...props }) {
+              const match = /language-(\w+)/.exec(className || '');
+              const language = match && match[1] ? match[1] : '';
+              const inline = !language;
+              if (inline) {
+                return (
+                  <code className={className} {...props}>
+                    {children}
+                  </code>
+                );
+              }
+
+              return (
+                <div
+                  style={{
+                    position: 'relative',
+                    borderRadius: '5px',
+                    paddingTop: '20px',
+                    width: '100%'
+                  }}
+                >
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: '0',
+                      left: '5px',
+                      fontSize: '0.8em',
+                      textTransform: 'uppercase'
+                    }}
+                  >
+                    {language}
+                  </span>
+
+                  <pre style={{ margin: '0', overflowX: 'auto' }}>
+                    <code className={className} {...props}>
+                      {children}
+                    </code>
+                  </pre>
+                </div>
+              );
+            }
+          }}
           remarkPlugins={[remarkGfm, remarkMath]}
           rehypePlugins={[[rehypeHighlight, highlightOptionsAI]]}
         >

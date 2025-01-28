@@ -2,20 +2,15 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { createServerSupabaseClient as createClient } from '@/lib/server/server';
-
-type AuthResponse = {
-  success: boolean;
-  message: string;
-};
+import { createServerSupabaseClient } from '@/lib/server/server';
 
 const formDataSchemaSignin = z.object({
   email: z.string().email(),
   password: z.string().min(6)
 });
 
-export async function login(formData: FormData): Promise<AuthResponse> {
-  const supabase = await createClient();
+export async function login(formData: FormData) {
+  const supabase = await createServerSupabaseClient();
 
   const result = formDataSchemaSignin.safeParse({
     email: formData.get('email'),
@@ -56,8 +51,8 @@ const formDataSchemaSignup = z.object({
   fullName: z.string().optional()
 });
 
-export async function signup(formData: FormData): Promise<AuthResponse> {
-  const supabase = await createClient();
+export async function signup(formData: FormData) {
+  const supabase = await createServerSupabaseClient();
 
   const result = formDataSchemaSignup.safeParse({
     email: formData.get('email') ? String(formData.get('email')) : '',
@@ -102,10 +97,8 @@ const formDataSchemaReset = z.object({
   email: z.string().email()
 });
 
-export async function resetPasswordForEmail(
-  formData: FormData
-): Promise<AuthResponse> {
-  const supabase = await createClient();
+export async function resetPasswordForEmail(formData: FormData) {
+  const supabase = await createServerSupabaseClient();
   const email = formData.get('email') ? String(formData.get('email')) : '';
 
   const result = formDataSchemaReset.safeParse({ email: email });
@@ -132,8 +125,8 @@ export async function resetPasswordForEmail(
   };
 }
 
-export async function signout(): Promise<AuthResponse> {
-  const supabase = await createClient();
+export async function signout() {
+  const supabase = await createServerSupabaseClient();
 
   const { error } = await supabase.auth.signOut();
 

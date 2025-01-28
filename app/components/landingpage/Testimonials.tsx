@@ -1,15 +1,9 @@
 import React from 'react';
-import { Box, Grid2, Typography, Paper, Avatar } from '@mui/material';
+import { Box, Grid2, Typography } from '@mui/material';
 import ChikenImage from '@/public/images/chiken image.jpg';
+import Image from 'next/image';
 
-interface Testimonial {
-  name: string;
-  role: string;
-  avatar: string;
-  content: string;
-}
-
-const testimonials: Testimonial[] = [
+const testimonials = [
   {
     name: 'Sarah Johnson',
     role: 'HR Manager',
@@ -54,49 +48,6 @@ const testimonials: Testimonial[] = [
   }
 ];
 
-const TestimonialCard: React.FC<Testimonial> = ({
-  name,
-  role,
-  avatar,
-  content
-}) => {
-  return (
-    <Paper
-      elevation={3}
-      sx={{
-        p: 2,
-        borderRadius: '8px',
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between'
-      }}
-    >
-      <Typography
-        variant="body1"
-        sx={{
-          color: 'text.secondary',
-          mb: 2,
-          flexGrow: 1
-        }}
-      >
-        &ldquo;{content}&rdquo;
-      </Typography>
-      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-        <Avatar src={avatar} alt={name} sx={{ width: 48, height: 48, mr: 2 }} />
-        <Box>
-          <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-            {name}
-          </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            {role}
-          </Typography>
-        </Box>
-      </Box>
-    </Paper>
-  );
-};
-
 const Testimonials: React.FC = () => {
   return (
     <Box
@@ -104,41 +55,40 @@ const Testimonials: React.FC = () => {
       sx={{
         maxWidth: '1800px',
         mx: 'auto',
-        my: 4
+        mt: 2,
+        mb: 4
       }}
     >
-      <Box
+      <Typography
+        variant="h3"
         sx={{
           textAlign: 'center',
-          mb: 10
+          fontWeight: 'bold',
+          fontFamily: 'Monospace',
+          letterSpacing: '0.1em',
+          backgroundClip: 'text',
+          WebkitBackgroundClip: 'text',
+          backgroundGradient: 'linear(to r, white, grey.500)',
+          pb: 2
         }}
       >
-        <Typography
-          variant="h3"
-          sx={{
-            fontWeight: 'bold',
-            fontFamily: 'Monospace',
-            letterSpacing: '0.1em',
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            backgroundGradient: 'linear(to r, white, grey.500)'
-          }}
-        >
-          What Our Users Say
-        </Typography>
-        <Typography
-          variant="body1"
-          sx={{
-            fontWeight: 'bold',
-            maxWidth: 800,
-            mx: 'auto',
-            fontFamily: 'Monospace',
-            letterSpacing: '0.05em'
-          }}
-        >
-          Real Experiences from Satisfied Customers
-        </Typography>
-      </Box>
+        What Our Users Say
+      </Typography>
+      <Typography
+        variant="body1"
+        sx={{
+          textAlign: 'center',
+          fontWeight: 'bold',
+          maxWidth: 800,
+          mx: 'auto',
+          fontFamily: 'Monospace',
+          letterSpacing: '0.05em',
+          pb: 2
+        }}
+      >
+        Real Experiences from Satisfied Customers
+      </Typography>
+
       <Grid2 container spacing={4}>
         {testimonials.map((testimonial, index) => (
           <Grid2
@@ -148,9 +98,54 @@ const Testimonials: React.FC = () => {
               md: 4
             }}
             key={index}
-            sx={{ display: 'flex' }}
+            sx={{
+              display: 'flex',
+              p: 2,
+              borderRadius: '8px',
+              height: '100%',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              boxShadow: 3,
+              backgroundColor: 'background.paper'
+            }}
           >
-            <TestimonialCard {...testimonial} />
+            <Typography
+              variant="body1"
+              sx={{
+                color: 'text.secondary',
+                mb: 2,
+                flexGrow: 1
+              }}
+            >
+              &ldquo;{testimonial.content}&rdquo;
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Box
+                sx={{
+                  position: 'relative',
+                  width: 48,
+                  height: 48,
+                  borderRadius: '50%',
+                  overflow: 'hidden',
+                  mr: 2
+                }}
+              >
+                <Image
+                  src={testimonial.avatar}
+                  alt={testimonial.name}
+                  fill
+                  style={{ objectFit: 'cover' }}
+                />
+              </Box>
+              <Box>
+                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                  {testimonial.name}
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                  {testimonial.role}
+                </Typography>
+              </Box>
+            </Box>
           </Grid2>
         ))}
       </Grid2>

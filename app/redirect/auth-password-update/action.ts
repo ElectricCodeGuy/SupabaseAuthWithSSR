@@ -2,7 +2,7 @@
 
 import { z } from 'zod';
 import { redirect } from 'next/navigation';
-import { createServerSupabaseClient as createClient } from '@/lib/server/server';
+import { createServerSupabaseClient } from '@/lib/server/server';
 
 const passwordValidation = z
   .string()
@@ -16,7 +16,7 @@ const formDataSchemaResetPassword = z.object({
 });
 
 export async function resetPassword(formData: FormData) {
-  const supabase = await createClient();
+  const supabase = await createServerSupabaseClient();
 
   const result = formDataSchemaResetPassword.safeParse({
     newPassword: formData.get('newPassword')

@@ -1,11 +1,6 @@
 import React from 'react';
 import { Box, Grid2, Typography, Paper, Divider } from '@mui/material';
 import Link from 'next/link';
-type Feature = {
-  title: string;
-  description: string | React.ReactElement;
-  Icon: string;
-};
 
 const features = [
   {
@@ -58,49 +53,6 @@ const features = [
     Icon: '💰'
   }
 ];
-
-const FeatureCard: React.FC<Feature> = ({ title, description, Icon }) => {
-  return (
-    <Paper
-      elevation={3}
-      sx={{
-        p: 5,
-        textAlign: 'center',
-        borderRadius: '12px',
-        borderColor: 'grey.800',
-        height: '100%',
-        minHeight: 350,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        width: '100%'
-      }}
-    >
-      <Box sx={{ p: 3, fontSize: 50, opacity: 0.9 }}>{Icon}</Box>
-      <Typography
-        variant="h6"
-        color="primary"
-        gutterBottom
-        sx={{
-          fontWeight: 'bold'
-        }}
-      >
-        {title}
-      </Typography>
-      <Divider variant="middle" />
-      <Typography
-        variant="body2"
-        component="div"
-        sx={{
-          color: 'text.secondary',
-          mt: 3
-        }}
-      >
-        {description}
-      </Typography>
-    </Paper>
-  );
-};
 
 export default function Component() {
   return (
@@ -156,11 +108,46 @@ export default function Component() {
               md: 4
             }}
           >
-            <FeatureCard
-              title={feature.title}
-              description={feature.description}
-              Icon={feature.Icon}
-            />
+            <Paper
+              elevation={3}
+              sx={{
+                p: 5,
+                textAlign: 'center',
+                borderRadius: '12px',
+                borderColor: 'grey.800',
+                height: '100%',
+                minHeight: 350,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                width: '100%'
+              }}
+            >
+              <Box sx={{ p: 3, fontSize: 50, opacity: 0.9 }}>
+                {feature.Icon}
+              </Box>
+              <Typography
+                variant="h6"
+                color="primary"
+                gutterBottom
+                sx={{
+                  fontWeight: 'bold'
+                }}
+              >
+                {feature.title}
+              </Typography>
+              <Divider variant="middle" />
+              <Typography
+                variant="body2"
+                component="div"
+                sx={{
+                  color: 'text.secondary',
+                  mt: 3
+                }}
+              >
+                {feature.description}
+              </Typography>
+            </Paper>
           </Grid2>
         ))}
       </Grid2>
