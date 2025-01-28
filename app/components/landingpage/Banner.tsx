@@ -74,7 +74,10 @@ const BannerComponent: React.FC<BannerProps> = ({ session, userEmail }) => {
           md: 4
         }}
       >
-        <Typography variant="h4" sx={{ mb: 1, color: 'primary.main' }}>
+        <Typography
+          variant="h4"
+          sx={{ mb: 1, color: 'primary.main', wordWrap: 'break-word' }}
+        >
           {session
             ? `Welcome back, ${userEmail || 'User'}!`
             : 'Empower Your Next.js App with Supabase Auth'}

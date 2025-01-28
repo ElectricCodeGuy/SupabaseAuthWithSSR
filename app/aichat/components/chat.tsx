@@ -377,7 +377,7 @@ const ChatComponent: FC<ChatProps> = ({
             textAlign: 'center'
           }}
         >
-          <Typography variant="h3" color="textSecondary" sx={{ pb: 2 }}>
+          <Typography variant="h4" color="textSecondary" sx={{ pb: 2 }}>
             Chat with our AI Assistant
           </Typography>
 

@@ -147,7 +147,7 @@ export default function ChatComponentPage({
             }}
           >
             <Typography
-              variant="h3"
+              variant="h4"
               sx={{
                 color: 'textSecondary',
                 mb: 2

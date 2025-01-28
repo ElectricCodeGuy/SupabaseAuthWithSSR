@@ -29,7 +29,7 @@ export default async function ProtectedPage() {
   // along with other user details. Here, it's included as a static example.
   const userAttributes = {
     location: 'New York, USA',
-    joinDate: format(new Date(), 'MMMM d, yyyy'),
+    joinDate: format(new Date(), 'PPP'),
     bio: 'Developer with a passion for web technologies and open source. Loves exploring new techniques and collaborating on global projects.'
   };
 
