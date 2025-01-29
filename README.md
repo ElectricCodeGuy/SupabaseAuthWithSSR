@@ -924,11 +924,3 @@ Reset Password Email For users that have requested a password reset:
 ## 📜 License
 
 🔖 Licensed under the MIT License. See LICENSE.md for details.
-
-```
-
-```
-
-```
-
-```
