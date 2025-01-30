@@ -14,7 +14,7 @@ import { AlertColor } from '@mui/material';
 
 interface UploadContextType {
   isUploading: boolean;
-  uploadFile: (file: File, userId: string) => Promise<void>;
+  uploadFile: (file: File) => Promise<void>;
   uploadProgress: number;
   uploadStatus: string;
   statusSeverity: AlertColor;
@@ -39,9 +39,10 @@ export const useUpload = () => {
   return context;
 };
 
-export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({
-  children
-}) => {
+export const UploadProvider: React.FC<{
+  children: React.ReactNode;
+  userId: string;
+}> = ({ children, userId }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState('');
@@ -94,52 +95,53 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   );
 
-  async function getTotalUploadedSize(userId: string): Promise<number> {
-    const { data, error } = await supabase.storage
-      .from('userfiles')
-      .list(userId);
-
-    if (error) {
-      console.error('Error fetching user files:', error);
-      return 0;
-    }
-
-    return data.reduce((total, file) => total + (file.metadata?.size || 0), 0);
-  }
-
-  const uploadToSupabase = async (file: File, userId: string) => {
-    const fileNameWithUnderscores = file.name.replace(/ /g, '_').trim();
-    const encodedFileName = encodeBase64(fileNameWithUnderscores);
-    const filePath = `${userId}/${encodedFileName}`;
-
-    const { data, error } = await supabase.storage
-      .from('userfiles')
-      .upload(filePath, file, { upsert: true });
-
-    if (error) {
-      console.error('Error uploading file:', error);
-      throw new Error(`Failed to upload file: ${file.name}`);
-    }
-
-    if (!data || !data.path) {
-      console.error('Upload successful but path is missing');
-      throw new Error(`Failed to get path for uploaded file: ${file.name}`);
-    }
-
-    return data.path;
-  };
-
   const uploadFile = useCallback(
-    async (file: File, userId: string) => {
+    async (file: File) => {
       setIsUploading(true);
       setUploadProgress(0);
       setUploadStatus('Uploading file...');
       setStatusSeverity('info');
+      async function getTotalUploadedSize(): Promise<number> {
+        const { data, error } = await supabase.storage
+          .from('userfiles')
+          .list(userId);
 
+        if (error) {
+          console.error('Error fetching user files:', error);
+          return 0;
+        }
+
+        return data.reduce(
+          (total, file) => total + (file.metadata?.size || 0),
+          0
+        );
+      }
+
+      const uploadToSupabase = async (file: File, userId: string) => {
+        const fileNameWithUnderscores = file.name.replace(/ /g, '_').trim();
+        const encodedFileName = encodeBase64(fileNameWithUnderscores);
+        const filePath = `${userId}/${encodedFileName}`;
+
+        const { data, error } = await supabase.storage
+          .from('userfiles')
+          .upload(filePath, file, { upsert: true });
+
+        if (error) {
+          console.error('Error uploading file:', error);
+          throw new Error(`Failed to upload file: ${file.name}`);
+        }
+
+        if (!data || !data.path) {
+          console.error('Upload successful but path is missing');
+          throw new Error(`Failed to get path for uploaded file: ${file.name}`);
+        }
+
+        return data.path;
+      };
       let uploadedFilePath: string | null = null;
 
       try {
-        const currentTotalSize = await getTotalUploadedSize(userId);
+        const currentTotalSize = await getTotalUploadedSize();
         const newTotalSize = currentTotalSize + file.size;
 
         if (newTotalSize > MAX_TOTAL_SIZE) {
@@ -218,15 +220,7 @@ export const UploadProvider: React.FC<{ children: React.ReactNode }> = ({
         setCurrentFileName(null);
       }
     },
-    [
-      // Add dependencies used in the function
-      setIsUploading,
-      setUploadProgress,
-      setUploadStatus,
-      setStatusSeverity,
-      setCurrentJobId,
-      setCurrentFileName
-    ]
+    [userId]
   );
 
   const resetUploadState = () => {

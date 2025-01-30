@@ -77,7 +77,7 @@ export default async function Layout(props: { children: React.ReactNode }) {
 
   return (
     <Box sx={{ display: 'flex' }}>
-      <UploadProvider>
+      <UploadProvider userId={userInfo.id}>
         <AiProvider>
           <ChatHistoryDrawer
             userInfo={userInfo}

@@ -517,7 +517,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
                       backgroundColor: 'background.paper'
                     }}
                   >
-                    <ServerUploadPage userId={userInfo.id} />
+                    <ServerUploadPage />
                   </Box>
                 </Box>
               ) : (

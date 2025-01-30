@@ -17,7 +17,10 @@ import {
   ListItemIcon,
   ListItemText
 } from '@mui/material';
-import { Search as SearchIcon } from '@mui/icons-material';
+import {
+  Search as SearchIcon,
+  Autorenew as AutorenewIcon
+} from '@mui/icons-material';
 import {
   BotMessage,
   UserMessage,
@@ -1014,28 +1017,26 @@ type ProcessedSearchResult = {
   url: string;
   content: string;
 };
-const zodSchemaSearch = z
-  .object({
-    variation1: z
-      .string()
-      .min(1)
-      .describe(
-        'A variation that precisely identifies the main topic or key concept of the query, aiming to match specific terminology used in authoritative sources. Output should be in English and is required.'
-      ),
-    variation2: z
-      .string()
-      .min(1)
-      .describe(
-        'A variation that focuses on the context or domain relevant to the question, tailored to find documents within the same field or area of interest. Output should be in English and is required.'
-      ),
-    variation3: z
-      .string()
-      .min(1)
-      .describe(
-        'A variation that focuses on potential applications or implications of the topic, to target documents discussing related outcomes or consequences. Output should be in English and is required.'
-      )
-  })
-  .required();
+const zodSchemaSearch = z.object({
+  variation1: z
+    .string()
+    .min(1)
+    .describe(
+      'A variation that precisely identifies the main topic or key concept of the query, aiming to match specific terminology used in authoritative sources. Output should be in English and is required.'
+    ),
+  variation2: z
+    .string()
+    .min(1)
+    .describe(
+      'A variation that focuses on the context or domain relevant to the question, tailored to find documents within the same field or area of interest. Output should be in English and is required.'
+    ),
+  variation3: z
+    .string()
+    .min(1)
+    .describe(
+      'A variation that focuses on potential applications or implications of the topic, to target documents discussing related outcomes or consequences. Output should be in English and is required.'
+    )
+});
 
 interface SearchResult {
   title: string;
@@ -1139,7 +1140,7 @@ async function SearchTool(
     2. Focusing on the relevant context or domain.
     3. Exploring potential applications or implications of the topic.
   
-    All questions and variations should be in English.
+    All questions and variations should be in the same language as the users question.
   
     Original question: ${currentUserMessage}
   `;
@@ -1172,43 +1173,121 @@ async function SearchTool(
       <Box
         display="flex"
         flexDirection="column"
-        justifyContent="center"
-        alignItems="center"
-        mb={2}
-        mt={2}
-        p={2}
-        borderRadius={4}
-        bgcolor="grey.100"
         sx={{
-          backgroundImage: 'linear-gradient(45deg, #e0eaFC, #cfdef3)',
-          boxShadow: '0 3px 5px 2px rgba(0, 0, 0, .1)',
-          transition: 'background-color 0.3s ease',
+          p: 2,
+          borderRadius: 2,
+          background: 'linear-gradient(145deg, #f5f7fa 0%, #e8edf5 100%)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
+          border: '1px solid rgba(255, 255, 255, 0.4)',
+          backdropFilter: 'blur(4px)',
+          transition: 'all 0.3s ease',
           ':hover': {
-            bgcolor: 'grey.200'
+            transform: 'translateY(-2px)',
+            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.12)'
           }
         }}
       >
-        <Typography variant="h6" color="primary" gutterBottom>
-          I&apos;ve identified these optimized search variations to better
-          understand your query:
+        <Typography
+          variant="h6"
+          color="primary.dark"
+          sx={{
+            fontWeight: 600,
+            fontSize: '1.1rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            '&::before': {
+              content: '""',
+              width: 4,
+              height: 24,
+              backgroundColor: 'primary.main',
+              borderRadius: 1,
+              display: 'block'
+            }
+          }}
+        >
+          Optimized Search Variations
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          I&apos;ve refined your query into these specific search patterns:
         </Typography>
 
-        <List sx={{ width: '100%' }}>
+        <List
+          sx={{
+            width: '100%',
+            bgcolor: 'background.paper',
+            borderRadius: 1,
+            p: 0,
+            overflow: 'hidden'
+          }}
+        >
           {searchQueries.map((query, index) => (
-            <ListItem key={index}>
-              <ListItemIcon>
-                <SearchIcon color="primary" />
+            <ListItem
+              key={index}
+              sx={{
+                borderBottom:
+                  index !== searchQueries.length - 1
+                    ? '1px solid rgba(0,0,0,0.08)'
+                    : 'none',
+                py: 1.5,
+                px: 2,
+                transition: 'background-color 0.2s ease',
+                ':hover': {
+                  bgcolor: 'rgba(0,0,0,0.02)'
+                }
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: 40 }}>
+                <SearchIcon color="primary" sx={{ fontSize: 20 }} />
               </ListItemIcon>
-              <ListItemText primary={query} sx={{ fontStyle: 'italic' }} />
+              <ListItemText
+                primary={query}
+                slotProps={{
+                  primary: {
+                    sx: {
+                      fontWeight: 500,
+                      color: 'text.primary',
+                      fontSize: '0.95rem'
+                    }
+                  }
+                }}
+              />
             </ListItem>
           ))}
         </List>
 
-        <Box display="flex" alignItems="center" mt={2}>
-          <Typography variant="body1" color="textSecondary" fontStyle="italic">
-            Analyzing results to provide a comprehensive response...
+        <Box
+          display="flex"
+          alignItems="center"
+          mt={2}
+          p={2}
+          borderRadius={1}
+          sx={{
+            bgcolor: 'rgba(25, 118, 210, 0.08)',
+            border: '1px solid rgba(25, 118, 210, 0.2)'
+          }}
+        >
+          <Typography
+            variant="body2"
+            color="primary.dark"
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              fontWeight: 500
+            }}
+          >
+            <AutorenewIcon sx={{ fontSize: 20 }} />
+            Processing results for comprehensive analysis
           </Typography>
-          <CircularProgress size={20} sx={{ marginLeft: 2 }} />
+          <CircularProgress
+            size={16}
+            thickness={4}
+            sx={{
+              ml: 2,
+              color: 'primary.main'
+            }}
+          />
         </Box>
       </Box>
     );

@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     index: true
   }
 };
-const AdminPage: React.FC = () => {
+export default function AdminPage() {
   return (
     <Box
       sx={{
@@ -316,6 +316,4 @@ const AdminPage: React.FC = () => {
       </Box>
     </Box>
   );
-};
-
-export default AdminPage;
+}

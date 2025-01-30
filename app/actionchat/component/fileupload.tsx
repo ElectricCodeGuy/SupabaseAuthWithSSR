@@ -27,10 +27,6 @@ const SUPPORTED_FILE_TYPES: { [key: string]: string[] } = {
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB in bytes
 
-interface ServerUploadPageProps {
-  userId: string;
-}
-
 function LinearProgressWithLabel({
   value,
   status
@@ -106,7 +102,7 @@ function LinearProgressWithLabel({
     </Box>
   );
 }
-export default function ServerUploadPage({ userId }: ServerUploadPageProps) {
+export default function ServerUploadPage() {
   const formRef = useRef<HTMLFormElement | null>(null);
   const {
     isUploading,
@@ -147,7 +143,7 @@ export default function ServerUploadPage({ userId }: ServerUploadPageProps) {
     if (!selectedFile) return;
 
     try {
-      await uploadFile(selectedFile, userId);
+      await uploadFile(selectedFile);
     } finally {
       formRef.current?.reset();
     }
@@ -248,10 +244,10 @@ export default function ServerUploadPage({ userId }: ServerUploadPageProps) {
           <Typography
             variant="body2"
             sx={{
-              color: '#9CA3AF', // Lighter color for the note
-              fontSize: '0.75rem', // Smaller font size
-              mt: 0.5, // Reduced margin top
-              fontStyle: 'italic' // Makes it look like a note
+              color: '#9CA3AF',
+              fontSize: '0.75rem',
+              mt: 0.5,
+              fontStyle: 'italic'
             }}
           >
             Note that files with more than approximately 600 pages are not
