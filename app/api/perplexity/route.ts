@@ -3,16 +3,8 @@ import { streamText, CoreMessage, Message } from 'ai';
 import { saveChatToSupbabase } from './SaveToDb';
 import { Redis } from '@upstash/redis';
 import { Ratelimit } from '@upstash/ratelimit';
-import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { getSession } from '@/lib/server/supabase';
-
-const perplexity = createOpenAICompatible({
-  name: 'perplexity',
-  headers: {
-    Authorization: `Bearer ${process.env.PERPLEXITY_API_KEY}`
-  },
-  baseURL: 'https://api.perplexity.ai/'
-});
+import { perplexity } from '@ai-sdk/perplexity';
 
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL!,
@@ -68,7 +60,7 @@ export async function POST(req: NextRequest) {
       role: 'system',
       content: `
     - You are a helpful assistant that always provides clear and accurate answers! For helpful information use Markdown. Use remark-math formatting for Math Equations
-    - References: Reference official documentation and trusted sources where applicable. Link to sources using Markdown.
+    - References: Reference official documentation and trusted sources where applicable. Link to sources using Markdown Links.
     `
     },
     ...messages.map((message) => ({
@@ -79,9 +71,16 @@ export async function POST(req: NextRequest) {
 
   try {
     const result = streamText({
-      model: perplexity('llama-3.1-sonar-small-128k-online'),
+      model: perplexity('sonar-pro'),
       messages: fullMessages,
       onFinish: async (event) => {
+        // Access the experimental provider metadata
+        const metadata = event.experimental_providerMetadata?.perplexity;
+        if (metadata) {
+          console.log('Citations:', metadata.citations);
+          console.log('Usage:', metadata.usage);
+        }
+
         await saveChatToSupbabase(
           chatSessionId,
           session.id,

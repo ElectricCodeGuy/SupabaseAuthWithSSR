@@ -21,30 +21,36 @@ export const saveChatToSupbabase = async (
   }
   const supabase = await createServerSupabaseClient();
   try {
+    const now = new Date();
+    // Add a small delay (1 second) for the AI message
+    const aiMessageTime = new Date(now.getTime() + 1000);
+
     // Upsert the chat session
     const { error: sessionError } = await supabase.from('chat_sessions').upsert(
       {
         id: chatSessionId,
         user_id: userId,
-        updated_at: new Date().toISOString()
+        updated_at: aiMessageTime.toISOString() // Use the later timestamp
       },
       { onConflict: 'id' }
     );
 
     if (sessionError) throw sessionError;
 
-    // Prepare messages data
+    // Prepare messages data with different timestamps
     const messagesData = [
       {
         chat_session_id: chatSessionId,
         is_user_message: true,
-        content: currentMessageContent
+        content: currentMessageContent,
+        created_at: now.toISOString() // User message timestamp
       },
       {
         chat_session_id: chatSessionId,
         is_user_message: false,
         content: completion,
-        sources: sources && sources.length > 0 ? sources : null
+        sources: sources && sources.length > 0 ? sources : null,
+        created_at: aiMessageTime.toISOString() // AI message timestamp (1 second later)
       }
     ];
 
