@@ -48,11 +48,11 @@ You can find the videos located inside the public folder!
 ### Prerequisites
 
 - A [Supabase account](https://supabase.io/)
-- A Llarma Cloud account [LlamaCloud](https://cloud.llamaindex.ai/) (for parsing pdf files into markdown)
-- An Upstash redis account [Upstash](https://upstash.com/) (for ratelimiting and caching)
 
 **If you want to use the AI features the following keys are needed**
 
+- A Llarma Cloud account [LlamaCloud](https://cloud.llamaindex.ai/) (for parsing pdf files into markdown)
+- An Upstash redis account [Upstash](https://upstash.com/) (for ratelimiting and caching)
 - A Tavily account for searching the internet using the AI [Tavily](https://tavily.com/)
 - A Openai API key [OpenaiAPI](https://platform.openai.com/docs/overview)
 - A Anthripic API key [Antropic](https://console.anthropic.com/dashboard)
