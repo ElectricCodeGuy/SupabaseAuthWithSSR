@@ -38,7 +38,8 @@ import {
   Delete as DeleteIcon,
   MoreHoriz as MoreHorizIcon,
   Share as ShareIcon,
-  Edit as EditIcon
+  Edit as EditIcon,
+  NoteAdd as NoteAddIcon
 } from '@mui/icons-material';
 import { isToday, isYesterday, subDays } from 'date-fns';
 import { Tables } from '@/types/database';
@@ -290,20 +291,24 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  position: 'relative',
+                  justifyContent: 'flex-end', // Aligns items to the end
+                  width: '100%',
                   pt: 1,
-                  pr: 2
+                  pr: 1,
+                  gap: 1 // Adds consistent spacing between buttons
                 }}
               >
-                <Typography
-                  variant="h5"
-                  sx={{
-                    textAlign: 'center'
-                  }}
-                >
-                  Chathistorik
-                </Typography>
+                <Tooltip title="Create a new conversation" arrow>
+                  <IconButton
+                    component={Link}
+                    href="/aichat"
+                    aria-label="clear messages"
+                    color="primary"
+                    size="small"
+                  >
+                    <NoteAddIcon />
+                  </IconButton>
+                </Tooltip>
               </Box>
 
               <List sx={{ overflow: 'auto' }}>
@@ -480,9 +485,7 @@ const RenderChatSection: FC<RenderChatSectionProps> = memo(
 
     return (
       <>
-        <Divider sx={{ color: 'textSecondary', px: 1, mt: 2.5, mb: 1 }}>
-          {title}
-        </Divider>
+        <Divider sx={{ color: 'textSecondary', px: 1, mb: 1 }}>{title}</Divider>
         {optimisticChats.map(({ id, firstMessage }) => {
           const currentParams = new URLSearchParams(searchParams.toString());
           const href = `/aichat/${id}${
