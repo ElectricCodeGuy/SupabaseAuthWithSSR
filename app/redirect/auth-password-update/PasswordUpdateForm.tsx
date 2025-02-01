@@ -5,7 +5,6 @@ import {
   Box,
   Card,
   Typography,
-  Stack,
   TextField,
   CircularProgress
 } from '@mui/material';
@@ -44,102 +43,91 @@ const PasswordUpdateForm: FC = () => {
   };
 
   return (
-    <Stack
-      direction="column"
+    <Box
       sx={{
+        display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        minHeight: '90vh'
+        width: '100%',
+        maxWidth: '800px',
+        m: 'auto'
       }}
     >
-      <Box
+      <Card
         sx={{
           display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          width: '100%',
-          maxWidth: '800px'
+          flexDirection: 'column',
+          alignSelf: 'center',
+          borderRadius: '16px',
+          width: { xs: '100%', sm: '350px', md: '500px' },
+          p: { xs: 1, sm: 1.5, md: 2 },
+          boxShadow:
+            'rgba(0, 0, 0, 0.05) 0px 5px 15px 0px, rgba(25, 28, 33, 0.05) 0px 15px 35px -5px, rgba(0, 0, 0, 0.05) 0px 0px 0px 1px'
         }}
       >
-        <Card
+        <Typography variant="h5">Update Password</Typography>
+        <Box
+          component="form"
+          action={handleSubmit}
+          noValidate
           sx={{
             display: 'flex',
             flexDirection: 'column',
-            alignSelf: 'center',
-            borderRadius: '16px',
-            width: { xs: '100%', sm: '350px', md: '500px' }, // Reduced width
-            p: { xs: 1, sm: 1.5, md: 4 }, // Reduced padding
-            gap: { xs: 1, sm: 1.5, md: 2 },
-            boxShadow:
-              'rgba(0, 0, 0, 0.05) 0px 5px 15px 0px, rgba(25, 28, 33, 0.05) 0px 15px 35px -5px, rgba(0, 0, 0, 0.05) 0px 0px 0px 1px'
+            width: '100%',
+            gap: { xs: 0.5, sm: 0.5, md: 1 }
           }}
         >
-          <Typography component="h1" variant="h5">
-            Update Password
-          </Typography>
-          <Box
-            component="form"
-            action={handleSubmit}
-            noValidate
-            sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              width: '100%',
-              gap: { xs: 0.5, sm: 0.5, md: 1 }
+          <TextField
+            id="newPassword"
+            label="New Password"
+            type="password"
+            value={newPassword}
+            onChange={(e) => {
+              setNewPassword(e.target.value);
+              validatePassword(e.target.value);
             }}
-          >
-            <TextField
-              id="newPassword"
-              label="New Password"
-              type="password"
-              value={newPassword}
-              onChange={(e) => {
-                setNewPassword(e.target.value);
-                validatePassword(e.target.value);
-              }}
-              autoComplete="new-password"
-              variant="outlined"
-              margin="normal"
-              fullWidth
-              slotProps={{
-                input: {
-                  startAdornment: <LockOutlinedIcon />
-                }
-              }}
-            />
+            autoComplete="new-password"
+            variant="outlined"
+            margin="normal"
+            fullWidth
+            slotProps={{
+              input: {
+                startAdornment: <LockOutlinedIcon />
+              }
+            }}
+          />
 
-            <TextField
-              id="confirmPassword"
-              label="Confirm New Password"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              autoComplete="new-password"
-              variant="outlined"
-              margin="normal"
-              fullWidth
-              slotProps={{
-                input: {
-                  startAdornment: <LockOutlinedIcon />
-                }
-              }}
-            />
-            <Message />
-            <SubmitButton />
-          </Box>
-        </Card>
-        <Box
-          sx={{
-            display: { xs: 'none', sm: 'flex' },
-            justifyContent: 'center',
-            alignItems: 'center',
-            ml: 2
-          }}
-        >
-          <PasswordRequirements requirements={passwordRequirements} />
+          <TextField
+            id="confirmPassword"
+            label="Confirm New Password"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            autoComplete="new-password"
+            variant="outlined"
+            margin="normal"
+            fullWidth
+            slotProps={{
+              input: {
+                startAdornment: <LockOutlinedIcon />
+              }
+            }}
+          />
+          <Message />
+          <SubmitButton />
         </Box>
+      </Card>
+      <Box
+        sx={{
+          display: { xs: 'none', sm: 'flex' },
+          justifyContent: 'center',
+          alignItems: 'center',
+          ml: 2
+        }}
+      >
+        <PasswordRequirements requirements={passwordRequirements} />
       </Box>
-    </Stack>
+    </Box>
   );
 };
 

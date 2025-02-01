@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient as createClient } from '@/lib/server/server';
+import { createServerSupabaseClient } from '@/lib/server/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,7 +10,7 @@ export async function GET(request: Request) {
   const next = searchParams.get('next') ?? '/signin';
 
   if (code) {
-    const supabase = await createClient();
+    const supabase = await createServerSupabaseClient();
 
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
