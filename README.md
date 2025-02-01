@@ -25,22 +25,21 @@ You can find the videos located inside the public folder!
 
 - [Features](#features)
 - [Getting Started](#getting-started)
-
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
   - [Database Setup](#database-setup)
-
   - [Document Processing Setup](#document-processing-setup)
   - [Storage Setup and RLS](#storage-setup-and-rls)
-
   - [Environment Variables](#environment-variables)
-
 - [Email Templates](#email-templates)
   - [Confirm Your Signup](#confirm-your-signup)
   - [Invite User Email](#invite-user-email)
   - [Magic Link Email](#magic-link-email)
   - [Confirm Email Change](#confirm-email-change)
   - [Reset Password Email](#reset-password-email)
+- [Code Structure and Philosophy](#code-structure-and-philosophy)
+  - [Code Organization Over Design Patterns](#code-organization-over-design-patterns)
+  - [Intentional Code Duplication Examples](#intentional-code-duplication-examples)
 - [License](#license)
 
 ## Features
@@ -554,6 +553,51 @@ Reset Password Email For users that have requested a password reset:
   >Reset Password</a
 >
 ```
+
+## Code Structure and Philosophy
+
+### Code Organization Over Design Patterns
+
+While design patterns like Factory Pattern and other "clean code" principles have their place, they often lead to overly complex, hard-to-understand codebases. Different developers have different coding styles and approaches - this is natural and okay. Instead of forcing a specific pattern, we focus on keeping related code together in the same folder, making it easier for everyone to understand and maintain.
+
+### Intentional Code Duplication Examples
+
+1. **Chat User Lists**
+
+   - `actionchat/component/UserChatList.tsx`
+   - `aichat/components/UserCharListDrawer.tsx`
+
+   These components are maintained separately to keep each feature independent and self-contained. While they share similar functionality today, keeping them separate means we can modify either without affecting the other. This avoids premature abstraction and makes the codebase more maintainable.
+
+2. **Chat Components**
+
+   - `actionchat/component/ChatComponent.tsx`
+   - `aichat/components/chat.tsx`
+
+   Each chat implementation lives independently with its own state management, API calls, and types. This separation means each feature can evolve independently without creating complex dependencies or requiring changes across multiple features.
+
+3. **Shared Code (Minimal)**
+   Only truly universal utilities are shared:
+
+   - `getSession()` for auth
+   - Type definitions for database schema
+   - Error boundary components
+
+4. **Locality of Behavior**
+   Everything else stays with its feature:
+   - Custom hooks live in feature directories
+   - API route handlers stay with their features
+   - State management is feature-specific
+   - Types and interfaces specific to a feature stay in that feature's directory
+
+This approach means:
+
+- Each feature directory is a complete, self-contained unit
+- No hunting through shared directories to understand a feature
+- Changes can be made confidently without side effects
+- New developers can understand features by looking in one place
+
+The goal is maximum independence and clarity, even at the cost of some duplication. Rather than creating complex abstractions or following rigid design patterns, we prioritize keeping related code together and making it easy to understand at a glance. Shared code is limited to only the most basic, unchanging utilities that truly serve every part of the application.
 
 ## 📜 License
 
