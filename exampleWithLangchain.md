@@ -18,7 +18,6 @@ See more at: https://sdk.vercel.ai/docs/introduction
 ## Code Example with both Langchain and ai sdk from Vercel.
 
 ```typescript
-// Your TypeScript code here
 import { NextRequest, NextResponse } from 'next/server';
 import { StreamingTextResponse, Message, LangChainAdapter } from 'ai';
 import { v4 as uuidv4 } from 'uuid';

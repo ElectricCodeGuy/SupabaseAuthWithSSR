@@ -213,22 +213,12 @@ export default function AdminPage() {
             mb: 2,
             width: 400
           }}
-          slotProps={{
-            input: {
-              readOnly: true
-            }
-          }}
           placeholder="Hint: It doesn't work"
         />
         <TextField
           label="Password"
           variant="outlined"
           sx={{ mb: 2, width: 400 }}
-          slotProps={{
-            input: {
-              readOnly: true
-            }
-          }}
           placeholder="Try 123456 (it still doesn't work)"
         />
         <Button
