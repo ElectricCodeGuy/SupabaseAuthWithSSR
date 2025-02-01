@@ -25,17 +25,23 @@ You can find the videos located inside the public folder!
 
 - [Features](#features)
 - [Getting Started](#getting-started)
+
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
   - [Database Setup](#database-setup)
+
+  - [Document Processing Setup](#document-processing-setup)
+  - [Storage Setup and RLS](#storage-setup-and-rls)
+
   - [Environment Variables](#environment-variables)
-- [Document Processing Setup](#document-processing-setup)
-- [Usage](#usage)
+
 - [Email Templates](#email-templates)
-- [Chat Interface Integration](#chat-interface-integration)
+  - [Confirm Your Signup](#confirm-your-signup)
+  - [Invite User Email](#invite-user-email)
+  - [Magic Link Email](#magic-link-email)
+  - [Confirm Email Change](#confirm-email-change)
+  - [Reset Password Email](#reset-password-email)
 - [License](#license)
-- [Acknowledgements](#acknowledgements)
-- [Packages Used](#packages-used)
 
 ## Features
 
@@ -466,10 +472,6 @@ For Openai, Perplexity and Upstash/Redis
 - `OPENAI_API_KEY=`
 - `UPSTASH_REDIS_REST_URL=`
 - `UPSTASH_REDIS_REST_TOKEN=`
-
-## 🔍 Usage
-
-📖 Follow the provided examples to integrate Supabase Auth with SSR in your Next.js project.
 
 ## 📧 Email Templates
 
