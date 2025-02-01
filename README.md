@@ -39,16 +39,17 @@ You can find the videos located inside the public folder!
 
 ## Features
 
-- **Robust Authentication**: Utilize Supabase's comprehensive auth capabilities alongside SSR for enhanced security.
+- **Robust and easy authentication**: Utilize Supabase's auth capabilities alongside SSR for security.
 - **Performance**: Leverage server-side rendering for faster load times and improved user experience.
-- **Next.js Integration**: Specifically designed for easy integration with Next.js 14 projects.
+- **Next.js Integration**: Specifically designed for easy integration with Next.js 15 projects.
 
 ## Getting Started
 
 ### Prerequisites
 
 - A [Supabase account](https://supabase.io/)
-- An existing [Next.js](https://nextjs.org/) project setup
+- A Llarma Cloud account [LlamaCloud](https://cloud.llamaindex.ai/) (for parsing pdf files into markdown)
+- An Upstash redis account [Upstash](https://upstash.com/) (for ratelimiting and caching)
 
 ### Installation
 
@@ -72,22 +73,43 @@ You can find the videos located inside the public folder!
 
 ### Database Setup
 
-Before launching your application, you must configure the database schema within Supabase.
+Before launching your application, you must configure the database schema within Supabase. Navigate to supabase SQL editor and use the following SQL queries to setup the schemas
 
 1. **Create the Users Table**
 
-   ```sql
-   create table users (
-     -- UUID from auth.users
-     id uuid references auth.users not null primary key,
-     full_name text,
-     email text
-   );
-   ```
+```sql
+-- Create users table
+create table users (
+  id uuid references auth.users not null primary key,
+  full_name text,
+  email text
+);
 
-   This SQL statement creates a `users` table with columns for storing user data such as `id`, `full_name`. The `id` column is a foreign key referencing the `auth.users` table.
+-- Enable Row Level Security (RLS)
+alter table public.users enable row level security;
 
-   These SQL statements enable Row Level Security (RLS) on the `users` table and create policies to allow users to view and update their own data.
+-- Create RLS policies for users table
+create policy "Users can insert own data"
+on public.users
+for insert
+to public
+with check (id = auth.uid());
+
+create policy "Users can update own data"
+on public.users
+for update
+to public
+using (id = auth.uid())
+with check (id = auth.uid());
+
+create policy "Users can view own data"
+on public.users
+for select
+to public
+using (id = auth.uid());
+```
+
+This SQL statement creates a `users` table with columns for storing user data such as `id`, `full_name` and `email`. The `id` column is a foreign key referencing the `auth.users` table. It also enables RLS for the users table allowing users to read, insert and update their own data
 
 2. **Create a Trigger Function**
 
@@ -106,7 +128,7 @@ Before launching your application, you must configure the database schema within
    $$ language plpgsql security definer;
    ```
 
-This SQL function is a trigger function that automatically inserts a new user entry into the `public.users` table when a new user signs up via Supabase Auth. It extracts the `id`, `full_name` from the `auth.users` table and inserts them into the corresponding columns in the `public.users` table.
+This SQL function is a trigger function that automatically inserts a new user entry into the `public.users` table when a new user signs up via Supabase Auth. It extracts the `id`, `full_name` and `email` from the `auth.users` table and inserts them into the corresponding columns in the `public.users` table.
 
 3. **Create a Trigger**
 
