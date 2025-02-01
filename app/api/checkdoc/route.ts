@@ -7,6 +7,15 @@ export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
+    if (!process.env.LLAMA_CLOUD_API_KEY) {
+      console.error('LLAMA_CLOUD_API_KEY is not configured');
+      return NextResponse.json(
+        {
+          error: 'Server configuration error: LLAMA_CLOUD_API_KEY is missing'
+        },
+        { status: 500 }
+      );
+    }
     const session = await getSession();
     if (!session) {
       return NextResponse.json(
