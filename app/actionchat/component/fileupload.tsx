@@ -45,7 +45,7 @@ function LinearProgressWithLabel({
   const shouldShowSpinner = statusesWithSpinner.includes(status);
 
   return (
-    <Box sx={{ width: '100%' }}>
+    <>
       <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', mb: 1 }}>
         <Box sx={{ width: '100%', mr: 1 }}>
           <LinearProgress
@@ -99,7 +99,7 @@ function LinearProgressWithLabel({
           )}
         </Typography>
       </Box>
-    </Box>
+    </>
   );
 }
 export default function ServerUploadPage() {

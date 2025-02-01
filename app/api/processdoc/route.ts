@@ -90,6 +90,8 @@ async function processFile(pages: string[], fileName: string, userId: string) {
   const totalPages = pages.length;
 
   const processingBatchSize = 200;
+  // Note that this is the number of AI requests made in parallel.
+  // You need a high enough account level to avoid hitting the OpenAI rate limit. Reduce this if you hit the ratelimit.
   const upsertBatchSize = 100;
 
   let totalPromptTokens = 0;
@@ -159,6 +161,7 @@ async function processFile(pages: string[], fileName: string, userId: string) {
       `;
 
           let contentChunks: string[];
+          // Some pages might contain more than 8000 tokens, so we need to split them into smaller chunks to avoid the embeddings models token limit of 8132 tokens. This is very rare thoguh.
           if (tokenizer.encode(combinedContent).length > 8000) {
             contentChunks = recursiveTextSplitter(combinedContent, 7500, 200);
           } else {
