@@ -402,20 +402,6 @@ async function submitMessage(
             ex: 60 * 60 * 24 * 90 // 90 days in seconds (3 month)
           });
         }
-
-        /*  If you want to track the usage of the AI model, you can use the following code:'
-      import { track } from '@vercel/analytics/server';
-        track('ailoven', {
-          systemPromptTemplate,
-          currnetUserMessage,
-          fullResponse: text,
-          promptTokens,
-          completionTokens,
-          totalTokens
-        });
-      }
-      Check out Vercel track functionallity
-          */
       }
     });
 

@@ -8,38 +8,6 @@ import { createServerSupabaseClient } from '@/lib/server/server';
 import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/server/admin';
 
-const AutoScrollEnabledSchema = z.object({
-  autoScrollEnabled: z.boolean()
-});
-//This is not used. But this is how you can store information in the cookies
-export async function autoScrollCookie(formData: FormData) {
-  const autoScrollEnabledFormData = formData.get('autoScrollEnabled');
-  const autoScrollEnabledBoolean =
-    autoScrollEnabledFormData === 'true' ? true : false;
-
-  // Use the updated boolean value to validate against the schema
-  const result = AutoScrollEnabledSchema.safeParse({
-    autoScrollEnabled: autoScrollEnabledBoolean
-  });
-
-  if (result.success) {
-    (await cookies()).set(
-      'autoScrollEnabled',
-      result.data.autoScrollEnabled ? 'true' : 'false',
-      {
-        maxAge: 60 * 60 * 24 * 7, // 1 week
-        httpOnly: false,
-        secure: false,
-        path: '/'
-      }
-    );
-  } else {
-    // Log the error if the validation fails
-    console.error('Invalid formData for autoScrollEnabled:', result.error);
-    // Optionally, throw an error or handle this case as needed
-  }
-}
-
 export async function deleteChatData(chatId: string) {
   const session = await getSession();
   if (!session) {

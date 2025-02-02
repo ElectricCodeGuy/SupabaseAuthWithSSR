@@ -18,13 +18,17 @@ export const saveChatToSupbabase = async (
     return;
   }
   const supabase = await createServerSupabaseClient();
+  const now = new Date();
+  // Add a small delay (1 second) for the AI message
+  const aiMessageTime = new Date(now.getTime() + 1000);
+
   try {
     // Upsert the chat session
     const { error: sessionError } = await supabase.from('chat_sessions').upsert(
       {
         id: chatSessionId,
         user_id: userId,
-        updated_at: new Date().toISOString()
+        updated_at: aiMessageTime.toISOString()
       },
       { onConflict: 'id' }
     );
@@ -43,7 +47,8 @@ export const saveChatToSupbabase = async (
         chat_session_id: chatSessionId,
         is_user_message: false,
         content: completion,
-        sources: sources ? JSON.stringify(sources) : null // Store sources as JSON string
+        sources: sources ? JSON.stringify(sources) : null,
+        created_at: aiMessageTime.toISOString()
       }
     ];
 

@@ -7,7 +7,6 @@ import {
   Table,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
   TableRow,
   Link as MuiLink,
@@ -146,7 +145,6 @@ export function BotMessage({
         position: 'relative',
         background: '#f0f0f0',
         color: '#2c3e50',
-        pt: 2,
         borderRadius: '8px',
         margin: '8px 0',
         alignSelf: 'flex-start',
@@ -154,7 +152,8 @@ export function BotMessage({
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'flex-start',
-        boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+        boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+        p: 1.5
       }}
       className={className}
     >
@@ -187,153 +186,145 @@ export function BotMessage({
           <ContentCopyIcon fontSize="inherit" />
         )}
       </Box>
-      <Box
-        sx={{
-          ml: 2,
-          flexGrow: 1,
-          overflow: 'hidden',
-          px: 1
-        }}
-      >
-        <ReactMarkdown
-          components={{
-            table: ({ children }) => (
-              <Box
-                sx={{
-                  display: 'block',
-                  '& table': {
-                    width: '100%',
-                    borderCollapse: 'collapse',
-                    wordBreak: 'normal',
-                    fontSize: '0.85rem'
-                  }
-                }}
-              >
-                <TableContainer>
-                  <Table size="small">{children}</Table>
-                </TableContainer>
-              </Box>
-            ),
-            thead: ({ children }) => <TableHead>{children}</TableHead>,
-            tbody: ({ children }) => <TableBody>{children}</TableBody>,
-            tr: ({ children }) => <TableRow>{children}</TableRow>,
-            th: ({ children }) => (
-              <TableCell
-                component="th"
-                size="small"
-                scope="row"
-                sx={{
-                  border: '1px solid #ddd',
-                  padding: '4px',
-                  textAlign: 'left',
-                  fontSize: '0.9em',
+
+      <ReactMarkdown
+        components={{
+          table: ({ children }) => (
+            <Table
+              size="small"
+              sx={{
+                display: 'block',
+                py: 2,
+                '& table': {
+                  width: '100%',
+                  borderCollapse: 'collapse',
                   wordBreak: 'normal',
-                  fontWeight: 'normal',
-                  hyphens: 'auto',
-                  overflowWrap: 'normal'
-                }}
-              >
-                {children}
-              </TableCell>
-            ),
-            td: ({ children }) => (
-              <TableCell
-                scope="row"
-                size="small"
-                sx={{
-                  border: '1px solid #ddd',
-                  padding: '4px',
-                  textAlign: 'left',
-                  fontSize: '0.9em',
-                  wordBreak: 'normal',
-                  fontWeight: 'normal',
-                  hyphens: 'auto',
-                  overflowWrap: 'normal'
-                }}
-              >
-                {children}
-              </TableCell>
-            ),
-            code({ className, children, ...props }) {
-              const match = /language-(\w+)/.exec(className || '');
-              const language = match && match[1] ? match[1] : '';
-              const inline = !language;
-              if (inline) {
-                return (
-                  <code className={className} {...props}>
-                    {children}
-                  </code>
-                );
-              }
+                  fontSize: '0.85rem'
+                }
+              }}
+            >
+              {children}
+            </Table>
+          ),
+          thead: ({ children }) => <TableHead>{children}</TableHead>,
+          tbody: ({ children }) => <TableBody>{children}</TableBody>,
+          tr: ({ children }) => <TableRow>{children}</TableRow>,
+          th: ({ children }) => (
+            <TableCell
+              component="th"
+              size="small"
+              scope="row"
+              sx={{
+                border: '1px solid #ddd',
+                padding: '4px',
+                textAlign: 'left',
+                fontSize: '0.9em',
+                wordBreak: 'normal',
+                fontWeight: 'normal',
+                hyphens: 'auto',
+                overflowWrap: 'normal'
+              }}
+            >
+              {children}
+            </TableCell>
+          ),
+          td: ({ children }) => (
+            <TableCell
+              scope="row"
+              size="small"
+              sx={{
+                border: '1px solid #ddd',
+                padding: '4px',
+                textAlign: 'left',
+                fontSize: '0.9em',
+                wordBreak: 'normal',
+                fontWeight: 'normal',
+                hyphens: 'auto',
+                overflowWrap: 'normal'
+              }}
+            >
+              {children}
+            </TableCell>
+          ),
+          code({ className, children, ...props }) {
+            const match = /language-(\w+)/.exec(className || '');
+            const language = match && match[1] ? match[1] : '';
+            const inline = !language;
+            if (inline) {
               return (
-                <div
+                <code className={className} {...props}>
+                  {children}
+                </code>
+              );
+            }
+            return (
+              <div
+                style={{
+                  position: 'relative',
+                  borderRadius: '5px',
+                  padding: '20px',
+                  marginTop: '20px',
+                  maxWidth: '100%' // Ensure the container fits its parent
+                }}
+              >
+                <span
                   style={{
-                    position: 'relative',
-                    borderRadius: '5px',
-                    padding: '20px',
-                    marginTop: '20px',
-                    maxWidth: '100%' // Ensure the container fits its parent
+                    position: 'absolute',
+                    top: '0',
+                    left: '5px',
+                    fontSize: '0.8em',
+                    textTransform: 'uppercase'
                   }}
                 >
-                  <span
-                    style={{
-                      position: 'absolute',
-                      top: '0',
-                      left: '5px',
-                      fontSize: '0.8em',
-                      textTransform: 'uppercase'
-                    }}
-                  >
-                    {language}
-                  </span>
-                  <div
-                    style={{
-                      overflowX: 'auto', // Enable horizontal scrolling
-                      maxWidth: '650px' // Set a fixed maximum width
-                    }}
-                  >
-                    <pre style={{ margin: '0' }}>
-                      <code className={className} {...props}>
-                        {children}
-                      </code>
-                    </pre>
-                  </div>
+                  {language}
+                </span>
+                <div
+                  style={{
+                    overflowX: 'auto', // Enable horizontal scrolling
+                    maxWidth: '650px' // Set a fixed maximum width
+                  }}
+                >
+                  <pre style={{ margin: '0' }}>
+                    <code className={className} {...props}>
+                      {children}
+                    </code>
+                  </pre>
                 </div>
-              );
-            },
-            a: ({ href, children }) => {
-              if (href) {
-                // Check if the link starts with http:// or https://
-                if (href.startsWith('http://') || href.startsWith('https://')) {
-                  // For web links, return a regular link that opens in a new tab
-                  return (
-                    <MuiLink
-                      href={href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {children}
-                    </MuiLink>
-                  );
-                } else {
-                  // For document links, use createDocumentLink
-                  const fullHref = createDocumentLink(href);
-                  return (
-                    <Link href={fullHref} passHref prefetch={false}>
-                      {children}
-                    </Link>
-                  );
-                }
+              </div>
+            );
+          },
+          a: ({ href, children }) => {
+            if (href) {
+              // Check if the link starts with http:// or https://
+              if (href.startsWith('http://') || href.startsWith('https://')) {
+                // For web links, return a regular link that opens in a new tab
+                return (
+                  <MuiLink
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {children}
+                  </MuiLink>
+                );
+              } else {
+                // For document links, use createDocumentLink
+                const fullHref = createDocumentLink(href);
+                return (
+                  <Link href={fullHref} passHref prefetch={false}>
+                    {children}
+                  </Link>
+                );
               }
-              return <MuiLink>{children}</MuiLink>;
             }
-          }}
-          remarkPlugins={[remarkGfm, remarkMath]}
-          rehypePlugins={[[rehypeHighlight, highlightOptionsAI]]}
-        >
-          {content}
-        </ReactMarkdown>
-      </Box>
+            return <MuiLink>{children}</MuiLink>;
+          }
+        }}
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[[rehypeHighlight, highlightOptionsAI]]}
+      >
+        {content}
+      </ReactMarkdown>
     </Box>
   );
 }
@@ -548,7 +539,7 @@ export const InternetSearchToolResults = ({
             width: '800px',
             height: '600px',
             border: 'none',
-            p: 1
+            overflow: 'hidden'
           }}
         >
           <iframe
