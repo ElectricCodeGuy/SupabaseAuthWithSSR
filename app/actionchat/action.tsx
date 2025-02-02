@@ -370,6 +370,17 @@ async function submitMessage(
             name: info.name
           }))
       ],
+      experimental_telemetry: {
+        isEnabled: true,
+        functionId: 'general_chat',
+        metadata: {
+          userId: userInfo.id,
+          chatId: CurrentChatSessionId,
+          isNewChat: !chatId
+        },
+        recordInputs: true,
+        recordOutputs: true
+      },
       onFinish: async (event) => {
         const { text, usage } = event;
         const { promptTokens, completionTokens, totalTokens } = usage;
@@ -711,6 +722,17 @@ Generate three variations of the query that:
 
 Keep the variations focused on the content available in the provided documents.`,
     schema: zodSchemaSearch,
+    experimental_telemetry: {
+      isEnabled: true,
+      functionId: 'improve_general',
+      metadata: {
+        userId: userInfo.id,
+        chatId: CurrentChatSessionId,
+        isNewChat: !chatId
+      },
+      recordInputs: true,
+      recordOutputs: true
+    },
     messages: [
       ...aiState
         .get()
@@ -923,6 +945,17 @@ ${formattedSearchResults}
             name: info.name
           }))
       ],
+      experimental_telemetry: {
+        isEnabled: true,
+        functionId: 'chat_to_pdf',
+        metadata: {
+          userId: userInfo.id,
+          chatId: CurrentChatSessionId,
+          isNewChat: !chatId
+        },
+        recordInputs: true,
+        recordOutputs: true
+      },
       onFinish: async (event) => {
         const { usage, text } = event;
         const { promptTokens, completionTokens, totalTokens } = usage;
@@ -1151,6 +1184,17 @@ async function SearchTool(
       system: contextualizeQSystemPrompt,
       schema: zodSchemaSearch,
       mode: 'json',
+      experimental_telemetry: {
+        isEnabled: true,
+        functionId: 'improve_web',
+        metadata: {
+          userId: userInfo.id,
+          chatId: CurrentChatSessionId,
+          isNewChat: !chatId
+        },
+        recordInputs: true,
+        recordOutputs: true
+      },
       messages: [
         ...aiState
           .get()
@@ -1502,6 +1546,17 @@ Remember to maintain a professional yet conversational tone throughout the respo
             name: info.name
           }))
       ],
+      experimental_telemetry: {
+        isEnabled: true,
+        functionId: 'chat_to_web',
+        metadata: {
+          userId: userInfo.id,
+          chatId: CurrentChatSessionId,
+          isNewChat: !chatId
+        },
+        recordInputs: true,
+        recordOutputs: true
+      },
       onFinish: async (event) => {
         const { usage, text } = event;
         const { promptTokens, completionTokens, totalTokens } = usage;

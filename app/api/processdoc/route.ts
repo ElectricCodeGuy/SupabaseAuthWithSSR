@@ -81,7 +81,10 @@ async function processFile(pages: string[], fileName: string, userId: string) {
   }
 
   const combinedDocumentContent = selectedDocuments.join('\n\n');
-  const { object } = await generateDocumentMetadata(combinedDocumentContent);
+  const { object } = await generateDocumentMetadata(
+    combinedDocumentContent,
+    userId
+  );
 
   const now = new TZDate(new Date(), 'Europe/Copenhagen');
   const timestamp = format(now, 'yyyy-MM-dd');
@@ -128,7 +131,8 @@ async function processFile(pages: string[], fileName: string, userId: string) {
               doc,
               object.descriptiveTitle,
               object.shortDescription,
-              object.mainTopics
+              object.mainTopics,
+              userId
             );
 
           totalPromptTokens += usage.promptTokens;
@@ -242,7 +246,8 @@ async function processDocumentWithAgentChains(
   doc: string,
   ai_title: string,
   ai_description: string,
-  ai_maintopics: string[]
+  ai_maintopics: string[],
+  userId: string
 ): Promise<{
   combinedPreliminaryAnswers: string;
   usage: { promptTokens: number; completionTokens: number };
@@ -265,7 +270,7 @@ async function processDocumentWithAgentChains(
     // Race between the actual processing and the timeout. This is here to prevent the AI function from hanging,
     // witch tend to happen from time to time...
     const result = await Promise.race<AgentChainResult>([
-      preliminaryAnswerChainAgent(prompt),
+      preliminaryAnswerChainAgent(prompt, userId),
       timeout
     ]);
 

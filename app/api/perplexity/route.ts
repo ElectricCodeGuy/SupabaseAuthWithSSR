@@ -73,6 +73,16 @@ export async function POST(req: NextRequest) {
     const result = streamText({
       model: perplexity('sonar-pro'),
       messages: fullMessages,
+      experimental_telemetry: {
+        isEnabled: true,
+        functionId: 'perplexity',
+        metadata: {
+          userId: session.id,
+          chatId: chatSessionId
+        },
+        recordInputs: true,
+        recordOutputs: true
+      },
       onFinish: async (event) => {
         // Access the experimental provider metadata
         const metadata = event.experimental_providerMetadata?.perplexity;

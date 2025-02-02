@@ -76,7 +76,16 @@ export async function POST(req: NextRequest) {
       system: SYSTEM_TEMPLATE,
       messages: messages,
       abortSignal: signal,
-
+      experimental_telemetry: {
+        isEnabled: true,
+        functionId: 'api_chat',
+        metadata: {
+          userId: session.id,
+          chatId: chatSessionId
+        },
+        recordInputs: true,
+        recordOutputs: true
+      },
       onFinish: async (event) => {
         try {
           const lastMessage = messages[messages.length - 1];

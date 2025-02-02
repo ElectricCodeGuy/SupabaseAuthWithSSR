@@ -62,6 +62,7 @@ You can find the videos located inside the public folder!
 - A Openai API key [OpenaiAPI](https://platform.openai.com/docs/overview)
 - A Anthripic API key [Antropic](https://console.anthropic.com/dashboard)
 - A perplexity API key [Perplexity](https://docs.perplexity.ai/home)
+- A Langfuse API key [Langfuse](https://cloud.langfuse.com/) (for telemetry for the AI chat, https://sdk.vercel.ai/providers/observability/langfuse)
 
 ### Installation
 

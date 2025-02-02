@@ -31,7 +31,10 @@ const contentAnalysisSchema = z.object({
     )
 });
 
-export const preliminaryAnswerChainAgent = async (content: string) => {
+export const preliminaryAnswerChainAgent = async (
+  content: string,
+  userId: string
+) => {
   const SystemPrompt =
     'Given the content provided below, perform a comprehensive analysis. Generate two preliminary answers, tag key concepts or topics, and generate two hypothetical questions. Ensure all outputs address specific elements mentioned in the text. Focus on interpreting key themes, implications of specific concepts, and potential real-life applications or consequences. Answers and questions should be detailed and thought-provoking. The output language should be in the same as the input text.';
 
@@ -41,7 +44,16 @@ export const preliminaryAnswerChainAgent = async (content: string) => {
     prompt: content,
     schema: contentAnalysisSchema,
     mode: 'json',
-    temperature: 0
+    temperature: 0,
+    experimental_telemetry: {
+      isEnabled: true,
+      functionId: 'upload_doc_preliminary',
+      metadata: {
+        userId
+      },
+      recordInputs: true,
+      recordOutputs: true
+    }
   });
 
   return { object, usage };
@@ -74,7 +86,10 @@ const documentMetadataSchema = z.object({
     .describe('Identify the primary language used in the document content.')
 });
 
-export const generateDocumentMetadata = async (content: string) => {
+export const generateDocumentMetadata = async (
+  content: string,
+  userId: string
+) => {
   const SystemPrompt = `
   Analyze the provided document content thoroughly and generate comprehensive metadata. 
   Your task is to extract key information that will help in understanding the document's context, 
@@ -92,7 +107,16 @@ export const generateDocumentMetadata = async (content: string) => {
     prompt: content,
     schema: documentMetadataSchema,
     mode: 'json',
-    temperature: 0
+    temperature: 0,
+    experimental_telemetry: {
+      isEnabled: true,
+      functionId: 'upload_doc_main',
+      metadata: {
+        userId
+      },
+      recordInputs: true,
+      recordOutputs: true
+    }
   });
 
   return { object, usage, finishReason };
