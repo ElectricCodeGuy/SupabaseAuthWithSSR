@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, type FC } from 'react';
+import React, { useState, type FC, Suspense } from 'react';
 import {
   Button,
   Box,
@@ -113,7 +113,9 @@ const PasswordUpdateForm: FC = () => {
               }
             }}
           />
-          <Message />
+          <Suspense fallback={null}>
+            <Message />
+          </Suspense>
           <SubmitButton />
         </Box>
       </Card>

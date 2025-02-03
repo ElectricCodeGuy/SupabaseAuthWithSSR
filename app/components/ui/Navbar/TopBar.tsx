@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, use } from 'react';
 import {
   AppBar,
   Toolbar,
@@ -25,12 +25,16 @@ import useScrollTrigger from '@mui/material/useScrollTrigger';
 import CloseIcon from '@mui/icons-material/Close';
 import Sitemark from './SitemarkIcon';
 import SignOutButton from './SignOut';
+import { type User } from '@supabase/supabase-js';
 
 interface AppBarProps {
-  session: boolean | null;
+  session: Promise<User | null>;
 }
 
 const AppBarComponent: React.FC<AppBarProps> = ({ session }) => {
+  // use() unwraps the Promise passed from the parent. See: https://react.dev/reference/react/use
+  const userSession = use(session);
+  const isSessionAvailable = userSession !== null;
   const pathname = usePathname();
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -124,8 +128,8 @@ const AppBarComponent: React.FC<AppBarProps> = ({ session }) => {
     { href: '/aichat', text: 'AI Chat' },
     { href: '/actionchat', text: 'Action Chat' },
     {
-      href: session ? '/profile' : '/signin',
-      text: session ? 'Profile' : 'Sign in'
+      href: isSessionAvailable ? '/profile' : '/signin',
+      text: isSessionAvailable ? 'Profile' : 'Sign in'
     }
   ];
 
@@ -276,7 +280,7 @@ const AppBarComponent: React.FC<AppBarProps> = ({ session }) => {
         </Box>
       </Box>
       <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-        {session ? (
+        {isSessionAvailable ? (
           <IconButton onClick={handleMenuClick} size="small">
             <Avatar alt="User" sizes="small" />
           </IconButton>
