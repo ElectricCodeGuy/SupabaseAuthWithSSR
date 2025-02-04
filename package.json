@@ -12,7 +12,7 @@
   "dependencies": {
     "@ai-sdk/anthropic": "^1.0.5",
     "@ai-sdk/openai": "^1.0.9",
-    "@ai-sdk/perplexity": "^0.0.6",
+    "@ai-sdk/perplexity": "^0.0.7",
     "@date-fns/tz": "^1.2.0",
     "@emotion/cache": "^11.13.1",
     "@emotion/react": "^11.13.3",
