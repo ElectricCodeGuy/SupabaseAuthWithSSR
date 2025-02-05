@@ -2,8 +2,9 @@ import 'server-only';
 import { Box } from '@mui/material';
 import { getUserInfo } from '@/lib/server/supabase';
 import ChatComponentPage from './component/ChatComponent';
-import { AI as AiProvider } from './action';
+import { AI as AiProvider } from './action_chat/AIProvider';
 import DocumentViewer from './component/PDFViewer';
+import WebsiteWiever from './component/WebsiteWiever';
 
 export const maxDuration = 60;
 
@@ -29,7 +30,9 @@ export default async function Page(props: PageProps) {
         </AiProvider>
       </Box>
 
-      {searchParams.pdf ? (
+      {searchParams.url ? (
+        <WebsiteWiever url={decodeURIComponent(searchParams.url)} />
+      ) : searchParams.pdf ? (
         <DocumentComponent fileName={decodeURIComponent(searchParams.pdf)} />
       ) : null}
     </Box>

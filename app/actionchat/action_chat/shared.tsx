@@ -1,3 +1,45 @@
+import React from 'react';
+import { type StreamableValue } from 'ai/rsc';
+import { openai } from '@ai-sdk/openai';
+import { anthropic } from '@ai-sdk/anthropic';
+
+export const getModel = (selectedModel: 'claude3' | 'chatgpt4') => {
+  if (selectedModel === 'claude3') {
+    return anthropic('claude-3-5-sonnet-20241022');
+  } else if (selectedModel === 'chatgpt4') {
+    return openai('gpt-4o');
+  }
+  return anthropic('claude-3-5-sonnet-20241022');
+};
+
+export type ServerMessage = {
+  role: 'user' | 'assistant';
+  content: string;
+  name?: string;
+  sources?: Source[];
+};
+export type ResetResult = {
+  success: boolean;
+  message: string;
+};
+export type ClientMessage = {
+  id: string | number | null;
+  role: 'user' | 'assistant';
+  display: React.ReactNode;
+  chatId?: string | null;
+};
+
+export type SubmitMessageResult = {
+  success?: boolean;
+  message?: string;
+  limit?: number;
+  remaining?: number;
+  reset?: number;
+  id?: string;
+  display?: React.ReactNode;
+  chatId?: string;
+  status: StreamableValue<string, any>;
+};
 import 'server-only';
 import { createServerSupabaseClient } from '@/lib/server/server';
 
@@ -41,7 +83,8 @@ export const saveChatToSupbabase = async (
         chat_session_id: chatSessionId,
         is_user_message: true,
         content: currentMessageContent,
-        sources: null // User messages don't have sources
+        sources: null,
+        created_at: now.toISOString()
       },
       {
         chat_session_id: chatSessionId,

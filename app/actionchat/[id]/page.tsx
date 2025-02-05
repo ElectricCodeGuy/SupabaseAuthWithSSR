@@ -6,11 +6,11 @@ import { createServerSupabaseClient } from '@/lib/server/server';
 import ChatComponentPage from '../component/ChatComponent';
 import { getUserInfo } from '@/lib/server/supabase';
 import { notFound } from 'next/navigation';
-import { AI as AiProvider } from '../action';
-import type { ServerMessage } from '../action';
+import { AI as AiProvider } from '../action_chat/AIProvider';
+import type { ServerMessage } from '../action_chat/shared';
 import DocumentViewer from '../component/PDFViewer';
 import { unstable_noStore as noStore } from 'next/cache';
-
+import WebsiteWiever from '../component/WebsiteWiever';
 export const maxDuration = 60;
 
 export const metadata: Metadata = {
@@ -129,7 +129,9 @@ export default async function Page(props: PageProps) {
         </AiProvider>
       </Box>
 
-      {searchParams.pdf ? (
+      {searchParams.url ? (
+        <WebsiteWiever url={decodeURIComponent(searchParams.url)} />
+      ) : searchParams.pdf ? (
         <DocumentViewerSuspended
           fileName={decodeURIComponent(searchParams.pdf)}
         />

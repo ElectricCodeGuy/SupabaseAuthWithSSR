@@ -9,7 +9,7 @@ import { Database } from '@/types/database';
 import { unstable_noStore as noStore } from 'next/cache';
 import { Tables } from '@/types/database';
 import { UploadProvider } from './context/uploadContext';
-import { AI as AiProvider } from './action';
+import { AI as AiProvider } from './action_chat/AIProvider';
 
 export const maxDuration = 60;
 

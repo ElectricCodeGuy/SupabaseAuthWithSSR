@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, KeyboardEvent } from 'react';
 import { useUIState, useActions, readStreamableValue } from 'ai/rsc';
-import { type AI } from '../action';
+import { type AI } from '../action_chat/AIProvider';
 import { UserMessage } from './ChatWrapper';
 import {
   IconButton,

@@ -9,7 +9,7 @@ import React, {
   startTransition
 } from 'react';
 import { useActions } from 'ai/rsc';
-import { type AI } from '../action';
+import { type AI } from '../action_chat/AIProvider';
 import {
   deleteChatData,
   fetchMoreChatPreviews,

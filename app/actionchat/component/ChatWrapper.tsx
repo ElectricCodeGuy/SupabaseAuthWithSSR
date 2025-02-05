@@ -12,8 +12,7 @@ import {
   Link as MuiLink,
   Grid2,
   Stack,
-  IconButton,
-  Popover
+  IconButton
 } from '@mui/material';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -300,9 +299,10 @@ export function BotMessage({
                 // For web links, return a regular link that opens in a new tab
                 return (
                   <MuiLink
-                    href={href}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    component={Link}
+                    href={`?url=${encodeURIComponent(href)}`}
+                    scroll={false}
+                    prefetch={false}
                   >
                     {children}
                   </MuiLink>
@@ -339,47 +339,6 @@ export const InternetSearchToolResults = ({
 }: {
   searchResults: SearchResult[];
 }) => {
-  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string>('');
-  const [isHoveringLink, setIsHoveringLink] = useState(false);
-  const [isHoveringPopover, setIsHoveringPopover] = useState(false);
-
-  const handlePopoverOpen = (
-    event: React.MouseEvent<HTMLElement>,
-    url: string
-  ) => {
-    setIsHoveringLink(true);
-    setAnchorEl(event.currentTarget);
-    setPreviewUrl(url);
-  };
-
-  const handleLinkMouseLeave = () => {
-    setIsHoveringLink(false);
-    // Give a small delay to check if user moved to popover
-    setTimeout(() => {
-      if (!isHoveringPopover) {
-        setAnchorEl(null);
-        setPreviewUrl('');
-      }
-    }, 100);
-  };
-
-  const handlePopoverMouseEnter = () => {
-    setIsHoveringPopover(true);
-  };
-
-  const handlePopoverMouseLeave = () => {
-    setIsHoveringPopover(false);
-    if (!isHoveringLink) {
-      setAnchorEl(null);
-      setPreviewUrl('');
-    }
-  };
-
-  const open = Boolean(anchorEl);
-  // Iframe preview for the website. This can cause issues with some websites and also large content downloads aswell.
-  // Not recommended for production use.
-
   return (
     <>
       <Typography
@@ -426,12 +385,10 @@ export const InternetSearchToolResults = ({
             >
               <Box sx={{ flex: 1 }}>
                 <MuiLink
-                  href={result.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  component={Link}
+                  href={`?url=${encodeURIComponent(result.url)}`}
+                  scroll={false}
                   className="source-link"
-                  onMouseEnter={(e) => handlePopoverOpen(e, result.url)}
-                  onMouseLeave={handleLinkMouseLeave}
                   sx={{
                     display: 'flex',
                     alignItems: 'flex-start',
@@ -508,52 +465,6 @@ export const InternetSearchToolResults = ({
           );
         })}
       </Grid2>
-
-      <Popover
-        sx={{
-          pointerEvents: 'auto',
-          '& .MuiPopover-paper': {
-            pointerEvents: 'auto'
-          }
-        }}
-        open={open}
-        anchorEl={anchorEl}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'left'
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'left'
-        }}
-        onClose={() => {
-          setAnchorEl(null);
-          setPreviewUrl('');
-        }}
-        disableRestoreFocus
-        onMouseEnter={handlePopoverMouseEnter}
-        onMouseLeave={handlePopoverMouseLeave}
-      >
-        <Box
-          sx={{
-            width: '800px',
-            height: '600px',
-            border: 'none',
-            overflow: 'hidden'
-          }}
-        >
-          <iframe
-            src={previewUrl}
-            title="Website Preview"
-            style={{
-              width: '100%',
-              height: '100%',
-              border: 'none'
-            }}
-            sandbox="allow-same-origin allow-scripts"
-          />
-        </Box>
-      </Popover>
     </>
   );
 };
