@@ -8,13 +8,10 @@ import Testimonials from './components/landingpage/Testimonials';
 import { getSession } from '@/lib/server/supabase';
 
 export default async function LandingPage() {
-  const session = await getSession();
-  const isSessionAvailable = session !== null;
-  const userEmail = session?.email;
-
   return (
     <>
-      <BannerComponent session={isSessionAvailable} userEmail={userEmail} />
+      {/* We pass the promise here and resolve it with react.use in the child to prevent the async request from blocking the UI */}
+      <BannerComponent session={getSession()} />
       <FeatureCard />
       <Divider />
       <Testimonials />
