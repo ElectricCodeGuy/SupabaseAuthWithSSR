@@ -56,25 +56,25 @@ const UserProfileComponent = () => {
             justifyContent: 'center'
           }}
         >
-          <IconButton color="primary">
-            <Link
-              href="#"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ textDecoration: 'none' }}
-            >
-              <LinkedInIcon fontSize="large" />
-            </Link>
+          <IconButton
+            color="primary"
+            component={Link}
+            href="#"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ textDecoration: 'none' }}
+          >
+            <LinkedInIcon fontSize="large" />
           </IconButton>
-          <IconButton color="primary">
-            <Link
-              href="#"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ textDecoration: 'none' }}
-            >
-              <GitHubIcon fontSize="large" />
-            </Link>
+          <IconButton
+            color="primary"
+            component={Link}
+            href="#"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ textDecoration: 'none' }}
+          >
+            <GitHubIcon fontSize="large" />
           </IconButton>
         </Box>
       </Grid2>

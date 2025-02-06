@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Grid2, Typography, Paper, Divider } from '@mui/material';
+import { Box, Grid2, Typography, Divider } from '@mui/material';
 import Link from 'next/link';
 
 const features = [
@@ -59,45 +59,42 @@ export default function Component() {
     <Box
       id="models"
       sx={{
-        pt: [1, 2, 3, 6],
-        pb: [4, 6, 8, 12],
+        pt: [1, 2, 3, 4],
+        pb: [1, 2, 3, 6],
         maxWidth: '1800px',
         mx: 'auto'
       }}
     >
-      <Box
+      <Typography
+        variant="h2"
         sx={{
           textAlign: 'center',
-          mb: 10
+          fontWeight: 'bold',
+          fontFamily: 'Monospace',
+          letterSpacing: '0.1em',
+          backgroundClip: 'text',
+          WebkitBackgroundClip: 'text',
+          backgroundGradient: 'linear(to r, white, grey.500)'
         }}
       >
-        <Typography
-          variant="h2"
-          sx={{
-            fontWeight: 'bold',
-            fontFamily: 'Monospace',
-            letterSpacing: '0.1em',
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            backgroundGradient: 'linear(to r, white, grey.500)'
-          }}
-        >
-          Discover Our Features
-        </Typography>
-        <Typography
-          variant="body1"
-          sx={{
-            fontWeight: 'bold',
-            maxWidth: 800,
-            mx: 'auto',
-            fontFamily: 'Monospace',
-            letterSpacing: '0.05em'
-          }}
-        >
-          Harnessing Advanced AI for Better Insights and Efficient Operations
-        </Typography>
-      </Box>
-      <Grid2 container spacing={10}>
+        Discover Our Features
+      </Typography>
+      <Typography
+        variant="body1"
+        sx={{
+          fontWeight: 'bold',
+          textAlign: 'center',
+          maxWidth: 800,
+          mx: 'auto',
+          fontFamily: 'Monospace',
+          letterSpacing: '0.05em',
+          mb: 2
+        }}
+      >
+        Harnessing Advanced AI for Better Insights and Efficient Operations
+      </Typography>
+
+      <Grid2 container spacing={4}>
         {features.map((feature, index) => (
           <Grid2
             key={index}
@@ -107,47 +104,43 @@ export default function Component() {
               sm: 6,
               md: 4
             }}
+            sx={{
+              p: 2,
+              textAlign: 'center',
+              borderRadius: '12px',
+              borderColor: 'grey.800',
+              height: '100%',
+              minHeight: 350,
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              width: '100%',
+              boxShadow: 3,
+              backgroundColor: 'background.paper'
+            }}
           >
-            <Paper
-              elevation={3}
+            <Box sx={{ fontSize: 50, opacity: 0.9 }}>{feature.Icon}</Box>
+            <Typography
+              variant="h6"
+              color="primary"
+              gutterBottom
               sx={{
-                p: 5,
-                textAlign: 'center',
-                borderRadius: '12px',
-                borderColor: 'grey.800',
-                height: '100%',
-                minHeight: 350,
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                width: '100%'
+                fontWeight: 'bold'
               }}
             >
-              <Box sx={{ p: 3, fontSize: 50, opacity: 0.9 }}>
-                {feature.Icon}
-              </Box>
-              <Typography
-                variant="h6"
-                color="primary"
-                gutterBottom
-                sx={{
-                  fontWeight: 'bold'
-                }}
-              >
-                {feature.title}
-              </Typography>
-              <Divider variant="middle" />
-              <Typography
-                variant="body2"
-                component="div"
-                sx={{
-                  color: 'text.secondary',
-                  mt: 3
-                }}
-              >
-                {feature.description}
-              </Typography>
-            </Paper>
+              {feature.title}
+            </Typography>
+            <Divider variant="middle" />
+            <Typography
+              variant="body2"
+              component="div"
+              sx={{
+                color: 'text.secondary',
+                mt: 2
+              }}
+            >
+              {feature.description}
+            </Typography>
           </Grid2>
         ))}
       </Grid2>
