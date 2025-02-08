@@ -30,7 +30,7 @@ export default function ModalWrapper({ children }: ModalWrapperProps) {
           <Box
             sx={{
               position: 'relative', // Add this to make absolute positioning of button work relative to Box
-              maxHeight: '100vh',
+              maxHeight: 'calc(100vh - 44px)',
               width: {
                 xs: '95%',
                 sm: '90%',

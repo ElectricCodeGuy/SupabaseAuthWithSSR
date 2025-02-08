@@ -1,5 +1,5 @@
 import 'server-only';
-import ChatComponent from '../components/chat';
+import ChatComponent from '../components/Chat';
 import { createServerSupabaseClient } from '@/lib/server/server';
 import { format } from 'date-fns';
 import { SupabaseClient } from '@supabase/supabase-js';

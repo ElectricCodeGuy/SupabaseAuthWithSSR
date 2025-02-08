@@ -18,7 +18,7 @@ export default async function AuthPage() {
       sx={{
         justifyContent: 'space-between',
         pt: 4,
-        height: { xs: 'auto', md: '100vh' }
+        height: { xs: 'auto', md: 'calc(100vh - 44px)' } // 44px is the height of the app bar so we subtract it from the viewport height
       }}
     >
       <Stack
@@ -26,7 +26,7 @@ export default async function AuthPage() {
         sx={{
           justifyContent: 'center',
           gap: { xs: 6, sm: 6 },
-          height: { xs: '100%', md: '100vh' },
+          height: { xs: '100%', md: 'calc(100vh - 44px)' }, // 44px is the height of the app bar so we subtract it from the viewport height
           p: 1
         }}
       >

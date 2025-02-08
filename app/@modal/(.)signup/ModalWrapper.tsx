@@ -27,7 +27,7 @@ export default function ModalWrapper({ children }: ModalWrapperProps) {
       <Box
         sx={{
           position: 'relative',
-          maxHeight: '100vh',
+          maxHeight: 'calc(100vh - 44px)',
           width: {
             xs: '95%',
             sm: '90%',

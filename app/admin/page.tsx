@@ -37,7 +37,7 @@ export default function AdminPage() {
         minHeight: {
           xs: '100vh',
           sm: '100vh',
-          md: 'calc(100vh - 44px)'
+          md: 'calc(100vh - 44px)' // 44px is the height of the app bar so we subtract it from the viewport height
         },
         display: 'flex',
         flexDirection: 'column',

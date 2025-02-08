@@ -1,12 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, use } from 'react';
+import React, { useState, useCallback, use } from 'react';
 import {
   AppBar,
-  Toolbar,
   IconButton,
   Box,
-  Slide,
   Button,
   Drawer,
   Divider,
@@ -14,81 +12,52 @@ import {
   List,
   ListItemButton,
   ListItemText,
-  Avatar,
-  Menu,
-  MenuItem
+  type SxProps,
+  type Theme,
+  MenuItem,
+  Popover
 } from '@mui/material';
-import { usePathname, useRouter } from 'next/navigation';
-import Link from 'next/link';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import { usePathname } from 'next/navigation';
 import { Menu as MenuIcon } from '@mui/icons-material';
-import useScrollTrigger from '@mui/material/useScrollTrigger';
 import CloseIcon from '@mui/icons-material/Close';
+import Link from 'next/link';
 import Sitemark from './SitemarkIcon';
-import SignOutButton from './SignOut';
+import PopupState, { bindTrigger, bindPopover } from 'material-ui-popup-state';
 import { type User } from '@supabase/supabase-js';
+import SignOut from './SignOut';
 
-interface AppBarProps {
+const linkStyleDesktop: SxProps<Theme> = {
+  fontWeight: 600,
+  fontSize: '1.05rem',
+  margin: '0 0.5rem',
+  color: 'text.primary',
+  whiteSpace: 'nowrap',
+  overflow: 'hidden',
+  borderRadius: '6px',
+  '&:hover': {
+    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+    textDecoration: 'none'
+  },
+  '&.active': {
+    fontWeight: 700,
+    color: 'primary.main',
+    backgroundColor: 'rgba(25, 118, 210, 0.08)'
+  }
+};
+
+interface HeaderProps {
   session: Promise<User | null>;
 }
 
-const AppBarComponent: React.FC<AppBarProps> = ({ session }) => {
-  // use() unwraps the Promise passed from the parent. See: https://react.dev/reference/react/use
-  const userSession = use(session);
-  const isSessionAvailable = userSession !== null;
-  const pathname = usePathname();
-  const router = useRouter();
+const Header: React.FC<HeaderProps> = ({ session }) => {
+  const userData = use(session);
+
+  const isLoggedIn = !!userData;
+
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
-  const trigger = useScrollTrigger({
-    disableHysteresis: true,
-    threshold: 50
-  });
-
-  const [showAppBar, setShowAppBar] = useState(!trigger);
-
-  useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-
-    const handleMouseMove = (event: MouseEvent) => {
-      if (window.innerWidth >= 900) {
-        const appBarWidth = getAppBarWidth();
-        const appBarLeft = (window.innerWidth - appBarWidth) / 2;
-        const appBarRight = appBarLeft + appBarWidth;
-
-        const isWithinAppBarWidth =
-          event.clientX >= appBarLeft && event.clientX <= appBarRight;
-
-        if (
-          pathname.startsWith('/aichat') ||
-          pathname.startsWith('/actionchat')
-        ) {
-          if (event.clientY <= 50 && isWithinAppBarWidth) {
-            setShowAppBar(true);
-          } else {
-            timeoutId = setTimeout(() => {
-              setShowAppBar(false);
-            }, 100);
-          }
-        } else {
-          if (event.clientY <= 50 && isWithinAppBarWidth) {
-            setShowAppBar(true);
-          } else {
-            timeoutId = setTimeout(() => {
-              setShowAppBar(!trigger);
-            }, 100);
-          }
-        }
-      }
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      clearTimeout(timeoutId);
-    };
-  }, [trigger, pathname]);
+  const pathname = usePathname();
 
   const isActive = useCallback(
     (href: string) => {
@@ -97,40 +66,14 @@ const AppBarComponent: React.FC<AppBarProps> = ({ session }) => {
     [pathname]
   );
 
-  const getAppBarWidth = () => {
-    const windowWidth = window.innerWidth;
-    let baseWidth;
-    if (windowWidth >= 1200)
-      baseWidth = 800; // lg
-    else if (windowWidth >= 900)
-      baseWidth = 900; // md
-    else if (windowWidth >= 600)
-      baseWidth = 1200; // sm
-    else baseWidth = windowWidth; // xs
-
-    return baseWidth * 1.1;
-  };
-
   const handleDrawerToggle = () => {
     setDrawerOpen(!drawerOpen);
-  };
-
-  const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
   };
 
   const mobileMenuItems = [
     { href: '/protected', text: 'Protected' },
     { href: '/aichat', text: 'AI Chat' },
-    { href: '/actionchat', text: 'Action Chat' },
-    {
-      href: isSessionAvailable ? '/profile' : '/signin',
-      text: isSessionAvailable ? 'Profile' : 'Sign in'
-    }
+    { href: '/actionchat', text: 'Action Chat' }
   ];
 
   const drawer = (
@@ -157,11 +100,22 @@ const AppBarComponent: React.FC<AppBarProps> = ({ session }) => {
       >
         <CloseIcon />
       </Button>
-      <Box sx={{ p: 0.2, display: 'flex', alignItems: 'center' }}>
+      <Box
+        sx={{
+          p: 0.2,
+          display: 'flex',
+          alignItems: 'center',
+          width: 'fit-content',
+          mx: 'auto'
+        }}
+      >
         <MuiLink
-          title="Home"
           href="/"
-          sx={{ cursor: 'pointer', display: 'inline-block' }}
+          sx={{
+            cursor: 'pointer',
+            display: 'inline-block',
+            textDecoration: 'none'
+          }}
         >
           <Sitemark />
         </MuiLink>
@@ -172,8 +126,6 @@ const AppBarComponent: React.FC<AppBarProps> = ({ session }) => {
           <React.Fragment key={index}>
             <ListItemButton
               component={Link}
-              prefetch
-              title={item.text}
               href={item.href}
               sx={{
                 py: 1.5,
@@ -187,138 +139,199 @@ const AppBarComponent: React.FC<AppBarProps> = ({ session }) => {
             >
               <ListItemText
                 primary={item.text}
-                slotProps={{
-                  primary: { component: 'div', fontWeight: 600, variant: 'h3' }
+                primaryTypographyProps={{
+                  fontWeight: 600,
+                  variant: 'h3'
                 }}
               />
             </ListItemButton>
             {index < mobileMenuItems.length - 1 && <Divider component="li" />}
           </React.Fragment>
         ))}
+        {isLoggedIn && (
+          <>
+            <Divider component="li" />
+            <ListItemButton>
+              <ListItemText
+                primary={<SignOut />}
+                primaryTypographyProps={{
+                  fontWeight: 600,
+                  variant: 'h3'
+                }}
+              />
+            </ListItemButton>
+          </>
+        )}
       </List>
     </Box>
   );
 
+  const mobileAppBarContent = (
+    <IconButton
+      edge="end"
+      aria-label="menu"
+      onClick={handleDrawerToggle}
+      sx={{
+        position: 'fixed',
+        top: 0,
+        right: 16,
+        bgcolor: 'rgba(0, 0, 0, 0.04)',
+        borderRadius: '50%'
+      }}
+    >
+      <MenuIcon sx={{ fontSize: '1.75rem' }} />
+    </IconButton>
+  );
   const appBarContent = (
-    <Toolbar
-      variant="dense"
+    <Box
       sx={{
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        borderRadius: '999px',
-        bgcolor: 'rgba(255, 255, 255, 0.4)',
-        backdropFilter: 'blur(24px)',
-        maxWidth: '100%',
-        width: { lg: 800, md: 900, sm: 1200, xs: '100%' },
-        mx: 'auto',
-        zIndex: 1202,
-        border: '1px solid',
-        borderColor: 'divider',
-        boxShadow:
-          '0 0 1px rgba(85, 166, 246, 0.1), 1px 1.5px 2px -1px rgba(85, 166, 246, 0.15), 4px 4px 12px -2.5px rgba(85, 166, 246, 0.15)'
+        width: '100%',
+        height: '100%',
+        pl: { md: 4, lg: 8 },
+        margin: '0 auto'
       }}
     >
       <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
-          ml: {
-            xs: '-10px',
-            sm: '-10px',
-            md: '-18px',
-            lg: '-18px',
-            xl: '-18px'
-          },
-          px: 0
+          flex: { md: 0, lg: 0, xl: 1 },
+          mr: -2
         }}
       >
         <MuiLink
           href="/"
           sx={{
+            padding: '8px',
             cursor: 'pointer',
-            display: 'inline-block',
-            pr: {
-              xs: 2,
-              sm: 2,
-              md: 4,
-              lg: 4,
-              xl: 4
-            }
+            display: 'flex',
+            alignItems: 'center',
+            textDecoration: 'none',
+            zIndex: 1,
+            position: 'relative',
+            '&:hover': { textDecoration: 'none' }
           }}
         >
           <Sitemark />
         </MuiLink>
-        <Box sx={{ display: { xs: 'none', sm: 'flex', md: 'flex' }, gap: 2 }}>
-          <MuiLink
-            component={Link}
-            prefetch
-            title="Protected"
-            href="/protected"
-            className={isActive('/protected') ? 'active' : ''}
-          >
-            Protected
-          </MuiLink>
-          <MuiLink
-            component={Link}
-            prefetch
-            title="AI Chat"
-            href="/aichat"
-            className={isActive('/aichat') ? 'active' : ''}
-          >
-            AI Chat
-          </MuiLink>
-          <MuiLink
-            component={Link}
-            prefetch
-            title="Action Chat"
-            href="/actionchat"
-            className={isActive('/actionchat') ? 'active' : ''}
-          >
-            Action Chat
-          </MuiLink>
-        </Box>
       </Box>
-      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-        {isSessionAvailable ? (
-          <IconButton onClick={handleMenuClick} size="small">
-            <Avatar alt="User" sizes="small" />
-          </IconButton>
+
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          flex: 1,
+          justifyContent: {
+            xs: 'none',
+            sm: 'none',
+            md: 'flex-end',
+            lg: 'flex-end',
+            xl: 'flex-end'
+          }
+        }}
+      >
+        <Button
+          component={Link}
+          href="/protected"
+          prefetch={false}
+          sx={linkStyleDesktop}
+          className={isActive('/protected') ? 'active' : ''}
+        >
+          Protected
+        </Button>
+
+        <Button
+          component={Link}
+          href="/aichat"
+          prefetch={false}
+          sx={linkStyleDesktop}
+          className={isActive('/aichat') ? 'active' : ''}
+        >
+          AI Chat
+        </Button>
+
+        <Button
+          component={Link}
+          href="/actionchat"
+          prefetch={false}
+          sx={linkStyleDesktop}
+          className={isActive('/actionchat') ? 'active' : ''}
+        >
+          Action Chat
+        </Button>
+
+        {isLoggedIn ? (
+          <PopupState variant="popover" popupId="profile-menu">
+            {(popupState) => (
+              <>
+                <Button
+                  {...bindTrigger(popupState)}
+                  endIcon={<KeyboardArrowDownIcon />}
+                  sx={linkStyleDesktop}
+                >
+                  Profile
+                </Button>
+                <Popover
+                  {...bindPopover(popupState)}
+                  anchorOrigin={{
+                    vertical: 'bottom',
+                    horizontal: 'left'
+                  }}
+                  transformOrigin={{
+                    vertical: 'top',
+                    horizontal: 'left'
+                  }}
+                  disableScrollLock
+                >
+                  <Box sx={{ py: 1 }}>
+                    <MenuItem component={Link} href="/profile">
+                      Profile
+                    </MenuItem>
+                    <MenuItem>
+                      <SignOut />
+                    </MenuItem>
+                  </Box>
+                </Popover>
+              </>
+            )}
+          </PopupState>
         ) : (
           <Button
             component={Link}
-            prefetch
             href="/signin"
-            color="primary"
-            variant="contained"
-            size="small"
+            prefetch={false}
+            sx={linkStyleDesktop}
+            className={isActive('/signin') ? 'active' : ''}
           >
             Sign in
           </Button>
         )}
       </Box>
-    </Toolbar>
+    </Box>
   );
 
   return (
     <>
-      <Slide appear={false} direction="down" in={showAppBar}>
-        <AppBar
-          position="fixed"
-          sx={{
-            bgcolor: 'transparent',
-            boxShadow: 'none',
-            left: 0,
-            right: 0,
-            display: { xs: 'none', sm: 'none', md: 'flex' },
-            justifyContent: 'center',
-            alignItems: 'center'
-          }}
-        >
-          {appBarContent}
-        </AppBar>
-      </Slide>
-
+      {/* AppBar for md and larger screens */}
+      <AppBar
+        position="static"
+        sx={{
+          bgcolor: 'rgba(255, 255, 255, 0.8)',
+          backdropFilter: 'blur(24px)',
+          boxShadow:
+            '0 0 1px rgba(85, 166, 246, 0.1), 1px 1.5px 2px -1px rgba(85, 166, 246, 0.15), 4px 4px 12px -2.5px rgba(85, 166, 246, 0.15)',
+          display: { xs: 'none', sm: 'none', md: 'block' },
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          width: '100%',
+          height: '44px',
+          p: '4px'
+        }}
+      >
+        {appBarContent}
+      </AppBar>
       <AppBar
         position="fixed"
         sx={{
@@ -331,20 +344,7 @@ const AppBarComponent: React.FC<AppBarProps> = ({ session }) => {
           alignItems: 'center'
         }}
       >
-        <IconButton
-          edge="end"
-          aria-label="menu"
-          onClick={handleDrawerToggle}
-          sx={{
-            position: 'fixed',
-            top: 0,
-            left: 4,
-            bgcolor: 'rgba(0, 0, 0, 0.04)',
-            borderRadius: '50%'
-          }}
-        >
-          <MenuIcon sx={{ fontSize: '1.75rem' }} />
-        </IconButton>
+        {mobileAppBarContent}
       </AppBar>
 
       <Drawer
@@ -358,51 +358,14 @@ const AppBarComponent: React.FC<AppBarProps> = ({ session }) => {
           display: { xs: 'block', sm: 'block', md: 'none' },
           '& .MuiDrawer-paper': {
             boxSizing: 'border-box',
-            width: '100%'
+            width: 'fit-content'
           }
         }}
       >
         {drawer}
       </Drawer>
-
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleClose}
-        onClick={handleClose}
-      >
-        <MenuItem
-          component={Link}
-          prefetch={false}
-          onMouseEnter={() => router.prefetch('/profile')}
-          href="/profile"
-        >
-          Profile
-        </MenuItem>
-        <MenuItem
-          component={Link}
-          prefetch={false}
-          onMouseEnter={() => router.prefetch('/aichat')}
-          href="/aichat"
-          sx={{ display: { md: 'none' } }}
-        >
-          AI Chat
-        </MenuItem>
-        <MenuItem
-          component={Link}
-          prefetch={false}
-          onMouseEnter={() => router.prefetch('/actionchat')}
-          href="/actionchat"
-          sx={{ display: { md: 'none' } }}
-        >
-          Action Chat
-        </MenuItem>
-        <MenuItem>
-          <SignOutButton />
-        </MenuItem>
-      </Menu>
     </>
   );
 };
 
-export default AppBarComponent;
+export default Header;

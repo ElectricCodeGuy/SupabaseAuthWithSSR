@@ -8,8 +8,7 @@ import {
   Collapse,
   Select,
   MenuItem,
-  Paper,
-  styled
+  Paper
 } from '@mui/material';
 import { Error as ErrorIcon } from '@mui/icons-material';
 import { SelectChangeEvent } from '@mui/material/Select';
@@ -28,16 +27,6 @@ interface ErrorBoundaryState {
   feedbackCategory: string;
   showDetails: boolean;
 }
-
-const StyledErrorBox = styled(Paper)({
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
-  minHeight: '100vh',
-  margin: 'auto',
-  padding: '20px'
-});
 
 class GeneralErrorBoundary extends React.Component<
   ErrorBoundaryProps,
@@ -108,7 +97,18 @@ class GeneralErrorBoundary extends React.Component<
     }
 
     return (
-      <StyledErrorBox elevation={3}>
+      <Paper
+        elevation={3}
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: 'calc(100vh - 44px)', // 44px is the height of the app bar so we subtract it from the viewport height
+          margin: 'auto',
+          padding: '20px'
+        }}
+      >
         <ErrorIcon fontSize="large" color="error" />
         <Typography variant="h4" gutterBottom>
           Oops! Something went wrong.
@@ -158,7 +158,7 @@ class GeneralErrorBoundary extends React.Component<
             Retry
           </Button>
         </Box>
-      </StyledErrorBox>
+      </Paper>
     );
   }
 }

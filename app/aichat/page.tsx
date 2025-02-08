@@ -1,5 +1,5 @@
 import 'server-only';
-import ChatComponent from './components/chat';
+import ChatComponent from './components/Chat';
 import { cookies } from 'next/headers';
 
 export default async function ChatPage() {

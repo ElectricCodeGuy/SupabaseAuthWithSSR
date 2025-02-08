@@ -59,7 +59,7 @@ import {
 } from 'next/navigation';
 import ChatIcon from '@mui/icons-material/Chat';
 import { useUpload } from '../context/uploadContext';
-import ServerUploadPage from './fileupload';
+import ServerUploadPage from './FileUpload';
 import { createClient } from '@/lib/client/client';
 import { decodeBase64, encodeBase64 } from '../lib/base64';
 import useSWRImmutable from 'swr/immutable';
@@ -292,11 +292,12 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
           const formattedDate = format(new Date(file.created_at), 'yyyy-MM-dd');
           const filterTag = `${file.name}[[${formattedDate}]]`;
           const isSelected = selectedBlobs.includes(filterTag);
+
           const currentParams = new URLSearchParams(searchParams.toString());
           currentParams.set('pdf', encodeURIComponent(encodeBase64(file.name)));
+          currentParams.delete('url'); // Remove the url parameter if it exists
           const href = `${pathname}?${currentParams.toString()}`;
 
-          // Check if this file is the currently selected one from URL
           const isCurrentFile = currentPdf === file.name;
 
           return (
@@ -488,7 +489,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
                   sx={{
                     display: 'flex',
                     flexDirection: 'column',
-                    height: 'calc(100vh - 50px)'
+                    height: 'calc(100vh - 94px)'
                   }}
                 >
                   <Box

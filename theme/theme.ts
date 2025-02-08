@@ -105,6 +105,24 @@ const theme = createTheme({
         }
       }
     },
+    MuiDrawer: {
+      styleOverrides: {
+        paper: {
+          top: '44px', // Match your AppBar height
+          height: 'calc(100% - 44px)', // Subtract AppBar height from total height
+          '@media (max-width: 900px)': {
+            top: 0, // Reset for mobile
+            height: '100%' // Full height for mobile
+          }
+        },
+        modal: {
+          top: '44px', // Match your AppBar height
+          '@media (max-width: 900px)': {
+            top: 0 // Reset for mobile
+          }
+        }
+      }
+    },
     MuiTooltip: {
       styleOverrides: {
         tooltip: {
