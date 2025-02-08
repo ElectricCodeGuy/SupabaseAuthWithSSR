@@ -92,10 +92,11 @@ export default function ChatComponentPage({
           height: {
             xs: '100vh',
             sm: '100vh',
-            md: 'calc(100vh - 44px)' // 44px is the height of the app bar so we subtract it from the viewport height
+            md: 'calc(100vh - 44px)'
           },
           overflow: 'hidden',
-          mx: 'auto'
+          mx: 'auto',
+          position: 'relative'
         }}
       >
         {/* Add the model selector at the top */}
@@ -108,6 +109,7 @@ export default function ChatComponentPage({
               backgroundColor: 'white',
               borderRadius: 1,
               m: 1,
+              position: 'absolute',
               alignSelf: {
                 xs: 'flex-end',
                 sm: 'flex-end',

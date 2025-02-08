@@ -18,10 +18,12 @@ import ForgotPassword from '../ForgotPassword';
 import { GoogleIcon } from '../CustomIcons';
 import { login } from '../action';
 import { signInWithGoogle } from '../OAuth';
+import { useRouter } from 'next/navigation';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
 
 export default function SignInCard() {
+  const router = useRouter();
   const [email, setEmail] = useState(
     typeof window !== 'undefined'
       ? localStorage.getItem('rememberedEmail') || ''
@@ -65,6 +67,7 @@ export default function SignInCard() {
         } else {
           localStorage.removeItem('rememberedEmail');
         }
+        router.back();
       }
     }
   };

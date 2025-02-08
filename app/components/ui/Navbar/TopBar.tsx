@@ -316,7 +316,7 @@ const Header: React.FC<HeaderProps> = ({ session }) => {
     <>
       {/* AppBar for md and larger screens */}
       <AppBar
-        position="static"
+        position="sticky"
         sx={{
           bgcolor: 'rgba(255, 255, 255, 0.8)',
           backdropFilter: 'blur(24px)',
