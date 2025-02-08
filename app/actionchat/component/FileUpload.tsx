@@ -1,5 +1,6 @@
 import React, { useCallback, useRef } from 'react';
-import { useDropzone, FileRejection, FileWithPath } from 'react-dropzone';
+import type { FileRejection, FileWithPath } from 'react-dropzone';
+import { useDropzone } from 'react-dropzone';
 import {
   Typography,
   Box,
@@ -17,7 +18,7 @@ import {
   Description as DescriptionIcon
 } from '@mui/icons-material';
 
-const SUPPORTED_FILE_TYPES: { [key: string]: string[] } = {
+const SUPPORTED_FILE_TYPES: Record<string, string[]> = {
   'application/pdf': ['.pdf', '.PDF'],
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': [
     '.docx',

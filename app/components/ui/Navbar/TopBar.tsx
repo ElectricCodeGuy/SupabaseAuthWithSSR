@@ -139,9 +139,11 @@ const Header: React.FC<HeaderProps> = ({ session }) => {
             >
               <ListItemText
                 primary={item.text}
-                primaryTypographyProps={{
-                  fontWeight: 600,
-                  variant: 'h3'
+                slotProps={{
+                  primary: {
+                    fontWeight: 600,
+                    variant: 'h3'
+                  }
                 }}
               />
             </ListItemButton>
@@ -154,9 +156,11 @@ const Header: React.FC<HeaderProps> = ({ session }) => {
             <ListItemButton>
               <ListItemText
                 primary={<SignOut />}
-                primaryTypographyProps={{
-                  fontWeight: 600,
-                  variant: 'h3'
+                slotProps={{
+                  primary: {
+                    fontWeight: 600,
+                    variant: 'h3'
+                  }
                 }}
               />
             </ListItemButton>

@@ -20,10 +20,10 @@ export const metadata: Metadata = {
   }
 };
 
-type Source = {
+interface Source {
   title: string;
   url: string;
-};
+}
 
 // Type guard function to check if the value is a string
 function isJsonString(value: unknown): value is string {
@@ -55,7 +55,7 @@ async function getChatMessages(chatId: string) {
       })
       .single();
 
-    if (error || !chatData) return { messages: [], userId: null };
+    if (error) return { messages: [], userId: null };
 
     return {
       messages: chatData.chat_messages.map((message): ServerMessage => {
@@ -87,7 +87,7 @@ async function getChatMessages(chatId: string) {
 
         return {
           role: message.is_user_message ? 'user' : ('assistant' as const),
-          content: message.content || '',
+          content: message.content ?? '',
           sources: parsedSources
         };
       }),
@@ -100,7 +100,7 @@ async function getChatMessages(chatId: string) {
 }
 interface PageProps {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ [key: string]: string | '' }>;
+  searchParams: Promise<Record<string, string>>;
 }
 
 export default async function Page(props: PageProps) {

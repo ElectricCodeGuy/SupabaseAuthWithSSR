@@ -1,5 +1,5 @@
 import React, { type ReactNode, Suspense } from 'react';
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import Footer from '@/app/components/ui/Footer/Footer';
 import ThemeRegistry from '@/theme/ThemeRegistry';
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     'An example demonstrating server-side rendering with authentication using Supabase.'
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
   modal
 }: {

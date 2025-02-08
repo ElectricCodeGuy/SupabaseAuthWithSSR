@@ -1,12 +1,12 @@
 import 'server-only';
 import { createServerSupabaseClient } from '@/lib/server/server';
 
-export type OpenAiLog = {
+export interface OpenAiLog {
   id: string;
   user_id: string | null;
   created_at: string;
   updated_at: string;
-};
+}
 
 export const saveChatToSupbabase = async (
   chatSessionId: string,

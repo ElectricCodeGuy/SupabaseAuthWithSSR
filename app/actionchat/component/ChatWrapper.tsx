@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
-import { StreamableValue, useStreamableValue } from 'ai/rsc';
+import type { StreamableValue } from 'ai/rsc';
+import { useStreamableValue } from 'ai/rsc';
 import {
   Box,
   Typography,
@@ -17,7 +18,8 @@ import {
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
-import rehypeHighlight, { Options as HighlightOptions } from 'rehype-highlight';
+import type { Options as HighlightOptions } from 'rehype-highlight';
+import rehypeHighlight from 'rehype-highlight';
 import 'highlight.js/styles/github-dark.css';
 import Link from 'next/link';
 import {
@@ -246,8 +248,8 @@ export function BotMessage({
             </TableCell>
           ),
           code({ className, children, ...props }) {
-            const match = /language-(\w+)/.exec(className || '');
-            const language = match && match[1] ? match[1] : '';
+            const match = /language-(\w+)/.exec(className ?? '');
+            const language = match?.[1] ? match[1] : '';
             const inline = !language;
             if (inline) {
               return (

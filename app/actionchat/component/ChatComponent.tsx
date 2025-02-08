@@ -1,5 +1,6 @@
 'use client';
-import React, { useState, KeyboardEvent } from 'react';
+import type { KeyboardEvent } from 'react';
+import React, { useState } from 'react';
 import { useUIState, useActions, readStreamableValue } from 'ai/rsc';
 import { type AI } from '../action_chat/AIProvider';
 import { UserMessage } from './ChatWrapper';
@@ -27,7 +28,7 @@ import {
 } from '@mui/icons-material';
 import { useRouter, useParams } from 'next/navigation';
 import { ChatScrollAnchor } from '../hooks/chat-scroll-anchor';
-import { Tables } from '@/types/database';
+import type { Tables } from '@/types/database';
 import ErrorBoundary from './ErrorBoundary';
 import { useUpload } from '../context/uploadContext'; // Add this import
 import Link from 'next/link';
@@ -651,7 +652,7 @@ export default function ChatComponentPage({
         id: Date.now(),
         role: 'user',
         display: (
-          <UserMessage full_name={userInfo?.full_name || 'Default_user'}>
+          <UserMessage full_name={userInfo.full_name || 'Default_user'}>
             {value}
           </UserMessage>
         ),
@@ -705,7 +706,7 @@ export default function ChatComponentPage({
         {
           ...response,
           role: 'assistant',
-          id: response.id || Date.now(),
+          id: response.id ?? Date.now(),
           display: response.display
         }
       ]);

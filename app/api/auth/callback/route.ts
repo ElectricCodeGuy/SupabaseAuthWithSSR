@@ -1,5 +1,6 @@
 import { type EmailOtpType } from '@supabase/supabase-js';
-import { NextResponse, NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createServerSupabaseClient } from '@/lib/server/server';
 
 export const dynamic = 'force-dynamic';
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
   const next = searchParams.get('next') ?? '/';
   const redirectTo = request.nextUrl.clone();
 
-  const token_hash = code || token_hash_searchParam;
+  const token_hash = code ?? token_hash_searchParam;
 
   if (token_hash && type) {
     const supabase = await createServerSupabaseClient();

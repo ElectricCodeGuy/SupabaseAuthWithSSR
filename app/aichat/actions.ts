@@ -30,11 +30,11 @@ export async function deleteChatData(chatId: string) {
   }
 }
 
-export type ChatPreview = {
+export interface ChatPreview {
   id: string;
   firstMessage: string;
   created_at: string;
-};
+}
 
 export async function fetchMoreChatPreviews(offset: number) {
   const session = await getSession();
@@ -64,7 +64,7 @@ export async function fetchMoreChatPreviews(offset: number) {
 
     const chatPreviews: ChatPreview[] = data.map((session) => ({
       id: session.id,
-      firstMessage: session.chat_messages[0]?.content || 'No messages yet',
+      firstMessage: session.chat_messages[0]?.content ?? 'No messages yet',
       created_at: session.created_at
     }));
 

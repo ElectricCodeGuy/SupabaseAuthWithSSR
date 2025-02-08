@@ -4,9 +4,9 @@ import { cookies } from 'next/headers';
 
 export default async function ChatPage() {
   const cookieStore = await cookies();
-  const modelType = cookieStore.get('modelType')?.value || 'standart';
+  const modelType = cookieStore.get('modelType')?.value ?? 'standart';
   const selectedOption =
-    cookieStore.get('selectedOption')?.value || 'gpt-3.5-turbo-1106';
+    cookieStore.get('selectedOption')?.value ?? 'gpt-3.5-turbo-1106';
 
   return (
     <ChatComponent

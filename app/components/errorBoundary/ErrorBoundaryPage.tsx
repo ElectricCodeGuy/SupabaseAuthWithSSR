@@ -11,7 +11,7 @@ import {
   Paper
 } from '@mui/material';
 import { Error as ErrorIcon } from '@mui/icons-material';
-import { SelectChangeEvent } from '@mui/material/Select';
+import type { SelectChangeEvent } from '@mui/material/Select';
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -56,9 +56,9 @@ class GeneralErrorBoundary extends React.Component<
   };
 
   public handleFeedbackCategoryChange = (
-    event: SelectChangeEvent<string> // Corrected type
+    event: SelectChangeEvent // Corrected type
   ): void => {
-    this.setState({ feedbackCategory: event.target.value as string });
+    this.setState({ feedbackCategory: event.target.value });
   };
 
   public toggleDetails = (): void => {

@@ -5,10 +5,10 @@ import { revalidatePath } from 'next/cache';
 import { createServerSupabaseClient as createClient } from '@/lib/server/server';
 import { redirect } from 'next/navigation';
 
-type AuthResponse = {
+interface AuthResponse {
   success: boolean;
   message: string;
-};
+}
 
 const formDataSchemaSignin = z.object({
   email: z.string().email(),
@@ -81,7 +81,7 @@ export async function signup(formData: FormData): Promise<AuthResponse> {
     email: email,
     password: password,
     options: {
-      data: { full_name: fullName || 'default_user' }
+      data: { full_name: fullName ?? 'default_user' }
     }
   });
 
@@ -138,7 +138,7 @@ export async function signout() {
 
   const signOutResult = await supabase.auth.signOut();
 
-  if (signOutResult?.error) {
+  if (signOutResult.error) {
     redirect('/?error=' + encodeURIComponent('Logout error'));
   } else {
     redirect('/');

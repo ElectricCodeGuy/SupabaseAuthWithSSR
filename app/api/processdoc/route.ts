@@ -11,7 +11,7 @@ import {
 import { openai } from '@ai-sdk/openai';
 import { recursiveTextSplitter } from './textspliter';
 import { encodingForModel } from 'js-tiktoken';
-import { backOff, IBackOffOptions } from 'exponential-backoff';
+import { backOff, type IBackOffOptions } from 'exponential-backoff';
 import { type LanguageModelUsage } from 'ai';
 
 export const dynamic = 'force-dynamic';
@@ -229,13 +229,13 @@ async function processFile(pages: string[], fileName: string, userId: string) {
   console.log('Token Usage:', totalPromptTokens, totalCompletionTokens);
   return filterTags;
 }
-type ContentAnalysisType = {
+interface ContentAnalysisType {
   preliminary_answer_1: string;
   preliminary_answer_2: string;
   hypothetical_question_1: string;
   hypothetical_question_2: string;
   tags: string[];
-};
+}
 
 interface AgentChainResult {
   object: ContentAnalysisType;
@@ -260,34 +260,22 @@ async function processDocumentWithAgentChains(
   `;
 
   // Create a promise that rejects after 15 seconds
-  const timeout: Promise<never> = new Promise((_, reject) => {
+  const timeout = new Promise<never>((_, reject) => {
     setTimeout(() => {
       reject(new Error('Processing timeout after 15 seconds'));
     }, 15000);
   });
 
   try {
-    // Race between the actual processing and the timeout. This is here to prevent the AI function from hanging,
-    // witch tend to happen from time to time...
     const result = await Promise.race<AgentChainResult>([
       preliminaryAnswerChainAgent(prompt, userId),
       timeout
     ]);
 
-    if (!result) {
-      console.error('Failed to process document with agent chains');
-      return {
-        combinedPreliminaryAnswers: '',
-        usage: {
-          promptTokens: 0,
-          completionTokens: 0
-        }
-      };
-    }
-
     const { object, usage } = result;
 
-    const tagTaxProvisions = object.tags?.join(', ') || '';
+    // If tags is potentially undefined, use nullish coalescing
+    const tagTaxProvisions = object.tags.join(', ') || '';
 
     const combinedPreliminaryAnswers = [
       object.preliminary_answer_1,
@@ -296,7 +284,6 @@ async function processDocumentWithAgentChains(
       object.hypothetical_question_1,
       object.hypothetical_question_2
     ].join('\n');
-
     return {
       combinedPreliminaryAnswers,
       usage: {

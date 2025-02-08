@@ -1,5 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { streamText, CoreMessage, Message } from 'ai';
+import type { NextRequest} from 'next/server';
+import { NextResponse } from 'next/server';
+import type { CoreMessage, Message } from 'ai';
+import { streamText } from 'ai';
 import { saveChatToSupbabase } from './SaveToDb';
 import { Redis } from '@upstash/redis';
 import { Ratelimit } from '@upstash/ratelimit';

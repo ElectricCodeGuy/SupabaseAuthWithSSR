@@ -74,7 +74,7 @@ export default function DocumentViewer({
   };
 
   const decodedFileName = decodeURIComponent(decodeBase64(fileName));
-  const fileExtension = decodedFileName.split('.').pop()?.toLowerCase() || '';
+  const fileExtension = decodedFileName.split('.').pop()?.toLowerCase() ?? '';
   const page = Number(searchParams.get('p')) || 1;
   const {
     data: fileUrl,

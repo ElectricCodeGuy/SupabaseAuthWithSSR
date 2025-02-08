@@ -61,10 +61,10 @@ async function querySupabaseVectors(
   queryEmbedding: number[],
   userId: string,
   selectedFiles: string[],
-  topK: number = 40,
-  similarityThreshold: number = 0.78
+  topK = 40,
+  similarityThreshold = 0.78
 ): Promise<
-  Array<{
+  {
     pageContent: string;
     metadata: {
       text: string;
@@ -81,7 +81,7 @@ async function querySupabaseVectors(
       totalChunks: number;
       similarity: number;
     };
-  }>
+  }[]
 > {
   const supabase = await createServerSupabaseClient();
 
@@ -101,26 +101,24 @@ async function querySupabaseVectors(
     throw error;
   }
 
-  return (
-    matches?.map((match) => ({
-      pageContent: match.text_content,
-      metadata: {
-        text: match.text_content,
-        title: match.title,
-        timestamp: match.doc_timestamp,
-        ai_title: match.ai_title,
-        ai_description: match.ai_description,
-        ai_maintopics: match.ai_maintopics,
-        ai_keyentities: match.ai_keyentities,
-        filterTags: match.filter_tags,
-        page: match.page_number,
-        totalPages: match.total_pages,
-        chunk: match.chunk_number,
-        totalChunks: match.total_chunks,
-        similarity: match.similarity
-      }
-    })) || []
-  );
+  return matches.map((match) => ({
+    pageContent: match.text_content,
+    metadata: {
+      text: match.text_content,
+      title: match.title,
+      timestamp: match.doc_timestamp,
+      ai_title: match.ai_title,
+      ai_description: match.ai_description,
+      ai_maintopics: match.ai_maintopics,
+      ai_keyentities: match.ai_keyentities,
+      filterTags: match.filter_tags,
+      page: match.page_number,
+      totalPages: match.total_pages,
+      chunk: match.chunk_number,
+      totalChunks: match.total_chunks,
+      similarity: match.similarity
+    }
+  }));
 }
 
 async function embedQuery(text: string): Promise<number[]> {
@@ -149,7 +147,7 @@ async function getSelectedDocumentsMetadata(
     return [];
   }
 
-  return data || [];
+  return data;
 }
 
 // Update the uploadFilesAndQuery function
@@ -359,7 +357,7 @@ Keep the variations focused on the content available in the provided documents.`
     const allSearchResults = searchResultsPromises.flat();
 
     // Deduplicate results based on content and page number
-    const uniqueResults = allSearchResults.reduce(
+    const uniqueResults = allSearchResults.reduce<typeof allSearchResults>(
       (acc, current) => {
         const isDuplicate = acc.some(
           (item) =>
@@ -371,7 +369,7 @@ Keep the variations focused on the content available in the provided documents.`
         }
         return acc;
       },
-      [] as typeof allSearchResults
+      []
     );
 
     const searchResults = uniqueResults.sort(
@@ -380,17 +378,14 @@ Keep the variations focused on the content available in the provided documents.`
 
     const formattedSearchResults = (() => {
       // Group results by document (using title and timestamp as identifier)
-      const groupedResults = searchResults.reduce(
-        (acc, result) => {
-          const key = `${result.metadata.title}[[${result.metadata.timestamp}]]`;
-          if (!acc[key]) {
-            acc[key] = [];
-          }
-          acc[key].push(result);
-          return acc;
-        },
-        {} as Record<string, typeof searchResults>
-      );
+      const groupedResults = searchResults.reduce<
+        Record<string, typeof searchResults>
+      >((acc, result) => {
+        const key = `${result.metadata.title}[[${result.metadata.timestamp}]]`;
+        acc[key] ??= []; // Using nullish coalescing assignment
+        acc[key].push(result);
+        return acc;
+      }, {});
 
       // Sort and format each group
       return Object.entries(groupedResults)
@@ -531,7 +526,7 @@ ${formattedSearchResults}
     dataStream.done();
     uiStream.done();
     status.done('done');
-  })().catch((e) => {
+  })().catch((e: unknown) => {
     console.error('Error in chat handler:', e);
     uiStream.error(
       <Box

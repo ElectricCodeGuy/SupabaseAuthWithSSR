@@ -142,7 +142,7 @@ export async function submitMessage(
           );
         }
         uiStream.update(<BotMessage textStream={textStream.value} />);
-        if (userInfo?.id) {
+        if (userInfo.id) {
           await saveChatToSupbabase(
             CurrentChatSessionId,
             userInfo.id,

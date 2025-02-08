@@ -1,6 +1,7 @@
 import React, { use } from 'react';
 import Image from 'next/image';
-import { Box, Typography, Button, Grid2, SvgIconProps } from '@mui/material';
+import type { SvgIconProps } from '@mui/material';
+import { Box, Typography, Button, Grid2 } from '@mui/material';
 import Link from 'next/link';
 import SecurityIcon from '@mui/icons-material/Security';
 import SpeedIcon from '@mui/icons-material/Speed';
@@ -83,7 +84,7 @@ const BannerComponent: React.FC<BannerProps> = ({ session }) => {
           sx={{ mb: 1, color: 'primary.main', wordWrap: 'break-word' }}
         >
           {isSessionAvailable
-            ? `Welcome back, ${userEmail || 'User'}!`
+            ? `Welcome back, ${userEmail ?? 'User'}!`
             : 'Empower Your Next.js App with Supabase Auth'}
         </Typography>
         <Typography variant="body1" sx={{ mb: 2 }}>

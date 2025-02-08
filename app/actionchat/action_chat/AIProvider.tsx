@@ -10,7 +10,7 @@ import { getSession } from '@/lib/server/supabase';
 import { submitMessage } from './GeneralAction';
 import { uploadFilesAndQuery } from './UploadAction';
 import { SearchTool } from './SearchAction';
-import {
+import type {
   ServerMessage,
   ClientMessage,
   ResetResult,
@@ -53,7 +53,7 @@ async function resetMessages(): Promise<ResetResult> {
   redirect('/actionchat');
 }
 
-type Actions = {
+interface Actions {
   submitMessage: (
     currentUserMessage: string,
     model_select: 'claude3' | 'chatgpt4',
@@ -71,7 +71,8 @@ type Actions = {
     chatId: string
   ) => Promise<SubmitMessageResult>;
   resetMessages: () => Promise<ResetResult>;
-};
+  [key: string]: (...args: any[]) => Promise<any>;
+}
 
 export const AI = createAI<ServerMessage[], ClientMessage[], Actions>({
   actions: {

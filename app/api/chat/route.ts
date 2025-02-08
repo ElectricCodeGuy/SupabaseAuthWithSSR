@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { streamText, CoreMessage } from 'ai';
+import type { CoreMessage } from 'ai';
+import { streamText } from 'ai';
 import { saveChatToSupbabase } from './SaveToDb';
 import { Ratelimit } from '@upstash/ratelimit';
 import { openai } from '@ai-sdk/openai';
@@ -90,7 +91,7 @@ export async function POST(req: NextRequest) {
         try {
           const lastMessage = messages[messages.length - 1];
           const lastMessageContent =
-            typeof lastMessage?.content === 'string' ? lastMessage.content : '';
+            typeof lastMessage.content === 'string' ? lastMessage.content : '';
           await saveChatToSupbabase(
             chatSessionId,
             session.id,

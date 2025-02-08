@@ -10,7 +10,7 @@ import React, {
 import { createClient } from '@/lib/client/client';
 import { encodeBase64 } from '../lib/base64';
 import useSWR, { useSWRConfig } from 'swr';
-import { AlertColor } from '@mui/material';
+import type { AlertColor } from '@mui/material';
 
 interface UploadContextType {
   isUploading: boolean;
@@ -112,7 +112,7 @@ export const UploadProvider: React.FC<{
         }
 
         return data.reduce(
-          (total, file) => total + (file.metadata?.size || 0),
+          (total, file) => total + (file.metadata.size || 0),
           0
         );
       }
@@ -131,7 +131,7 @@ export const UploadProvider: React.FC<{
           throw new Error(`Failed to upload file: ${file.name}`);
         }
 
-        if (!data || !data.path) {
+        if (!data.path) {
           console.error('Upload successful but path is missing');
           throw new Error(`Failed to get path for uploaded file: ${file.name}`);
         }

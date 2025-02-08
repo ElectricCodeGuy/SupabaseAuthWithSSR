@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { type ReactNode } from 'react';
 import { CssBaseline, ThemeProvider, GlobalStyles } from '@mui/material';
 import theme from './theme';
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';

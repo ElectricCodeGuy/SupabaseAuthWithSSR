@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
       dynamic: 30,
       static: 180
     }
-  }
+  },
+  poweredByHeader: false
 };
 export default nextConfig;

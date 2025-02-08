@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useMemo, useState, FC, KeyboardEvent } from 'react';
+import type { FC, KeyboardEvent } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useChat, type Message } from 'ai/react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
-import rehypeHighlight, { Options as HighlightOptions } from 'rehype-highlight';
+import type { Options as HighlightOptions } from 'rehype-highlight';
+import rehypeHighlight from 'rehype-highlight';
 import { v4 as uuidv4 } from 'uuid';
 import 'highlight.js/styles/github-dark.css';
 import {
@@ -43,7 +45,7 @@ import {
   CheckCircle as CheckCircleIcon,
   KeyboardArrowDown as KeyboardArrowDownIcon
 } from '@mui/icons-material';
-import { Tables } from '@/types/database';
+import type { Tables } from '@/types/database';
 import Link from 'next/link';
 import { useSWRConfig } from 'swr';
 import { ChatScrollAnchor } from '../hooks/chat-scroll-anchor';
@@ -176,7 +178,7 @@ const MessageComponent = ({ message }: { message: Message }) => {
             a: ({ href, children }) => (
               <MuiLink
                 component={Link}
-                href={href || '#'}
+                href={href ?? '#'}
                 target="_blank"
                 rel="noopener"
               >
@@ -185,8 +187,8 @@ const MessageComponent = ({ message }: { message: Message }) => {
             ),
 
             code({ className, children, ...props }) {
-              const match = /language-(\w+)/.exec(className || '');
-              const language = match && match[1] ? match[1] : '';
+              const match = /language-(\w+)/.exec(className ?? '');
+              const language = match?.[1] ? match[1] : '';
               const inline = !language;
               if (inline) {
                 return (
@@ -273,12 +275,12 @@ const ChatComponent: FC<ChatProps> = ({
   const { mutate } = useSWRConfig();
 
   const initialMessages = useMemo(() => {
-    if (currentChat && currentChat.chat_messages) {
+    if (currentChat) {
       return currentChat.chat_messages.map(
         (message): Message => ({
           role: message.is_user_message ? 'user' : 'assistant',
           id: message.id,
-          content: message.content || '' // Handle null content
+          content: message.content ?? '' // Handle null content
         })
       );
     }
@@ -301,7 +303,7 @@ const ChatComponent: FC<ChatProps> = ({
   } = useChat({
     api: apiEndpoint,
     body: {
-      chatId: chatId || createChatId,
+      chatId: chatId ?? createChatId,
       option: selectedOption
     },
     experimental_throttle: 100,
@@ -314,7 +316,7 @@ const ChatComponent: FC<ChatProps> = ({
         router.replace(newUrl, {
           scroll: false
         });
-        mutate((key) => Array.isArray(key) && key[0] === 'chatPreviews');
+        await mutate((key) => Array.isArray(key) && key[0] === 'chatPreviews');
       }
     },
     onError: (error) => {
@@ -327,13 +329,13 @@ const ChatComponent: FC<ChatProps> = ({
     }
   });
   const handleModelTypeChange = async (newValue: string | null) => {
-    const newModelType = newValue || 'standart';
+    const newModelType = newValue ?? 'standart';
     setModelType(newModelType);
     await setModelSettings(newModelType, selectedOption);
   };
 
   const handleOptionChange = async (newValue: string | null) => {
-    const newOption = newValue || 'gpt-3.5-turbo-1106';
+    const newOption = newValue ?? 'gpt-3.5-turbo-1106';
     setSelectedOption(newOption);
     await setModelSettings(modelType, newOption);
   };
@@ -498,7 +500,7 @@ const ChatComponent: FC<ChatProps> = ({
                     {messages.length > 0 && (
                       <IconButton
                         onClick={async () => {
-                          reload();
+                          await reload();
                         }}
                         disabled={isLoading}
                         color="primary"
@@ -622,8 +624,8 @@ const ChatComponent: FC<ChatProps> = ({
                   ].map((option) => (
                     <MenuItem
                       key={option}
-                      onClick={() => {
-                        handleOptionChange(option);
+                      onClick={async () => {
+                        await handleOptionChange(option);
                         handleClose();
                       }}
                       selected={selectedOption === option}

@@ -19,9 +19,7 @@ export async function resetPassword(formData: FormData) {
   const supabase = await createServerSupabaseClient();
 
   const result = formDataSchemaResetPassword.safeParse({
-    newPassword: formData.get('newPassword')
-      ? String(formData.get('newPassword'))
-      : ''
+    newPassword: formData.get('newPassword') ? formData.get('newPassword') : ''
   });
 
   if (!result.success) {

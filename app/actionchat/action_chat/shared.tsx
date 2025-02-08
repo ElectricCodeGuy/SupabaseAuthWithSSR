@@ -1,4 +1,4 @@
-import React from 'react';
+import type React from 'react';
 import { type StreamableValue } from 'ai/rsc';
 import { openai } from '@ai-sdk/openai';
 import { anthropic } from '@ai-sdk/anthropic';
@@ -12,24 +12,24 @@ export const getModel = (selectedModel: 'claude3' | 'chatgpt4') => {
   return anthropic('claude-3-5-sonnet-20241022');
 };
 
-export type ServerMessage = {
+export interface ServerMessage {
   role: 'user' | 'assistant';
   content: string;
   name?: string;
   sources?: Source[];
-};
-export type ResetResult = {
+}
+export interface ResetResult {
   success: boolean;
   message: string;
-};
-export type ClientMessage = {
+}
+export interface ClientMessage {
   id: string | number | null;
   role: 'user' | 'assistant';
   display: React.ReactNode;
   chatId?: string | null;
-};
+}
 
-export type SubmitMessageResult = {
+export interface SubmitMessageResult {
   success?: boolean;
   message?: string;
   limit?: number;
@@ -38,15 +38,15 @@ export type SubmitMessageResult = {
   id?: string;
   display?: React.ReactNode;
   chatId?: string;
-  status: StreamableValue<string, any>;
-};
+  status: StreamableValue<string>;
+}
 import 'server-only';
 import { createServerSupabaseClient } from '@/lib/server/server';
 
-export type Source = {
+export interface Source {
   title: string;
   url: string;
-};
+}
 
 export const saveChatToSupbabase = async (
   chatSessionId: string,

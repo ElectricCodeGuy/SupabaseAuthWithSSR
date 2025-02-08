@@ -4,10 +4,10 @@ import { Box } from '@mui/material';
 import { createServerSupabaseClient } from '@/lib/server/server';
 import { getUserInfo } from '@/lib/server/supabase';
 import ChatHistoryDrawer from './component/UserChatList';
-import { SupabaseClient } from '@supabase/supabase-js';
-import { Database } from '@/types/database';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/types/database';
 import { unstable_noStore as noStore } from 'next/cache';
-import { Tables } from '@/types/database';
+import type { Tables } from '@/types/database';
 import { UploadProvider } from './context/uploadContext';
 import { AI as AiProvider } from './action_chat/AIProvider';
 
@@ -15,8 +15,8 @@ export const maxDuration = 60;
 
 async function fetchData(
   supabase: SupabaseClient<Database>,
-  limit: number = 30,
-  offset: number = 0
+  limit = 30,
+  offset = 0
 ) {
   noStore();
   try {
@@ -39,8 +39,8 @@ async function fetchData(
     return data.map((session) => ({
       id: session.id,
       firstMessage:
-        session.chat_title ||
-        session.first_message[0]?.content ||
+        session.chat_title ??
+        session.first_message[0]?.content ??
         'No messages yet',
       created_at: session.created_at
     }));
@@ -51,11 +51,11 @@ async function fetchData(
 }
 
 type UserInfo = Pick<Tables<'users'>, 'full_name' | 'email' | 'id'>;
-type ChatPreview = {
+interface ChatPreview {
   id: string;
   firstMessage: string;
   created_at: string;
-};
+}
 
 export default async function Layout(props: { children: React.ReactNode }) {
   const supabase = await createServerSupabaseClient();

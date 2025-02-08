@@ -7,7 +7,7 @@ import FeatureCard from './components/landingpage/FeatureCard';
 import Testimonials from './components/landingpage/Testimonials';
 import { getSession } from '@/lib/server/supabase';
 
-export default async function LandingPage() {
+export default function LandingPage() {
   return (
     <>
       {/* We pass the promise here and resolve it with react.use in the child to prevent the async request from blocking the UI */}

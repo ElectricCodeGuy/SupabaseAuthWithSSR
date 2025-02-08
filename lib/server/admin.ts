@@ -1,6 +1,6 @@
 import 'server-only';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
-import { Database } from '@/types/database';
+import { type Database } from '@/types/database';
 
 /**
  * ⚠️ ADMIN CLIENT - DANGER ZONE ⚠️

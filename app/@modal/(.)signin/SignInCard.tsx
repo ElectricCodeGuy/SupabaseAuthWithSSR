@@ -26,7 +26,7 @@ export default function SignInCard() {
   const router = useRouter();
   const [email, setEmail] = useState(
     typeof window !== 'undefined'
-      ? localStorage.getItem('rememberedEmail') || ''
+      ? (localStorage.getItem('rememberedEmail') ?? '')
       : ''
   );
   const [password, setPassword] = useState('');

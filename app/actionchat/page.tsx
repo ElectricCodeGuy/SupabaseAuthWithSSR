@@ -9,7 +9,7 @@ import WebsiteWiever from './component/WebsiteWiever';
 export const maxDuration = 60;
 
 interface PageProps {
-  searchParams: Promise<{ [key: string]: string | '' }>;
+  searchParams: Promise<Record<string, string>>;
 }
 
 export default async function Page(props: PageProps) {

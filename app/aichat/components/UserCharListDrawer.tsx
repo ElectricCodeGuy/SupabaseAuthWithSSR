@@ -42,7 +42,7 @@ import {
   NoteAdd as NoteAddIcon
 } from '@mui/icons-material';
 import { isToday, isYesterday, subDays } from 'date-fns';
-import { Tables } from '@/types/database';
+import type { Tables } from '@/types/database';
 import useSWRInfinite from 'swr/infinite';
 import { TZDate } from '@date-fns/tz';
 import Link from 'next/link';
@@ -51,11 +51,11 @@ import ChatIcon from '@mui/icons-material/Chat';
 
 type UserInfo = Pick<Tables<'users'>, 'full_name' | 'email' | 'id'>;
 
-type ChatPreview = {
+interface ChatPreview {
   id: string;
   firstMessage: string;
   created_at: string;
-};
+}
 
 interface CombinedDrawerProps {
   userInfo: UserInfo;
@@ -152,9 +152,9 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
   const hasMore =
     chatPreviews && chatPreviews[chatPreviews.length - 1]?.length === 30;
 
-  const loadMoreChats = useCallback(() => {
+  const loadMoreChats = useCallback(async () => {
     if (!isLoadingMore) {
-      setSize(size + 1);
+      await setSize(size + 1);
     }
   }, [isLoadingMore, setSize, size]);
 
@@ -324,42 +324,42 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
                   <>
                     <RenderChatSection
                       title="Today"
-                      chats={categorizedChats.today || []}
+                      chats={categorizedChats.today}
                       currentChatId={currentChatId}
                       handleDeleteClick={handleDeleteClick}
                       onChatSelect={handleChatSelect}
                     />
                     <RenderChatSection
                       title="Yesterday"
-                      chats={categorizedChats.yesterday || []}
+                      chats={categorizedChats.yesterday}
                       currentChatId={currentChatId}
                       handleDeleteClick={handleDeleteClick}
                       onChatSelect={handleChatSelect}
                     />
                     <RenderChatSection
                       title="Last 7 days"
-                      chats={categorizedChats.last7Days || []}
+                      chats={categorizedChats.last7Days}
                       currentChatId={currentChatId}
                       handleDeleteClick={handleDeleteClick}
                       onChatSelect={handleChatSelect}
                     />
                     <RenderChatSection
                       title="Last 30 days"
-                      chats={categorizedChats.last30Days || []}
+                      chats={categorizedChats.last30Days}
                       currentChatId={currentChatId}
                       handleDeleteClick={handleDeleteClick}
                       onChatSelect={handleChatSelect}
                     />
                     <RenderChatSection
                       title="Last 2 month"
-                      chats={categorizedChats.last2Months || []}
+                      chats={categorizedChats.last2Months}
                       currentChatId={currentChatId}
                       handleDeleteClick={handleDeleteClick}
                       onChatSelect={handleChatSelect}
                     />
                     <RenderChatSection
                       title="Older"
-                      chats={categorizedChats.older || []}
+                      chats={categorizedChats.older}
                       currentChatId={currentChatId}
                       handleDeleteClick={handleDeleteClick}
                       onChatSelect={handleChatSelect}
@@ -420,13 +420,13 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
   );
 };
 
-type RenderChatSectionProps = {
+interface RenderChatSectionProps {
   title: string;
   chats: ChatPreview[];
   currentChatId: string | null | undefined;
   handleDeleteClick: (id: string) => void;
   onChatSelect: (id: string) => void; // Add this prop
-};
+}
 const RenderChatSection: FC<RenderChatSectionProps> = memo(
   ({ title, chats, currentChatId, handleDeleteClick, onChatSelect }) => {
     const searchParams = useSearchParams();
@@ -590,7 +590,7 @@ const RenderChatSection: FC<RenderChatSectionProps> = memo(
         <Dialog open={editDialogOpen} onClose={handleCloseDialog}>
           <Box
             component="form"
-            onSubmit={async (e: React.FormEvent<HTMLFormElement>) => {
+            onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
               e.preventDefault();
               const formData = new FormData(e.currentTarget);
               const chatId = formData.get('chatId') as string;
@@ -636,7 +636,7 @@ const RenderChatSection: FC<RenderChatSectionProps> = memo(
             }}
             sx={{ p: 1, minWidth: '400px' }}
           >
-            <input type="hidden" name="chatId" value={editingChatId || ''} />
+            <input type="hidden" name="chatId" value={editingChatId ?? ''} />
             <TextField
               autoFocus
               margin="dense"

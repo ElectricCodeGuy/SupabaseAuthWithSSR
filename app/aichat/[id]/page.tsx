@@ -2,18 +2,18 @@ import 'server-only';
 import ChatComponent from '../components/Chat';
 import { createServerSupabaseClient } from '@/lib/server/server';
 import { format } from 'date-fns';
-import { SupabaseClient } from '@supabase/supabase-js';
-import { Database } from '@/types/database';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/types/database';
 import { redirect } from 'next/navigation';
 import { unstable_noStore as noStore } from 'next/cache';
 import { cookies } from 'next/headers';
 
-type ChatMessage = {
+interface ChatMessage {
   id: string;
   is_user_message: boolean;
   content: string | null;
   created_at: string;
-};
+}
 
 async function fetchChat(supabase: SupabaseClient<Database>, chatId: string) {
   noStore();
@@ -62,9 +62,9 @@ export default async function ChatPage(props: {
     redirect('/aichat');
   }
   const cookieStore = await cookies();
-  const modelType = cookieStore.get('modelType')?.value || 'standart';
+  const modelType = cookieStore.get('modelType')?.value ?? 'standart';
   const selectedOption =
-    cookieStore.get('selectedOption')?.value || 'gpt-3.5-turbo-1106';
+    cookieStore.get('selectedOption')?.value ?? 'gpt-3.5-turbo-1106';
 
   const formattedChatData = {
     id: chatData.id,

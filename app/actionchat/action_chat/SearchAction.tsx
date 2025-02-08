@@ -37,29 +37,29 @@ import {
   saveChatToSupbabase
 } from './shared';
 
-type TavilySearchResult = {
+interface TavilySearchResult {
   title: string;
   url: string;
   content: string;
   raw_content: string;
   score: number;
-};
+}
 
-type TavilyAPIResponse = {
+interface TavilyAPIResponse {
   answer: string;
   query: string;
   response_time: string;
   follow_up_questions: string[];
   images: string[];
   results: TavilySearchResult[];
-};
+}
 
 // Type for our processed search result
-type ProcessedSearchResult = {
+interface ProcessedSearchResult {
   title: string;
   url: string;
   content: string;
-};
+}
 
 const zodSchemaSearch = z.object({
   variation1: z
@@ -429,7 +429,7 @@ export async function SearchTool(
                     .html();
 
               // Convert to markdown with proper sanitization
-              const content = nhm.translate(contentRAW || '');
+              const content = nhm.translate(contentRAW ?? '');
 
               return {
                 title: result.title,
@@ -453,12 +453,12 @@ export async function SearchTool(
     const searchResultsArray = await Promise.all(searchPromises);
     const uniqueSearchResults = searchResultsArray
       .flat()
-      .reduce((acc, result) => {
+      .reduce<ProcessedSearchResult[]>((acc, result) => {
         if (!acc.some((r: ProcessedSearchResult) => r.url === result.url)) {
           acc.push(result);
         }
         return acc;
-      }, [] as ProcessedSearchResult[]);
+      }, []);
 
     searchResults = uniqueSearchResults;
 

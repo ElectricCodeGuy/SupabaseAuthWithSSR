@@ -75,7 +75,7 @@ export async function signup(formData: FormData) {
     email: email,
     password: password,
     options: {
-      data: { full_name: fullName || 'default_user' }
+      data: { full_name: fullName ?? 'default_user' }
     }
   });
 
