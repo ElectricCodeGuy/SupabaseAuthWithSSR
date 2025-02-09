@@ -356,9 +356,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const markdown = await markdownResponse.text();
+    const output = await markdownResponse.json();
+    const markdown: string = output.markdown;
+
     const pages = markdown
-      .split('\\n---\\n')
+      .split(/\n---\n|\r\n---\r\n|---/)
       .map((page) => page.trim())
       .filter((page) => page !== '');
 

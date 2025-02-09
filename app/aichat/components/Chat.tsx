@@ -312,7 +312,9 @@ const ChatComponent: FC<ChatProps> = ({
       if (!chatId) {
         // Only redirect if it's a new chat
         const existingParams = searchParams.toString();
-        const newUrl = `${pathname}/${createChatId}${existingParams ? `?${existingParams}` : ''}`;
+        const newUrl = `${pathname}/${createChatId}${
+          existingParams ? `?${existingParams}` : ''
+        }`;
         router.replace(newUrl, {
           scroll: false
         });
