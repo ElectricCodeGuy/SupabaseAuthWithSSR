@@ -8,8 +8,12 @@ import { getSession } from '@/lib/server/supabase';
 import NavBar from '@/app/components/ui/Navbar/TopBar';
 import SnackbarMessages from './components/ui/SnackbarMessage';
 
-const inter = Inter({ subsets: ['latin'] });
-
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  adjustFontFallback: false,
+  variable: '--font-Inter'
+});
 export const metadata: Metadata = {
   metadataBase: new URL('http://localhost:3000/'),
   title: 'Supabase SSR Auth Example',

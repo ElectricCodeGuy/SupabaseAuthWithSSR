@@ -2,7 +2,7 @@
 
 import type { FC, KeyboardEvent } from 'react';
 import React, { useMemo, useState } from 'react';
-import { useChat, type Message } from 'ai/react';
+import { useChat, type Message } from '@ai-sdk/react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';

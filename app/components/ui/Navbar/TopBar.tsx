@@ -18,7 +18,7 @@ import {
   Popover
 } from '@mui/material';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Menu as MenuIcon } from '@mui/icons-material';
 import CloseIcon from '@mui/icons-material/Close';
 import Link from 'next/link';
@@ -58,7 +58,7 @@ const Header: React.FC<HeaderProps> = ({ session }) => {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const pathname = usePathname();
-
+  const router = useRouter();
   const isActive = useCallback(
     (href: string) => {
       return pathname.startsWith(href);
@@ -240,6 +240,7 @@ const Header: React.FC<HeaderProps> = ({ session }) => {
           component={Link}
           href="/protected"
           prefetch={false}
+          onMouseEnter={() => router.prefetch('/protected')}
           sx={linkStyleDesktop}
           className={isActive('/protected') ? 'active' : ''}
         >
@@ -250,6 +251,7 @@ const Header: React.FC<HeaderProps> = ({ session }) => {
           component={Link}
           href="/aichat"
           prefetch={false}
+          onMouseEnter={() => router.prefetch('/aichat')}
           sx={linkStyleDesktop}
           className={isActive('/aichat') ? 'active' : ''}
         >
@@ -260,6 +262,7 @@ const Header: React.FC<HeaderProps> = ({ session }) => {
           component={Link}
           href="/actionchat"
           prefetch={false}
+          onMouseEnter={() => router.prefetch('/actionchat')}
           sx={linkStyleDesktop}
           className={isActive('/actionchat') ? 'active' : ''}
         >
@@ -290,7 +293,12 @@ const Header: React.FC<HeaderProps> = ({ session }) => {
                   disableScrollLock
                 >
                   <Box sx={{ py: 1 }}>
-                    <MenuItem component={Link} href="/profile">
+                    <MenuItem
+                      component={Link}
+                      href="/protected"
+                      prefetch={false}
+                      onMouseEnter={() => router.prefetch('/protected')}
+                    >
                       Profile
                     </MenuItem>
                     <MenuItem>

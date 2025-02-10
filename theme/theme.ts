@@ -43,6 +43,9 @@ const theme = createTheme({
       secondary: hslToHex(215.4, 16.3, 46.9) // --muted-foreground
     }
   },
+  typography: {
+    fontFamily: 'var(--font-Inter)'
+  },
   components: {
     MuiButton: {
       styleOverrides: {

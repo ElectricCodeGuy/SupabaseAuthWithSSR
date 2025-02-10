@@ -44,7 +44,7 @@ const BannerComponent: React.FC<BannerProps> = ({ session }) => {
       spacing={2}
       sx={{
         alignItems: 'center',
-        padding: '4rem',
+        p: 2,
         backgroundColor: '#f5f5f5' // Background color for contrast
       }}
     >
@@ -54,23 +54,25 @@ const BannerComponent: React.FC<BannerProps> = ({ session }) => {
           xs: 12,
           md: 8
         }}
+        sx={{
+          height: '600px',
+          display: {
+            xs: 'none', // Hide on small screens
+            md: 'block'
+          },
+          overflow: 'hidden'
+        }}
       >
-        <Box
-          sx={{
-            width: '60%',
-            height: '600px', // Fixed height, you can adjust as needed
-            position: 'relative',
-            borderRadius: '12px',
-            overflow: 'hidden'
+        <Image
+          src={FrontPageImage}
+          priority
+          alt="Background"
+          style={{
+            objectFit: 'cover',
+            objectPosition: 'center',
+            borderRadius: '12px'
           }}
-        >
-          <Image
-            src={FrontPageImage}
-            fill
-            alt="Background"
-            style={{ objectFit: 'cover', objectPosition: 'center' }}
-          />
-        </Box>
+        />
       </Grid2>
 
       <Grid2
