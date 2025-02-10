@@ -1,164 +1,100 @@
 'use client';
-import React from 'react';
-import {
-  Button,
-  Box,
-  Typography,
-  TextareaAutosize,
-  Collapse,
-  Select,
-  MenuItem,
-  Paper
-} from '@mui/material';
-import { Error as ErrorIcon } from '@mui/icons-material';
-import type { SelectChangeEvent } from '@mui/material/Select';
+import type { ReactNode, ErrorInfo } from 'react';
+import React, { Component } from 'react';
 
 interface ErrorBoundaryProps {
-  children: React.ReactNode;
-  onCatch?: (error: Error, info: React.ErrorInfo) => void;
-  logger?: (error: Error, errorInfo: string) => void;
+  children: ReactNode;
+  onCatch?: (_error: Error, _info: ErrorInfo) => void;
+  logger?: (_error: Error, _errorInfo: string) => void;
 }
 
 interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
-  errorInfo: React.ErrorInfo | null;
-  feedback: string;
-  feedbackCategory: string;
-  showDetails: boolean;
+  errorInfo: ErrorInfo | null;
 }
 
-class GeneralErrorBoundary extends React.Component<
+class GeneralErrorBoundary extends Component<
   ErrorBoundaryProps,
   ErrorBoundaryState
 > {
   public state: ErrorBoundaryState = {
     hasError: false,
     error: null,
-    errorInfo: null,
-    feedback: '',
-    feedbackCategory: 'ui',
-    showDetails: false
+    errorInfo: null
   };
 
-  public componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
-    this.setState({ hasError: true, error, errorInfo });
-    this.props.onCatch?.(error, errorInfo);
-    if (this.props.logger && errorInfo.componentStack) {
-      this.props.logger(error, errorInfo.componentStack);
-    }
-  }
-
-  public handleFeedbackChange = (
-    e: React.ChangeEvent<HTMLTextAreaElement>
-  ): void => {
-    this.setState({ feedback: e.target.value });
+  public navigateToRoot = (): void => {
+    window.location.href = '/';
   };
 
-  public handleFeedbackCategoryChange = (
-    event: SelectChangeEvent // Corrected type
-  ): void => {
-    this.setState({ feedbackCategory: event.target.value });
-  };
-
-  public toggleDetails = (): void => {
-    this.setState((prevState) => ({ showDetails: !prevState.showDetails }));
-  };
-
-  public retry = (): void => {
-    window.location.reload();
-  };
-
-  public handleSubmitFeedback = (e: React.FormEvent): void => {
-    e.preventDefault();
-    const { error, errorInfo, feedback, feedbackCategory } = this.state;
-
-    console.log('Error Feedback:', {
-      feedback,
-      category: feedbackCategory,
-      errorMessage: error?.message,
-      errorStack: errorInfo?.componentStack
-    });
-  };
-
-  public render(): React.ReactNode {
+  public render(): ReactNode {
     const { children } = this.props;
-    const {
-      hasError,
-      showDetails,
-      feedback,
-      feedbackCategory,
-      error,
-      errorInfo
-    } = this.state;
+    const { hasError, error, errorInfo } = this.state;
 
     if (!hasError) {
       return children;
     }
 
     return (
-      <Paper
-        elevation={3}
-        sx={{
+      <div
+        style={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          minHeight: 'calc(100vh - 44px)', // 44px is the height of the app bar so we subtract it from the viewport height
+          minHeight: 'calc(100vh - 44px)',
           margin: 'auto',
-          padding: '20px'
+          padding: '20px',
+          backgroundColor: 'white',
+          borderRadius: '8px',
+          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
         }}
       >
-        <ErrorIcon fontSize="large" color="error" />
-        <Typography variant="h4" gutterBottom>
-          Oops! Something went wrong.
-        </Typography>
-        <Button variant="outlined" onClick={this.toggleDetails}>
-          {showDetails ? 'Hide Details' : 'Show Details'}
-        </Button>
-        <Collapse in={showDetails}>
-          <Typography variant="body2" gutterBottom>
-            Error: {error?.message}
-          </Typography>
-          <Typography variant="body2">
-            {errorInfo && <pre>{errorInfo.componentStack}</pre>}
-          </Typography>
-        </Collapse>
-        <form onSubmit={this.handleSubmitFeedback}>
-          <Box sx={{ my: 2 }}>
-            <Select
-              value={feedbackCategory}
-              onChange={this.handleFeedbackCategoryChange}
-              fullWidth
-            >
-              <MenuItem value="ui">UI Issue</MenuItem>
-              <MenuItem value="functionality">Functionality Error</MenuItem>
-              <MenuItem value="performance">Performance Issue</MenuItem>
-            </Select>
-          </Box>
-          <Box sx={{ my: 2 }}>
-            <TextareaAutosize
-              value={feedback}
-              onChange={this.handleFeedbackChange}
-              placeholder="Describe the issue..."
-              minRows={3}
-            />
-          </Box>
-          <Button type="submit" variant="contained" color="primary" fullWidth>
-            Submit Feedback
-          </Button>
-        </form>
-        <Box sx={{ mt: 2 }}>
-          <Button
-            variant="contained"
-            color="secondary"
-            onClick={this.retry}
-            fullWidth
+        <div style={{ color: 'red', fontSize: '48px', marginBottom: '20px' }}>
+          ⚠️
+        </div>
+        <h1 style={{ margin: '0 0 20px 0', fontSize: '24px' }}>
+          Ups! Something went wrong
+        </h1>
+        <p style={{ margin: '0 0 10px 0', fontSize: '14px' }}>
+          Error: {error?.message}
+        </p>
+        {errorInfo && (
+          <pre
+            style={{
+              margin: '0 0 20px 0',
+              fontSize: '12px',
+              maxWidth: '100%',
+              overflow: 'auto'
+            }}
           >
-            Retry
-          </Button>
-        </Box>
-      </Paper>
+            {errorInfo.componentStack}
+          </pre>
+        )}
+        <button
+          onClick={this.navigateToRoot}
+          style={{
+            padding: '10px 20px',
+            fontSize: '16px',
+            backgroundColor: '#007bff',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            width: '100%',
+            maxWidth: '200px'
+          }}
+          onMouseOver={(e) =>
+            (e.currentTarget.style.backgroundColor = '#0056b3')
+          }
+          onMouseOut={(e) =>
+            (e.currentTarget.style.backgroundColor = '#007bff')
+          }
+        >
+          Back to Home
+        </button>
+      </div>
     );
   }
 }

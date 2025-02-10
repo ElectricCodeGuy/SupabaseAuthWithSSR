@@ -30,16 +30,16 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <ThemeRegistry>
-        <RootErrorBoundary>
-          <body
-            className={inter.className}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              minHeight: '100vh'
-            }}
-          >
+      <RootErrorBoundary>
+        <body
+          className={inter.className}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: '100vh'
+          }}
+        >
+          <ThemeRegistry>
             {/* We pass the promise here and resolve it with react.use in the child to prevent the async request from blocking the UI */}
             <NavBar session={getSession()} />
             <main>{children}</main>
@@ -48,9 +48,9 @@ export default function RootLayout({
             <Suspense fallback={null}>
               <SnackbarMessages />
             </Suspense>
-          </body>
-        </RootErrorBoundary>
-      </ThemeRegistry>
+          </ThemeRegistry>
+        </body>
+      </RootErrorBoundary>
     </html>
   );
 }
