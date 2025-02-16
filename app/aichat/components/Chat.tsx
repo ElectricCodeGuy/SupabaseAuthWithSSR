@@ -1,7 +1,7 @@
 'use client';
 
 import type { FC, KeyboardEvent } from 'react';
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { useChat, type Message } from '@ai-sdk/react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
@@ -56,16 +56,11 @@ const highlightOptionsAI: HighlightOptions = {
   prefix: 'hljs-'
 };
 
-type MessageFromDB = Pick<
-  Tables<'chat_messages'>,
-  'id' | 'content' | 'is_user_message' | 'created_at'
->;
-
 type ChatSessionWithMessages = Pick<
   Tables<'chat_sessions'>,
   'id' | 'user_id' | 'created_at' | 'updated_at'
 > & {
-  chat_messages: MessageFromDB[];
+  chat_messages: Message[];
 };
 
 interface ChatProps {
@@ -111,8 +106,8 @@ interface ChatMessageProps {
 const MessageComponent = ({ message }: { message: Message }) => {
   const [isCopied, setIsCopied] = useState(false);
 
-  const copyToClipboard = (str: string): void => {
-    void window.navigator.clipboard.writeText(str);
+  const copyToClipboard = (str: string) => {
+    window.navigator.clipboard.writeText(str);
   };
 
   const handleCopy = (content: string) => {
@@ -120,6 +115,11 @@ const MessageComponent = ({ message }: { message: Message }) => {
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 1000);
   };
+
+  // Extract sources from message parts
+  const sources = message.parts
+    ?.filter((part) => part.type === 'source')
+    .map((part) => part.source);
 
   return (
     <ListItem
@@ -165,79 +165,110 @@ const MessageComponent = ({ message }: { message: Message }) => {
         </Box>
       )}
 
-      {message.role === 'user' ? (
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm, remarkMath]}
-          rehypePlugins={[rehypeHighlight]}
-        >
-          {message.content}
-        </ReactMarkdown>
-      ) : (
-        <ReactMarkdown
-          components={{
-            a: ({ href, children }) => (
-              <MuiLink
-                component={Link}
-                href={href ?? '#'}
-                target="_blank"
-                rel="noopener"
-              >
-                {children}
-              </MuiLink>
-            ),
-
-            code({ className, children, ...props }) {
-              const match = /language-(\w+)/.exec(className ?? '');
-              const language = match?.[1] ? match[1] : '';
-              const inline = !language;
-              if (inline) {
-                return (
-                  <code className={className} {...props}>
-                    {children}
-                  </code>
-                );
-              }
-
-              return (
-                <div
-                  style={{
-                    position: 'relative',
-                    borderRadius: '5px',
-                    paddingTop: '20px',
-                    width: '100%'
-                  }}
-                >
-                  <span
-                    style={{
-                      position: 'absolute',
-                      top: '0',
-                      left: '5px',
-                      fontSize: '0.8em',
-                      textTransform: 'uppercase'
-                    }}
+      <Box sx={{ width: '100%' }}>
+        {message.role === 'user' ? (
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm, remarkMath]}
+            rehypePlugins={[rehypeHighlight]}
+          >
+            {message.content}
+          </ReactMarkdown>
+        ) : (
+          <>
+            <ReactMarkdown
+              components={{
+                a: ({ href, children }) => (
+                  <MuiLink
+                    component={Link}
+                    href={href ?? '#'}
+                    target="_blank"
+                    rel="noopener"
                   >
-                    {language}
-                  </span>
+                    {children}
+                  </MuiLink>
+                ),
+                code({ className, children, ...props }) {
+                  const match = /language-(\w+)/.exec(className ?? '');
+                  const language = match?.[1] ? match[1] : '';
+                  const inline = !language;
+                  if (inline) {
+                    return (
+                      <code className={className} {...props}>
+                        {children}
+                      </code>
+                    );
+                  }
 
-                  <pre style={{ margin: '0', overflowX: 'auto' }}>
-                    <code className={className} {...props}>
-                      {children}
-                    </code>
-                  </pre>
-                </div>
-              );
-            }
-          }}
-          remarkPlugins={[remarkGfm, remarkMath]}
-          rehypePlugins={[[rehypeHighlight, highlightOptionsAI]]}
-        >
-          {message.content}
-        </ReactMarkdown>
-      )}
+                  return (
+                    <div
+                      style={{
+                        position: 'relative',
+                        borderRadius: '5px',
+                        paddingTop: '20px',
+                        width: '100%'
+                      }}
+                    >
+                      <span
+                        style={{
+                          position: 'absolute',
+                          top: '0',
+                          left: '5px',
+                          fontSize: '0.8em',
+                          textTransform: 'uppercase'
+                        }}
+                      >
+                        {language}
+                      </span>
+
+                      <pre style={{ margin: '0', overflowX: 'auto' }}>
+                        <code className={className} {...props}>
+                          {children}
+                        </code>
+                      </pre>
+                    </div>
+                  );
+                }
+              }}
+              remarkPlugins={[remarkGfm, remarkMath]}
+              rehypePlugins={[[rehypeHighlight, highlightOptionsAI]]}
+            >
+              {message.content}
+            </ReactMarkdown>
+
+            {/* Display sources if available */}
+            {sources && sources.length > 0 && (
+              <Box sx={{ mt: 2, borderTop: '1px solid #ddd', pt: 1 }}>
+                <Typography
+                  variant="subtitle2"
+                  sx={{ fontWeight: 'bold', color: '#666' }}
+                >
+                  Sources:
+                </Typography>
+                <List dense>
+                  {sources.map((source, index) => (
+                    <ListItem key={index} sx={{ py: 0.5 }}>
+                      {source.url && (
+                        <MuiLink
+                          component={Link}
+                          href={`?url=${encodeURIComponent(source.url)}`}
+                          scroll={false}
+                          prefetch={false}
+                          variant="body2"
+                        >
+                          {source.url}
+                        </MuiLink>
+                      )}
+                    </ListItem>
+                  ))}
+                </List>
+              </Box>
+            )}
+          </>
+        )}
+      </Box>
     </ListItem>
   );
 };
-
 const ChatMessage: FC<ChatMessageProps> = ({ messages }) => {
   return (
     <>
@@ -274,19 +305,6 @@ const ChatComponent: FC<ChatProps> = ({
 
   const { mutate } = useSWRConfig();
 
-  const initialMessages = useMemo(() => {
-    if (currentChat) {
-      return currentChat.chat_messages.map(
-        (message): Message => ({
-          role: message.is_user_message ? 'user' : 'assistant',
-          id: message.id,
-          content: message.content ?? '' // Handle null content
-        })
-      );
-    }
-    return [];
-  }, [currentChat]);
-
   const [modelType, setModelType] = useState(initialModelType);
   const [selectedOption, setSelectedOption] = useState(initialSelectedOption);
 
@@ -297,7 +315,7 @@ const ChatComponent: FC<ChatProps> = ({
     input,
     handleInputChange,
     handleSubmit,
-    isLoading,
+    status,
     reload,
     stop
   } = useChat({
@@ -307,7 +325,7 @@ const ChatComponent: FC<ChatProps> = ({
       option: selectedOption
     },
     experimental_throttle: 100,
-    initialMessages: initialMessages,
+    initialMessages: currentChat?.chat_messages,
     onFinish: async () => {
       if (!chatId) {
         // Only redirect if it's a new chat
@@ -476,7 +494,7 @@ const ChatComponent: FC<ChatProps> = ({
             variant="outlined"
             multiline
             maxRows={4}
-            disabled={isLoading}
+            disabled={status !== 'ready'}
             fullWidth
             autoFocus
             sx={{
@@ -504,13 +522,13 @@ const ChatComponent: FC<ChatProps> = ({
                         onClick={async () => {
                           await reload();
                         }}
-                        disabled={isLoading}
+                        disabled={status !== 'ready'}
                         color="primary"
                       >
                         <RetryIcon />
                       </IconButton>
                     )}
-                    {isLoading ? (
+                    {status !== 'ready' ? (
                       <IconButton
                         onClick={stop}
                         color="primary"
@@ -523,15 +541,43 @@ const ChatComponent: FC<ChatProps> = ({
                           }
                         }}
                       >
-                        <CircularProgress
-                          size={24}
-                          sx={{
-                            display: 'inline-flex',
-                            '&:hover': {
-                              display: 'none'
-                            }
-                          }}
-                        />
+                        {status === 'submitted' && (
+                          <CircularProgress
+                            size={24}
+                            sx={{
+                              display: 'inline-flex'
+                            }}
+                          />
+                        )}
+                        {status === 'streaming' && (
+                          <Box
+                            sx={{
+                              position: 'relative',
+                              display: 'inline-flex'
+                            }}
+                          >
+                            <CircularProgress
+                              size={24}
+                              variant="determinate"
+                              value={75}
+                              sx={{
+                                display: 'inline-flex',
+                                animation: 'rotate 2s linear infinite'
+                              }}
+                            />
+                            <CircularProgress
+                              size={24}
+                              variant="determinate"
+                              value={25}
+                              sx={{
+                                display: 'inline-flex',
+                                position: 'absolute',
+                                left: 0,
+                                color: 'primary.light'
+                              }}
+                            />
+                          </Box>
+                        )}
                         <StopIcon
                           className="stop-icon"
                           sx={{
@@ -547,7 +593,7 @@ const ChatComponent: FC<ChatProps> = ({
                         aria-label="send message"
                         color="primary"
                         type="submit"
-                        disabled={isLoading}
+                        disabled={status !== 'ready'}
                       >
                         <SendIcon />
                       </IconButton>

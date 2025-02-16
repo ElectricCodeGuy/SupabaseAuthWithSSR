@@ -13,7 +13,7 @@ export const saveChatToSupbabase = async (
   userId: string,
   currentMessageContent: string,
   completion: string,
-  sources?: string[]
+  sources?: { sourceType: string; id: string; url: string }[]
 ): Promise<void> => {
   if (!chatSessionId) {
     console.warn('Chat session ID is empty. Skipping saving chat to Supabase.');
@@ -49,7 +49,7 @@ export const saveChatToSupbabase = async (
         chat_session_id: chatSessionId,
         is_user_message: false,
         content: completion,
-        sources: sources && sources.length > 0 ? sources : null,
+        sources: sources && sources.length > 0 ? JSON.stringify(sources) : null,
         created_at: aiMessageTime.toISOString() // AI message timestamp (1 second later)
       }
     ];

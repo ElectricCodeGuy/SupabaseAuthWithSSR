@@ -1,4 +1,6 @@
+// page.tsx
 import 'server-only';
+import { Box } from '@mui/material';
 import ChatComponent from '../components/Chat';
 import { createServerSupabaseClient } from '@/lib/server/server';
 import { format } from 'date-fns';
@@ -7,12 +9,67 @@ import type { Database } from '@/types/database';
 import { redirect } from 'next/navigation';
 import { unstable_noStore as noStore } from 'next/cache';
 import { cookies } from 'next/headers';
+import { type Message } from '@ai-sdk/react';
+import WebsiteWiever from '../components/WebsiteWiever';
 
-interface ChatMessage {
+interface ChatSource {
+  sourceType: string;
+  id: string;
+  url: string;
+}
+
+interface SupabaseChatMessage {
   id: string;
   is_user_message: boolean;
   content: string | null;
   created_at: string;
+  sources: unknown;
+}
+
+function parseSources(sources: unknown): ChatSource[] {
+  if (!sources) return [];
+  try {
+    if (typeof sources === 'string') {
+      return JSON.parse(sources) as ChatSource[];
+    }
+    if (Array.isArray(sources)) {
+      return sources as ChatSource[];
+    }
+    return [];
+  } catch (error) {
+    console.error('Error parsing sources:', error);
+    return [];
+  }
+}
+
+function formatMessages(messages: SupabaseChatMessage[]): Message[] {
+  return messages.map((message) => ({
+    role: message.is_user_message ? 'user' : 'assistant',
+    id: message.id,
+    content: message.content ?? '',
+    parts:
+      parseSources(message.sources).length > 0
+        ? [
+            {
+              type: 'text',
+              text: message.content ?? ''
+            },
+            ...parseSources(message.sources).map((source) => ({
+              type: 'source' as const,
+              source: {
+                sourceType: source.sourceType,
+                id: source.id,
+                url: source.url
+              }
+            }))
+          ]
+        : [
+            {
+              type: 'text',
+              text: message.content ?? ''
+            }
+          ]
+  }));
 }
 
 async function fetchChat(supabase: SupabaseClient<Database>, chatId: string) {
@@ -30,7 +87,8 @@ async function fetchChat(supabase: SupabaseClient<Database>, chatId: string) {
           id,
           is_user_message,
           content,
-          created_at
+          created_at,
+          sources
         )
       `
       )
@@ -51,8 +109,10 @@ async function fetchChat(supabase: SupabaseClient<Database>, chatId: string) {
 
 export default async function ChatPage(props: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ url?: string }>;
 }) {
   const params = await props.params;
+  const searchParams = await props.searchParams;
   const { id } = params;
 
   const supabase = await createServerSupabaseClient();
@@ -61,31 +121,47 @@ export default async function ChatPage(props: {
   if (!chatData) {
     redirect('/aichat');
   }
+
   const cookieStore = await cookies();
   const modelType = cookieStore.get('modelType')?.value ?? 'standart';
   const selectedOption =
     cookieStore.get('selectedOption')?.value ?? 'gpt-3.5-turbo-1106';
 
+  const formattedMessages = formatMessages(chatData.chat_messages);
+
   const formattedChatData = {
     id: chatData.id,
     user_id: chatData.user_id,
-    prompt: chatData.chat_messages
-      .filter((m: ChatMessage) => m.is_user_message)
-      .map((m: ChatMessage) => m.content),
-    completion: chatData.chat_messages
-      .filter((m: ChatMessage) => !m.is_user_message)
-      .map((m: ChatMessage) => m.content),
+    prompt: formattedMessages
+      .filter((m) => m.role === 'user')
+      .map((m) => m.content),
+    completion: formattedMessages
+      .filter((m) => m.role === 'assistant')
+      .map((m) => m.content),
     created_at: format(new Date(chatData.created_at), 'dd-MM-yyyy HH:mm'),
     updated_at: format(new Date(chatData.updated_at), 'dd-MM-yyyy HH:mm'),
-    chat_messages: chatData.chat_messages
+    chat_messages: formattedMessages
   };
 
   return (
-    <ChatComponent
-      currentChat={formattedChatData}
-      chatId={id}
-      initialModelType={modelType}
-      initialSelectedOption={selectedOption}
-    />
+    <Box
+      sx={{
+        display: 'flex',
+        width: '100%',
+        overflow: 'hidden'
+      }}
+    >
+      <Box sx={{ flex: 1 }}>
+        <ChatComponent
+          currentChat={formattedChatData}
+          chatId={id}
+          initialModelType={modelType}
+          initialSelectedOption={selectedOption}
+        />
+      </Box>
+      {searchParams.url ? (
+        <WebsiteWiever url={decodeURIComponent(searchParams.url)} />
+      ) : null}
+    </Box>
   );
 }

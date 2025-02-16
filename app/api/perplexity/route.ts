@@ -62,7 +62,6 @@ export async function POST(req: NextRequest) {
       role: 'system',
       content: `
     - You are a helpful assistant that always provides clear and accurate answers! For helpful information use Markdown. Use remark-math formatting for Math Equations
-    - References: Reference official documentation and trusted sources where applicable. Link to sources using Markdown Links.
     `
     },
     ...messages.map((message) => ({
@@ -87,23 +86,20 @@ export async function POST(req: NextRequest) {
       },
       onFinish: async (event) => {
         // Access the experimental provider metadata
-        const metadata = event.experimental_providerMetadata?.perplexity;
-        if (metadata) {
-          console.log('Citations:', metadata.citations);
-          console.log('Usage:', metadata.usage);
-        }
-
+        const sources = event.sources;
+        console.log('Sources:', sources);
         await saveChatToSupbabase(
           chatSessionId,
           session.id,
           messages[messages.length - 1].content,
-          event.text
+          event.text,
+          event.sources
         );
       }
     });
 
     // Return the streaming response
-    return result.toDataStreamResponse();
+    return result.toDataStreamResponse({ sendSources: true });
   } catch (error) {
     console.error('Error processing Perplexity response:', error);
     return new NextResponse('Internal Server Error', { status: 500 });

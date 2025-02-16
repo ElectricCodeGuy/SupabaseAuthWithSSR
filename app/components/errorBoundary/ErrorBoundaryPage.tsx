@@ -24,7 +24,7 @@ class GeneralErrorBoundary extends Component<
     errorInfo: null
   };
 
-  public navigateToRoot = (): void => {
+  public navigateToRoot = () => {
     window.location.href = '/';
   };
 

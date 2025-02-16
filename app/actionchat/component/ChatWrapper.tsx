@@ -102,12 +102,12 @@ export function BotMessage({
   const content = text
     ? text
     : typeof children === 'string'
-      ? children
-      : children;
+    ? children
+    : children;
   const [isCopied, setIsCopied] = useState(false);
 
-  const copyToClipboard = (str: string): void => {
-    void window.navigator.clipboard.writeText(str);
+  const copyToClipboard = (str: string) => {
+    window.navigator.clipboard.writeText(str);
   };
 
   const handleCopy = (content: string) => {

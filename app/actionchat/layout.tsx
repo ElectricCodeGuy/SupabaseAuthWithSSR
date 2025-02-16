@@ -4,8 +4,6 @@ import { Box } from '@mui/material';
 import { createServerSupabaseClient } from '@/lib/server/server';
 import { getUserInfo } from '@/lib/server/supabase';
 import ChatHistoryDrawer from './component/UserChatList';
-import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@/types/database';
 import { unstable_noStore as noStore } from 'next/cache';
 import type { Tables } from '@/types/database';
 import { UploadProvider } from './context/uploadContext';
@@ -13,12 +11,9 @@ import { AI as AiProvider } from './action_chat/AIProvider';
 
 export const maxDuration = 60;
 
-async function fetchData(
-  supabase: SupabaseClient<Database>,
-  limit = 30,
-  offset = 0
-) {
+async function fetchData(limit = 30, offset = 0) {
   noStore();
+  const supabase = await createServerSupabaseClient();
   try {
     const { data, error } = await supabase
       .from('chat_sessions')
@@ -58,7 +53,6 @@ interface ChatPreview {
 }
 
 export default async function Layout(props: { children: React.ReactNode }) {
-  const supabase = await createServerSupabaseClient();
   const userData = await getUserInfo();
 
   let userInfo: UserInfo;
@@ -66,7 +60,7 @@ export default async function Layout(props: { children: React.ReactNode }) {
 
   if (userData) {
     userInfo = userData;
-    initialChatPreviews = await fetchData(supabase, 30, 0);
+    initialChatPreviews = await fetchData(30, 0);
   } else {
     userInfo = {
       id: '',
