@@ -5,15 +5,18 @@
 ### Images
 
 <div style="display: flex; justify-content: center; align-items: center; flex-wrap: wrap;">
-  <img src="public/images/frontpage1.png" alt="Front Page 1" style="width: 45%; margin: 10px;">
-  <img src="public/images/frontpage2.png" alt="Front Page 2" style="width: 45%; margin: 10px;">
-  <img src="public/images/frontpage3.png" alt="Front Page 3" style="width: 45%; margin: 10px;">
-  <img src="public/images/protectedpage1.png" alt="Protected Page 1" style="width: 45%; margin: 10px;">
-  <img src="public/images/loginpage.png" alt="Sign In Page" style="width: 45%; margin: 10px;">
+  <img src="public/images/ai_chat.png" alt="Front Page 1" style="width: 45%; margin: 10px;">
+  
+  <img src="public/images/ai_chat2.png" alt="Front Page 2" style="width: 45%; margin: 10px;">
+
+  <img src="public/images/ai_chat3.png" alt="Front Page 3" style="width: 45%; margin: 10px;">
+
+  <img src="public/images/profile.png" alt="Protected Page 1" style="width: 45%; margin: 10px;">
+  <img src="public/images/signin.png" alt="Sign In Page" style="width: 45%; margin: 10px;">
   <img src="public/images/loginpagepassword.png" alt="Sign In Page Password" style="width: 45%; margin: 10px;">
-  <img src="public/images/signuppage.png" alt="Sign Up Page" style="width: 45%; margin: 10px;">
  <img src="public/images/aichatimage.png" alt="AI Chat Page" style="width: 45%; margin: 10px;">
   <img src="public/images/rag_pic.png" alt="RAG Chat" style="width: 45%; margin: 10px;">
+   <img src="public/images/tavily.png" alt="RAG Chat" style="width: 45%; margin: 10px;">
  
 </div>
 
@@ -482,7 +485,7 @@ To ensure that the authentication flow works correctly with the API routes provi
 When users sign up, they'll receive an email to confirm their account. The template should look like this:
 
 ```html
-<!doctype html>
+<!DOCTYPE html>
 <html>
   <head>
     <title>Confirm Your Signup</title>

@@ -57,7 +57,7 @@ function formatMessages(messages: SupabaseChatMessage[]): Message[] {
             ...parseSources(message.sources).map((source) => ({
               type: 'source' as const,
               source: {
-                sourceType: source.sourceType,
+                sourceType: 'url' as const, // Fixed: explicitly set to 'url'
                 id: source.id,
                 url: source.url
               }
@@ -71,7 +71,6 @@ function formatMessages(messages: SupabaseChatMessage[]): Message[] {
           ]
   }));
 }
-
 async function fetchChat(supabase: SupabaseClient<Database>, chatId: string) {
   noStore();
   try {
