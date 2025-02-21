@@ -9,7 +9,7 @@ import React, {
   startTransition
 } from 'react';
 import { useActions } from 'ai/rsc';
-import { type AI } from '../action_chat/AIProvider';
+import { type AI } from '../action_chat/shared';
 import {
   deleteChatData,
   fetchMoreChatPreviews,
@@ -248,7 +248,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
   }, [userFiles]);
-  const { resetMessages } = useActions<typeof AI>();
+  const { resetMessages } = useActions<AI>();
   const handleClearMessages = async () => {
     const result = await resetMessages();
     if (result.success) {

@@ -1,5 +1,5 @@
 import type React from 'react';
-import { type StreamableValue } from 'ai/rsc';
+import { type StreamableValue, type createAI } from 'ai/rsc';
 import { openai } from '@ai-sdk/openai';
 import { anthropic } from '@ai-sdk/anthropic';
 
@@ -105,3 +105,35 @@ export const saveChatToSupbabase = async (
     console.error('Error saving chat to Supabase:', error);
   }
 };
+
+export interface AIActions {
+  submitMessage: (
+    currentUserMessage: string,
+    model_select: 'claude3' | 'chatgpt4',
+    chatId: string
+  ) => Promise<SubmitMessageResult>;
+  uploadFilesAndQuery: (
+    currentUserMessage: string,
+    chatId: string,
+    model_select: 'claude3' | 'chatgpt4',
+    selectedFiles: string[]
+  ) => Promise<SubmitMessageResult>;
+  SearchTool: (
+    currentUserMessage: string,
+    model_select: 'claude3' | 'chatgpt4',
+    chatId: string
+  ) => Promise<SubmitMessageResult>;
+  resetMessages: () => Promise<ResetResult>;
+  [key: string]: (...args: any[]) => Promise<any>;
+}
+
+export interface AIProviderProps {
+  children: React.ReactNode;
+  initialAIState?: ServerMessage[];
+  initialUIState?: ClientMessage[];
+  $ActionTypes?: AIActions;
+}
+
+export type AI = ReturnType<
+  typeof createAI<ServerMessage[], ClientMessage[], AIActions>
+>;

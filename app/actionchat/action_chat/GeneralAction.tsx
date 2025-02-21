@@ -11,7 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { getUserInfo } from '@/lib/server/supabase';
 import { Ratelimit } from '@upstash/ratelimit';
 import { redis } from '@/lib/server/server';
-import { type AI } from './AIProvider';
+import type { AI } from './shared';
 
 import {
   type SubmitMessageResult,
@@ -29,7 +29,7 @@ export async function submitMessage(
 
   const CurrentChatSessionId = chatId || uuidv4();
 
-  const aiState = getMutableAIState<typeof AI>();
+  const aiState = getMutableAIState<AI>();
   const status = createStreamableValue('searching');
 
   const userInfo = await getUserInfo();

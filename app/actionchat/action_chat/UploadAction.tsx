@@ -16,8 +16,6 @@ import {
 } from '@mui/material';
 import { Search as SearchIcon } from '@mui/icons-material';
 import { BotMessage } from '../component/ChatWrapper';
-import { type AI } from './AIProvider';
-
 import { v4 as uuidv4 } from 'uuid';
 import { openai } from '@ai-sdk/openai';
 import { getUserInfo } from '@/lib/server/supabase';
@@ -25,7 +23,8 @@ import { createServerSupabaseClient } from '@/lib/server/server';
 import {
   type SubmitMessageResult,
   getModel,
-  saveChatToSupbabase
+  saveChatToSupbabase,
+  type AI
 } from './shared';
 import { z } from 'zod';
 
@@ -160,7 +159,7 @@ export async function uploadFilesAndQuery(
   'use server';
 
   const CurrentChatSessionId = chatId || uuidv4();
-  const aiState = getMutableAIState<typeof AI>();
+  const aiState = getMutableAIState<AI>();
   const status = createStreamableValue('searching');
   const userInfo = await getUserInfo();
 
@@ -419,7 +418,11 @@ Keep the variations focused on the content available in the provided documents.`
       .map(
         (doc) => `
     <page number="${doc.metadata.page}">
-      <reference_link>[${doc.metadata.title}, s.${doc.metadata.page}](<?pdf=${doc.metadata.title.replace(/ /g, '_').trim()}&p=${doc.metadata.page}>)</reference_link>
+      <reference_link>[${doc.metadata.title}, s.${
+          doc.metadata.page
+        }](<?pdf=${doc.metadata.title.replace(/ /g, '_').trim()}&p=${
+          doc.metadata.page
+        }>)</reference_link>
       <text>${doc.pageContent}</text>
     </page>`
       )
@@ -436,7 +439,11 @@ Keep the variations focused on the content available in the provided documents.`
         .slice(0, 2)
         .map(
           (result) =>
-            `[${result.metadata.title}, s.${result.metadata.page}](<?pdf=${result.metadata.title.replace(/ /g, '_').trim()}&p=${result.metadata.page}>)`
+            `[${result.metadata.title}, s.${
+              result.metadata.page
+            }](<?pdf=${result.metadata.title.replace(/ /g, '_').trim()}&p=${
+              result.metadata.page
+            }>)`
         )
         .join(' and ');
       return `

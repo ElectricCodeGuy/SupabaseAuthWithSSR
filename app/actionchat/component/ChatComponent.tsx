@@ -2,7 +2,7 @@
 import type { KeyboardEvent } from 'react';
 import React, { useState } from 'react';
 import { useUIState, useActions, readStreamableValue } from 'ai/rsc';
-import { type AI } from '../action_chat/AIProvider';
+import { type AI } from '../action_chat/shared';
 import { UserMessage } from './ChatWrapper';
 import {
   IconButton,
@@ -45,14 +45,13 @@ export default function ChatComponentPage({
 }: ChatComponentPageProps) {
   const [inputValue, setInputValue] = useState('');
   const router = useRouter();
-  const [messages, setMessages] = useUIState<typeof AI>();
+  const [messages, setMessages] = useUIState<AI>();
   const [rateLimitInfo, setRateLimitInfo] = useState<{
     success: boolean;
     message?: string;
     reset?: number;
   } | null>(null);
-  const { submitMessage, uploadFilesAndQuery, SearchTool } =
-    useActions<typeof AI>();
+  const { submitMessage, uploadFilesAndQuery, SearchTool } = useActions<AI>();
   const { selectedBlobs, selectedMode, setSelectedMode } = useUpload();
 
   const [selectedModel, setSelectedModel] = useState<'claude3' | 'chatgpt4'>(

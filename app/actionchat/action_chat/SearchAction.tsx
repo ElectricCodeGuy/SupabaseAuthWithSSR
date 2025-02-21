@@ -30,11 +30,11 @@ import { redis } from '@/lib/server/server';
 import { load } from 'cheerio';
 import { NodeHtmlMarkdown } from 'node-html-markdown';
 import { z } from 'zod';
-import { type AI } from './AIProvider';
 import {
   type SubmitMessageResult,
   getModel,
-  saveChatToSupbabase
+  saveChatToSupbabase,
+  type AI
 } from './shared';
 
 interface TavilySearchResult {
@@ -129,7 +129,7 @@ export async function SearchTool(
   const CurrentChatSessionId = chatId || uuidv4();
 
   // Initialize AI state with user's message
-  const aiState = getMutableAIState<typeof AI>();
+  const aiState = getMutableAIState<AI>();
   aiState.update([
     ...aiState.get(),
     {

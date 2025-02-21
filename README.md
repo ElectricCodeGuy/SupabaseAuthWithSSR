@@ -6,18 +6,14 @@
 
 <div style="display: flex; justify-content: center; align-items: center; flex-wrap: wrap;">
   <img src="public/images/ai_chat.png" alt="Front Page 1" style="width: 45%; margin: 10px;">
-  
   <img src="public/images/ai_chat2.png" alt="Front Page 2" style="width: 45%; margin: 10px;">
-
   <img src="public/images/ai_chat3.png" alt="Front Page 3" style="width: 45%; margin: 10px;">
-
   <img src="public/images/profile.png" alt="Protected Page 1" style="width: 45%; margin: 10px;">
   <img src="public/images/signin.png" alt="Sign In Page" style="width: 45%; margin: 10px;">
   <img src="public/images/loginpagepassword.png" alt="Sign In Page Password" style="width: 45%; margin: 10px;">
- <img src="public/images/aichatimage.png" alt="AI Chat Page" style="width: 45%; margin: 10px;">
+  <img src="public/images/aichatimage.png" alt="AI Chat Page" style="width: 45%; margin: 10px;">
   <img src="public/images/rag_pic.png" alt="RAG Chat" style="width: 45%; margin: 10px;">
-   <img src="public/images/tavily.png" alt="RAG Chat" style="width: 45%; margin: 10px;">
- 
+  <img src="public/images/tavily.png" alt="RAG Chat" style="width: 45%; margin: 10px;">
 </div>
 
 ### Videos
@@ -603,6 +599,42 @@ This approach means:
 
 The goal is maximum independence and clarity, even at the cost of some duplication. Rather than creating complex abstractions or following rigid design patterns, we prioritize keeping related code together and making it easy to understand at a glance. Shared code is limited to only the most basic, unchanging utilities that truly serve every part of the application.
 
+### Project Structure Visualization
+
+Below is a comprehensive dependency graph showing how all components and modules in the project are interconnected. This visualization helps understand the project's architecture and component relationships:
+
+<img src="/full-deps.svg" alt="Project Dependencies Graph" style="width: 100%; margin: 20px 0;">
+
+This dependency graph illustrates:
+
+- Component hierarchies and their relationships
+- Module dependencies across the application
+- Import/Export relationships between files
+- The overall architectural structure of the project
+
+Understanding this graph can help developers:
+
+- Navigate the codebase more effectively
+- Identify potential areas for refactoring
+- Understand component dependencies
+- Visualize the application's architecture
+
+The dependency graph was generated using the following command:
+
+```bash
+npx madge \
+  --image full-deps.svg \
+  --extensions js,jsx,ts,tsx \
+  --ts-config tsconfig.json \
+  --exclude "node_modules|.next|public" \
+  --warning \
+  .
+```
+
 ## 📜 License
 
 🔖 Licensed under the MIT License. See LICENSE.md for details.
+
+```
+
+```
