@@ -1,7 +1,7 @@
 'use client';
 
-import type { FC, KeyboardEvent } from 'react';
-import React, { useState } from 'react';
+import type { KeyboardEvent } from 'react';
+import React, { useState, useOptimistic, startTransition } from 'react';
 import { useChat, type Message } from '@ai-sdk/react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
@@ -269,7 +269,7 @@ const MessageComponent = ({ message }: { message: Message }) => {
     </ListItem>
   );
 };
-const ChatMessage: FC<ChatMessageProps> = ({ messages }) => {
+const ChatMessage: React.FC<ChatMessageProps> = ({ messages }) => {
   return (
     <>
       {messages.map((message, index) => (
@@ -280,7 +280,7 @@ const ChatMessage: FC<ChatMessageProps> = ({ messages }) => {
 };
 
 // The rest of the ChatComponent remains unchanged.
-const ChatComponent: FC<ChatProps> = ({
+const ChatComponent: React.FC<ChatProps> = ({
   currentChat,
   chatId,
   initialModelType,
@@ -305,10 +305,18 @@ const ChatComponent: FC<ChatProps> = ({
 
   const { mutate } = useSWRConfig();
 
-  const [modelType, setModelType] = useState(initialModelType);
-  const [selectedOption, setSelectedOption] = useState(initialSelectedOption);
+  const [optimisticModelType, setOptimisticModelType] = useOptimistic<
+    string,
+    string
+  >(initialModelType, (_, newValue) => newValue);
 
-  const apiEndpoint = modelType === 'perplex' ? '/api/perplexity' : '/api/chat';
+  const [optimisticOption, setOptimisticOption] = useOptimistic<string, string>(
+    initialSelectedOption,
+    (_, newValue) => newValue
+  );
+
+  const apiEndpoint =
+    optimisticModelType === 'perplex' ? '/api/perplexity' : '/api/chat';
   const createChatId = uuidv4();
   const {
     messages,
@@ -322,7 +330,7 @@ const ChatComponent: FC<ChatProps> = ({
     api: apiEndpoint,
     body: {
       chatId: chatId ?? createChatId,
-      option: selectedOption
+      option: optimisticOption
     },
     experimental_throttle: 100,
     initialMessages: currentChat?.chat_messages,
@@ -350,14 +358,18 @@ const ChatComponent: FC<ChatProps> = ({
   });
   const handleModelTypeChange = async (newValue: string | null) => {
     const newModelType = newValue ?? 'standart';
-    setModelType(newModelType);
-    await setModelSettings(newModelType, selectedOption);
+    startTransition(async () => {
+      setOptimisticModelType(newModelType);
+      await setModelSettings(newModelType, optimisticOption);
+    });
   };
 
   const handleOptionChange = async (newValue: string | null) => {
     const newOption = newValue ?? 'gpt-3.5-turbo-1106';
-    setSelectedOption(newOption);
-    await setModelSettings(modelType, newOption);
+    startTransition(async () => {
+      setOptimisticOption(newOption);
+      await setModelSettings(optimisticModelType, newOption);
+    });
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -612,7 +624,7 @@ const ChatComponent: FC<ChatProps> = ({
               gap: 0.5
             }}
           >
-            {modelType === 'standart' && (
+            {optimisticModelType === 'standart' && (
               <Grid2
                 size={{
                   xs: 4.8,
@@ -643,7 +655,7 @@ const ChatComponent: FC<ChatProps> = ({
                     padding: '8px 14px'
                   }}
                 >
-                  {selectedOption}
+                  {optimisticOption}
                 </Button>
                 <Menu
                   id="model-menu"
@@ -676,7 +688,7 @@ const ChatComponent: FC<ChatProps> = ({
                         await handleOptionChange(option);
                         handleClose();
                       }}
-                      selected={selectedOption === option}
+                      selected={optimisticOption === option}
                       sx={{
                         minWidth: '200px',
                         '&.Mui-selected': {
@@ -707,7 +719,7 @@ const ChatComponent: FC<ChatProps> = ({
                   aria-label="model-type"
                   name="model-type"
                   defaultValue="standart"
-                  value={modelType}
+                  value={optimisticModelType}
                   onChange={(_, newValue) => handleModelTypeChange(newValue)}
                   row
                 >

@@ -602,34 +602,7 @@ const RenderChatSection: FC<RenderChatSectionProps> = memo(
                   id: chatId,
                   newTitle: title
                 });
-
-                try {
-                  const result = await updateChatTitle(formData);
-
-                  if (!result.success) {
-                    // If the server action failed, revert the optimistic update
-                    const originalChat = chats.find(
-                      (chat) => chat.id === chatId
-                    );
-                    if (originalChat) {
-                      addOptimisticChat({
-                        id: chatId,
-                        newTitle: originalChat.firstMessage
-                      });
-                    }
-                    console.error('Failed to update chat title');
-                  }
-                } catch (error) {
-                  // If there's an error, revert the optimistic update
-                  const originalChat = chats.find((chat) => chat.id === chatId);
-                  if (originalChat) {
-                    addOptimisticChat({
-                      id: chatId,
-                      newTitle: originalChat.firstMessage
-                    });
-                  }
-                  console.error('Error updating chat title:', error);
-                }
+                await updateChatTitle(formData);
               });
 
               handleCloseDialog();
