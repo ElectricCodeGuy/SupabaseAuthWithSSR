@@ -1,7 +1,6 @@
 // page.tsx
 import React from 'react';
 import { type Metadata } from 'next';
-import { Box } from '@mui/material';
 import { createServerSupabaseClient } from '@/lib/server/server';
 import ChatComponentPage from '../component/ChatComponent';
 import { getUserInfo } from '@/lib/server/supabase';
@@ -116,18 +115,18 @@ export default async function Page(props: PageProps) {
   }
 
   return (
-    <Box
-      sx={{
+    <div
+      style={{
         display: 'flex',
         width: '100%',
         overflow: 'hidden'
       }}
     >
-      <Box sx={{ flex: 1 }}>
+      <div style={{ flex: 1 }}>
         <AiProvider initialAIState={messages}>
           <ChatComponentPage userInfo={userInfo} />
         </AiProvider>
-      </Box>
+      </div>
 
       {searchParams.url ? (
         <WebsiteWiever url={decodeURIComponent(searchParams.url)} />
@@ -136,7 +135,7 @@ export default async function Page(props: PageProps) {
           fileName={decodeURIComponent(searchParams.pdf)}
         />
       ) : null}
-    </Box>
+    </div>
   );
 }
 

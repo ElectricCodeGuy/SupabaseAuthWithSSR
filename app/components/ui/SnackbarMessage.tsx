@@ -1,72 +1,48 @@
 'use client';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Snackbar, Alert, IconButton } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
+import { toast } from 'sonner';
+import { Toaster } from '@/components/ui/sonner';
 
 export default function SnackbarMessages() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const error = searchParams.get('error');
-  const message = searchParams.get('message');
-
-  const handleClose = () => {
+  // Handle clearing the URL params
+  const clearParams = () => {
     const currentParams = new URLSearchParams(window.location.search);
     currentParams.delete('error');
     currentParams.delete('message');
-    const newPath = window.location.pathname + '?' + currentParams.toString();
+    const newPath =
+      window.location.pathname +
+      (currentParams.toString() ? '?' + currentParams.toString() : '');
     router.replace(newPath);
   };
 
-  if (!error && !message) return null;
+  useEffect(() => {
+    const error = searchParams.get('error');
+    const message = searchParams.get('message');
 
-  const severity = error ? 'error' : 'success';
-  const content = error
-    ? decodeURIComponent(error)
-    : decodeURIComponent(message!);
+    // Show toast if params are present
+    if (error || message) {
+      const content = error
+        ? decodeURIComponent(error)
+        : decodeURIComponent(message!);
 
-  return (
-    <Snackbar
-      open
-      autoHideDuration={6000}
-      onClose={handleClose}
-      anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      sx={{
-        '& .MuiSnackbarContent-root': {
-          minWidth: '300px',
-          boxShadow:
-            '0px 3px 5px -1px rgba(0,0,0,0.2), 0px 6px 10px 0px rgba(0,0,0,0.14), 0px 1px 18px 0px rgba(0,0,0,0.12)'
+      toast(error ? 'Error' : 'Success', {
+        description: content,
+        duration: 6000,
+        action: {
+          label: 'Dismiss',
+          onClick: clearParams
         }
-      }}
-    >
-      <Alert
-        severity={severity}
-        variant="filled"
-        elevation={6}
-        sx={{
-          width: '100%',
-          '& .MuiAlert-icon': {
-            fontSize: '1.5rem'
-          },
-          '& .MuiAlert-message': {
-            fontSize: '1rem',
-            fontWeight: 500
-          }
-        }}
-        action={
-          <IconButton
-            size="small"
-            aria-label="close"
-            color="inherit"
-            onClick={handleClose}
-          >
-            <CloseIcon fontSize="small" />
-          </IconButton>
-        }
-      >
-        {content}
-      </Alert>
-    </Snackbar>
-  );
+      });
+
+      // Clear params right after showing toast
+      clearParams();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  return <Toaster />;
 }

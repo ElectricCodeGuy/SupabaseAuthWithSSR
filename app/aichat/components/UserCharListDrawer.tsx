@@ -13,41 +13,51 @@ import {
   fetchMoreChatPreviews,
   updateChatTitle
 } from '../actions';
-import {
-  Drawer,
-  Box,
-  List,
-  ListItem,
-  ListItemButton,
-  Button,
-  IconButton,
-  Dialog,
-  DialogContent,
-  DialogActions,
-  DialogContentText,
-  Skeleton,
-  Divider,
-  Typography,
-  CircularProgress,
-  Tooltip,
-  Menu,
-  MenuItem,
-  TextField
-} from '@mui/material';
-import {
-  Delete as DeleteIcon,
-  MoreHoriz as MoreHorizIcon,
-  Share as ShareIcon,
-  Edit as EditIcon,
-  NoteAdd as NoteAddIcon
-} from '@mui/icons-material';
 import { isToday, isYesterday, subDays } from 'date-fns';
 import type { Tables } from '@/types/database';
 import useSWRInfinite from 'swr/infinite';
 import { TZDate } from '@date-fns/tz';
 import Link from 'next/link';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
-import ChatIcon from '@mui/icons-material/Chat';
+import { Loader2 } from 'lucide-react';
+// Shadcn UI components
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Separator } from '@/components/ui/separator';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@/components/ui/tooltip';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
+
+// Import Drawer components from shadcn
+import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer';
+
+// Lucide icons (replacing MUI icons)
+import {
+  Trash as DeleteIcon,
+  MoreHorizontal as MoreHorizIcon,
+  Share as ShareIcon,
+  Edit as EditIcon,
+  FilePlus as NoteAddIcon,
+  Menu as MenuIcon
+} from 'lucide-react';
 
 type UserInfo = Pick<Tables<'users'>, 'full_name' | 'email' | 'id'>;
 
@@ -104,7 +114,145 @@ const useCategorizedChats = (chatPreviews: ChatPreview[][] | undefined) => {
     });
 
     return { today, yesterday, last7Days, last30Days, last2Months, older };
-  }, [chatPreviews]); // Only recalculate when chatPreviews changes
+  }, [chatPreviews]);
+};
+
+// Content component to avoid duplication between mobile and desktop
+interface DrawerContentProps {
+  userInfo: UserInfo;
+  chatPreviews: ChatPreview[][] | undefined;
+  currentChatId: string | undefined;
+  categorizedChats: ReturnType<typeof useCategorizedChats>;
+  handleDeleteClick: (id: string) => void;
+  handleChatSelect: (id: string) => void;
+  loadMoreChats: () => Promise<void>;
+  isLoadingMore: boolean;
+  hasMore: boolean;
+}
+
+const ChatListComponent: FC<DrawerContentProps> = ({
+  userInfo,
+  chatPreviews,
+  currentChatId,
+  categorizedChats,
+  handleDeleteClick,
+  handleChatSelect,
+  loadMoreChats,
+  isLoadingMore,
+  hasMore
+}) => {
+  return (
+    <div className="flex flex-col h-full">
+      {!userInfo.email ? (
+        // Show sign-in message when no user
+        <div className="flex flex-col items-center justify-center h-[90vh] text-center p-4 space-y-4">
+          <h3 className="text-lg font-medium">
+            Sign in to save and view your chats
+          </h3>
+
+          <Button asChild className="rounded-lg px-8 py-2 font-normal">
+            <Link href="/signin">Sign in</Link>
+          </Button>
+        </div>
+      ) : (
+        <>
+          <div className="flex items-center justify-end w-full pt-2 pr-2 gap-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-primary h-8 w-8"
+                    asChild
+                  >
+                    <Link href="/aichat" aria-label="clear messages">
+                      <NoteAddIcon className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Create a new conversation</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+
+          <div className="overflow-auto flex-1">
+            {!chatPreviews ? (
+              Array.from({ length: 5 }).map((_, index) => (
+                <div key={index} className="px-2 py-1">
+                  <Skeleton className="h-6 w-full" />
+                </div>
+              ))
+            ) : (
+              <>
+                <RenderChatSection
+                  title="Today"
+                  chats={categorizedChats.today}
+                  currentChatId={currentChatId}
+                  handleDeleteClick={handleDeleteClick}
+                  onChatSelect={handleChatSelect}
+                />
+                <RenderChatSection
+                  title="Yesterday"
+                  chats={categorizedChats.yesterday}
+                  currentChatId={currentChatId}
+                  handleDeleteClick={handleDeleteClick}
+                  onChatSelect={handleChatSelect}
+                />
+                <RenderChatSection
+                  title="Last 7 days"
+                  chats={categorizedChats.last7Days}
+                  currentChatId={currentChatId}
+                  handleDeleteClick={handleDeleteClick}
+                  onChatSelect={handleChatSelect}
+                />
+                <RenderChatSection
+                  title="Last 30 days"
+                  chats={categorizedChats.last30Days}
+                  currentChatId={currentChatId}
+                  handleDeleteClick={handleDeleteClick}
+                  onChatSelect={handleChatSelect}
+                />
+                <RenderChatSection
+                  title="Last 2 month"
+                  chats={categorizedChats.last2Months}
+                  currentChatId={currentChatId}
+                  handleDeleteClick={handleDeleteClick}
+                  onChatSelect={handleChatSelect}
+                />
+                <RenderChatSection
+                  title="Older"
+                  chats={categorizedChats.older}
+                  currentChatId={currentChatId}
+                  handleDeleteClick={handleDeleteClick}
+                  onChatSelect={handleChatSelect}
+                />
+                {hasMore && (
+                  <div className="flex justify-center my-4">
+                    <Button
+                      variant="outline"
+                      onClick={loadMoreChats}
+                      disabled={isLoadingMore}
+                      className="rounded-lg min-w-[120px]"
+                    >
+                      {isLoadingMore ? (
+                        <>
+                          <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                          Load more
+                        </>
+                      ) : (
+                        'Load more'
+                      )}
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
 };
 
 const CombinedDrawer: FC<CombinedDrawerProps> = ({
@@ -114,12 +262,6 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
   const params = useParams();
   const router = useRouter();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-
-  // Add toggle function
-  const toggleMobileDrawer = (event: React.MouseEvent) => {
-    event.stopPropagation();
-    setIsMobileOpen(!isMobileOpen);
-  };
 
   const currentChatId = typeof params.id === 'string' ? params.id : undefined;
 
@@ -142,7 +284,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
     {
       fallbackData: [initialChatPreviews],
       revalidateFirstPage: false,
-      revalidateOnFocus: false, // Add these options
+      revalidateOnFocus: false,
       revalidateOnReconnect: false,
       revalidateIfStale: false,
       revalidateOnMount: false
@@ -169,7 +311,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
         await deleteChatData(chatToDelete);
         await mutateChatPreviews();
 
-        // If the deleted chat is the current one, redirect to /aichat while preserving pdf parameter
+        // If the deleted chat is the current one, redirect to /aichat
         if (chatToDelete === currentChatId) {
           router.push('/aichat');
         }
@@ -186,236 +328,87 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
   const handleChatSelect = useCallback(() => {
     // Close drawer on mobile screens
     if (window.innerWidth < 800) {
-      // 600px is MUI's sm breakpoint
       setIsMobileOpen(false);
     }
   }, []);
 
   return (
     <>
-      <IconButton
-        onClick={toggleMobileDrawer}
-        size="small"
-        sx={{
-          display: { xs: 'block', sm: 'block', md: 'none' },
-          position: 'fixed',
-          left: 4,
-          bottom: 42,
-          zIndex: 1200
-        }}
-      >
-        <ChatIcon sx={{ color: 'blue' }} />
-      </IconButton>
-      <Drawer
-        variant="persistent"
-        anchor="left"
-        open
-        SlideProps={{ direction: 'left', timeout: 300 }}
-        ModalProps={{
-          slotProps: {
-            backdrop: {
-              style: { backgroundColor: 'transparent' }
-            }
-          }
-        }}
-        sx={{
-          width: {
-            xs: isMobileOpen ? '100%' : '0%',
-            sm: isMobileOpen ? '40%' : '0%',
-            md: '200px',
-            lg: '250px',
-            xl: '300px'
-          },
-          '@media (min-width: 2000px)': {
-            width: '350px'
-          },
-          '& .MuiDrawer-paper': {
-            boxShadow: 'none',
-            width: {
-              xs: isMobileOpen ? '100%' : '0%', // Set width to 0 when closed on mobile
-              sm: isMobileOpen ? '40%' : '0%',
-              md: '200px',
-              lg: '250px',
-              xl: '300px'
-            },
-            '@media (min-width: 2000px)': {
-              width: '350px'
-            },
-            visibility: {
-              xs: isMobileOpen ? 'visible' : 'hidden', // Hide completely when closed on mobile
-              sm: 'visible'
-            },
-            backgroundColor: 'rgba(240, 247, 255, 0.9)',
-            border: '1px solid rgba(0, 0, 0, 0.1)',
-            transition: 'width 0.3s ease-in-out'
-          }
-        }}
-      >
-        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-          {!userInfo.email ? (
-            // Show sign-in message when no user
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: '90vh',
-                textAlign: 'center',
-                p: 2,
-                gap: 2
-              }}
+      {/* Mobile drawer */}
+      <div className="md:hidden">
+        <Drawer open={isMobileOpen} onOpenChange={setIsMobileOpen}>
+          <DrawerTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="fixed left-1 bottom-10 z-50 bg-white/80 shadow-sm"
             >
-              <Typography variant="h6" gutterBottom>
-                Sign in to save and view your chats
-              </Typography>
+              <MenuIcon className="h-5 w-5 text-blue-600" />
+            </Button>
+          </DrawerTrigger>
+          <DrawerContent className="h-[85vh]">
+            <div className="h-full p-0 bg-[rgba(240,247,255,0.9)]">
+              <ChatListComponent
+                userInfo={userInfo}
+                chatPreviews={chatPreviews}
+                currentChatId={currentChatId}
+                categorizedChats={categorizedChats}
+                handleDeleteClick={handleDeleteClick}
+                handleChatSelect={handleChatSelect}
+                loadMoreChats={loadMoreChats}
+                isLoadingMore={isLoadingMore}
+                hasMore={hasMore ?? false}
+              />
+            </div>
+          </DrawerContent>
+        </Drawer>
+      </div>
 
-              <Button
-                component={Link}
-                href="/signin"
-                variant="contained"
-                color="primary"
-                sx={{
-                  borderRadius: 2,
-                  textTransform: 'none',
-                  px: 4,
-                  py: 1
-                }}
-              >
-                Sign in
-              </Button>
-            </Box>
-          ) : (
-            <>
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'flex-end', // Aligns items to the end
-                  width: '100%',
-                  pt: 1,
-                  pr: 1,
-                  gap: 1 // Adds consistent spacing between buttons
-                }}
-              >
-                <Tooltip title="Create a new conversation" arrow>
-                  <IconButton
-                    component={Link}
-                    href="/aichat"
-                    aria-label="clear messages"
-                    color="primary"
-                    size="small"
-                  >
-                    <NoteAddIcon />
-                  </IconButton>
-                </Tooltip>
-              </Box>
+      {/* Desktop persistent drawer */}
+      <div className="hidden md:block fixed inset-y-0 left-0 z-20 w-[200px] lg:w-[250px] xl:w-[300px] 2xl:w-[350px] bg-[rgba(240,247,255,0.9)] border-r border-[rgba(0,0,0,0.1)]">
+        <ChatListComponent
+          userInfo={userInfo}
+          chatPreviews={chatPreviews}
+          currentChatId={currentChatId}
+          categorizedChats={categorizedChats}
+          handleDeleteClick={handleDeleteClick}
+          handleChatSelect={handleChatSelect}
+          loadMoreChats={loadMoreChats}
+          isLoadingMore={isLoadingMore}
+          hasMore={hasMore ?? false}
+        />
+      </div>
 
-              <List sx={{ overflow: 'auto' }}>
-                {!chatPreviews ? (
-                  Array.from({ length: 5 }).map((_, index) => (
-                    <ListItem key={index} disablePadding>
-                      <ListItemButton>
-                        <Skeleton variant="text" width="100%" />
-                      </ListItemButton>
-                    </ListItem>
-                  ))
-                ) : (
-                  <>
-                    <RenderChatSection
-                      title="Today"
-                      chats={categorizedChats.today}
-                      currentChatId={currentChatId}
-                      handleDeleteClick={handleDeleteClick}
-                      onChatSelect={handleChatSelect}
-                    />
-                    <RenderChatSection
-                      title="Yesterday"
-                      chats={categorizedChats.yesterday}
-                      currentChatId={currentChatId}
-                      handleDeleteClick={handleDeleteClick}
-                      onChatSelect={handleChatSelect}
-                    />
-                    <RenderChatSection
-                      title="Last 7 days"
-                      chats={categorizedChats.last7Days}
-                      currentChatId={currentChatId}
-                      handleDeleteClick={handleDeleteClick}
-                      onChatSelect={handleChatSelect}
-                    />
-                    <RenderChatSection
-                      title="Last 30 days"
-                      chats={categorizedChats.last30Days}
-                      currentChatId={currentChatId}
-                      handleDeleteClick={handleDeleteClick}
-                      onChatSelect={handleChatSelect}
-                    />
-                    <RenderChatSection
-                      title="Last 2 month"
-                      chats={categorizedChats.last2Months}
-                      currentChatId={currentChatId}
-                      handleDeleteClick={handleDeleteClick}
-                      onChatSelect={handleChatSelect}
-                    />
-                    <RenderChatSection
-                      title="Older"
-                      chats={categorizedChats.older}
-                      currentChatId={currentChatId}
-                      handleDeleteClick={handleDeleteClick}
-                      onChatSelect={handleChatSelect}
-                    />
-                    {hasMore && (
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          justifyContent: 'center',
-                          mt: 2,
-                          mb: 2
-                        }}
-                      >
-                        <Button
-                          onClick={loadMoreChats}
-                          disabled={isLoadingMore}
-                          size="small"
-                          variant="outlined"
-                          sx={{
-                            borderRadius: '8px',
-                            minWidth: '120px'
-                          }}
-                        >
-                          {isLoadingMore ? (
-                            <CircularProgress size={20} sx={{ mr: 1 }} />
-                          ) : (
-                            'Hent flere'
-                          )}
-                        </Button>
-                      </Box>
-                    )}
-                  </>
-                )}
-              </List>
-            </>
-          )}
-        </Box>
-        <Dialog
-          open={deleteConfirmationOpen}
-          onClose={() => setDeleteConfirmationOpen(false)}
-        >
-          <DialogContent sx={{ p: 2 }}>
-            <DialogContentText>
-              Are you sure you want to delete this chat?
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setDeleteConfirmationOpen(false)}>
+      {/* Main content area - add padding to account for the drawer */}
+      <div className="md:pl-[200px] lg:pl-[250px] xl:pl-[300px] 2xl:pl-[350px]">
+        {/* Your main content goes here */}
+      </div>
+
+      {/* Delete confirmation dialog */}
+      <Dialog
+        open={deleteConfirmationOpen}
+        onOpenChange={setDeleteConfirmationOpen}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Confirmation</DialogTitle>
+          </DialogHeader>
+          <p className="text-gray-600">
+            Are you sure you want to delete this chat?
+          </p>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteConfirmationOpen(false)}
+            >
               Cancel
             </Button>
-            <Button onClick={handleDeleteConfirmation} color="error">
+            <Button variant="destructive" onClick={handleDeleteConfirmation}>
               Delete
             </Button>
-          </DialogActions>
-        </Dialog>
-      </Drawer>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
@@ -425,16 +418,17 @@ interface RenderChatSectionProps {
   chats: ChatPreview[];
   currentChatId: string | null | undefined;
   handleDeleteClick: (id: string) => void;
-  onChatSelect: (id: string) => void; // Add this prop
+  onChatSelect: (id: string) => void;
 }
+
 const RenderChatSection: FC<RenderChatSectionProps> = memo(
   ({ title, chats, currentChatId, handleDeleteClick, onChatSelect }) => {
     const searchParams = useSearchParams();
     const router = useRouter();
-    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const [menuOpen, setMenuOpen] = useState(false);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
-    const [menuChatId, setMenuChatId] = useState<string | null>(null); // For menu
-    const [editingChatId, setEditingChatId] = useState<string | null>(null); // For editing
+    const [menuChatId, setMenuChatId] = useState<string | null>(null);
+    const [editingChatId, setEditingChatId] = useState<string | null>(null);
     const [newTitle, setNewTitle] = useState('');
 
     const [optimisticChats, addOptimisticChat] = useOptimistic(
@@ -447,10 +441,7 @@ const RenderChatSection: FC<RenderChatSectionProps> = memo(
           chat.id === optimisticUpdate.id
             ? {
                 ...chat,
-                chat_messages: [
-                  { content: optimisticUpdate.newTitle },
-                  ...chat.firstMessage.slice(1)
-                ]
+                firstMessage: optimisticUpdate.newTitle
               }
             : chat
         )
@@ -461,12 +452,13 @@ const RenderChatSection: FC<RenderChatSectionProps> = memo(
       chatId: string
     ) => {
       event.preventDefault();
-      setAnchorEl(event.currentTarget);
+      event.stopPropagation();
       setMenuChatId(chatId);
+      setMenuOpen(true);
     };
 
     const handleMenuClose = () => {
-      setAnchorEl(null);
+      setMenuOpen(false);
       setMenuChatId(null);
     };
 
@@ -481,11 +473,21 @@ const RenderChatSection: FC<RenderChatSectionProps> = memo(
       setEditingChatId(null);
       setNewTitle('');
     };
+
     if (optimisticChats.length === 0) return null;
 
     return (
       <>
-        <Divider sx={{ color: 'textSecondary', px: 1, mb: 1 }}>{title}</Divider>
+        <div className="px-3 mb-2">
+          <div className="relative flex items-center py-2">
+            <Separator>
+              <span className="flex-shrink mx-2 text-xs text-gray-500">
+                {title}
+              </span>
+            </Separator>
+          </div>
+        </div>
+
         {optimisticChats.map(({ id, firstMessage }) => {
           const currentParams = new URLSearchParams(searchParams.toString());
           const href = `/aichat/${id}${
@@ -493,149 +495,132 @@ const RenderChatSection: FC<RenderChatSectionProps> = memo(
           }`;
 
           return (
-            <Box key={id}>
-              <ListItemButton
-                component={Link}
+            <div key={id} className="relative">
+              <Link
+                href={href}
                 prefetch={false}
                 scroll={false}
-                href={href}
+                className={cn(
+                  'block px-3 py-2 text-sm relative pr-8',
+                  'hover:bg-gray-100/70 transition-colors',
+                  currentChatId === id ? 'bg-gray-200/70' : '',
+                  'group'
+                )}
                 onMouseEnter={() => router.prefetch(href)}
                 onClick={() => onChatSelect(id)}
-                sx={{
-                  fontSize: '0.95rem',
-                  backgroundColor:
-                    currentChatId === id ? 'rgba(0, 0, 0, 0.1)' : 'inherit',
-                  paddingRight: '25px',
-                  position: 'relative',
-                  '& .menu-button': {
-                    display: currentChatId === id ? 'flex' : 'none'
-                  },
-                  '&:hover .menu-button': {
-                    display: 'flex'
-                  }
-                }}
               >
-                {/* Tooltip for the chat title */}
-                <Tooltip
-                  title={firstMessage}
-                  placement="top-end"
-                  enterDelay={500}
-                  enterNextDelay={500}
-                >
-                  <Box
-                    sx={{
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      flex: 1
-                    }}
-                  >
-                    {firstMessage}
-                  </Box>
-                </Tooltip>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="block overflow-hidden text-ellipsis whitespace-nowrap">
+                        {firstMessage}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">{firstMessage}</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
 
-                {/* Separate tooltip for the menu button */}
-                <Tooltip title="Options" placement="top">
-                  <IconButton
-                    className="menu-button"
-                    onClick={(e) => handleMenuClick(e, id)}
-                    size="small"
-                    sx={{
-                      padding: '2px',
-                      position: 'absolute',
-                      right: 4,
-                      top: '50%',
-                      transform: 'translateY(-50%)'
-                    }}
-                  >
-                    <MoreHorizIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-              </ListItemButton>
-
-              <Menu
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl) && menuChatId === id}
-                onClose={handleMenuClose}
-                sx={{ borderRadius: '8px' }}
-              >
-                <MenuItem onClick={() => handleMenuClose()} disabled>
-                  <ShareIcon fontSize="small" sx={{ mr: 1 }} />
-                  Share
-                </MenuItem>
-                <MenuItem onClick={() => handleOpenRename(id)}>
-                  <EditIcon fontSize="small" sx={{ mr: 1 }} />
-                  Rename
-                </MenuItem>
-                <MenuItem
-                  onClick={() => {
-                    handleDeleteClick(id);
-                    handleMenuClose();
-                  }}
-                  sx={{
-                    color: 'error.main'
-                  }}
+                <DropdownMenu
+                  open={menuOpen && menuChatId === id}
+                  onOpenChange={handleMenuClose}
                 >
-                  <DeleteIcon
-                    fontSize="small"
-                    sx={{ mr: 1, color: 'error.main' }}
-                  />
-                  Delete
-                </MenuItem>
-              </Menu>
-            </Box>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={cn(
+                        'absolute right-1 top-1/2 -translate-y-1/2',
+                        'opacity-0 group-hover:opacity-100',
+                        currentChatId === id ? 'opacity-100' : '',
+                        'h-6 w-6 p-0'
+                      )}
+                      onClick={(e) => handleMenuClick(e, id)}
+                    >
+                      <MoreHorizIcon className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-40">
+                    <DropdownMenuItem
+                      disabled
+                      className="flex items-center gap-2"
+                    >
+                      <ShareIcon className="h-4 w-4" />
+                      <span>Share</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleOpenRename(id)}
+                      className="flex items-center gap-2"
+                    >
+                      <EditIcon className="h-4 w-4" />
+                      <span>Rename</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        handleDeleteClick(id);
+                        handleMenuClose();
+                      }}
+                      className="text-red-600 flex items-center gap-2"
+                    >
+                      <DeleteIcon className="h-4 w-4" />
+                      <span>Delete</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </Link>
+            </div>
           );
         })}
 
-        <Dialog open={editDialogOpen} onClose={handleCloseDialog}>
-          <Box
-            component="form"
-            onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              const chatId = formData.get('chatId') as string;
-              const title = formData.get('title') as string;
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Rename Chat</DialogTitle>
+            </DialogHeader>
+            <form
+              onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                const chatId = formData.get('chatId') as string;
+                const title = formData.get('title') as string;
 
-              startTransition(async () => {
-                // Apply optimistic update immediately
-                addOptimisticChat({
-                  id: chatId,
-                  newTitle: title
+                startTransition(async () => {
+                  // Apply optimistic update immediately
+                  addOptimisticChat({
+                    id: chatId,
+                    newTitle: title
+                  });
+                  await updateChatTitle(formData);
                 });
-                await updateChatTitle(formData);
-              });
 
-              handleCloseDialog();
-            }}
-            sx={{ p: 1, minWidth: '400px' }}
-          >
-            <input type="hidden" name="chatId" value={editingChatId ?? ''} />
-            <TextField
-              autoFocus
-              margin="dense"
-              name="title"
-              label="New name"
-              type="text"
-              fullWidth
-              required
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-            />
-
-            <DialogActions>
-              <Button
-                variant="outlined"
-                onClick={handleCloseDialog}
-                color="error"
-                sx={{ mr: 1 }}
-              >
-                Cancel
-              </Button>
-              <Button variant="outlined" type="submit">
-                Save
-              </Button>
-            </DialogActions>
-          </Box>
+                handleCloseDialog();
+              }}
+              className="space-y-4"
+            >
+              <input type="hidden" name="chatId" value={editingChatId ?? ''} />
+              <div>
+                <Input
+                  name="title"
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  placeholder="Enter new name"
+                  required
+                  className="w-full"
+                  autoFocus
+                />
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={handleCloseDialog}
+                  className="mr-2"
+                >
+                  Cancel
+                </Button>
+                <Button type="submit">Save</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
         </Dialog>
       </>
     );

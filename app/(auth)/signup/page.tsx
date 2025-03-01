@@ -1,6 +1,5 @@
 import 'server-only';
 import React from 'react';
-import { Stack } from '@mui/material';
 import SignUpCard from './SignUpCard';
 import Content from '../Content';
 import { redirect } from 'next/navigation';
@@ -13,26 +12,11 @@ export default async function AuthPage() {
   }
 
   return (
-    <Stack
-      direction="column"
-      sx={{
-        justifyContent: 'space-between',
-        pt: 4,
-        height: { xs: 'auto', md: 'calc(100vh - 44px)' }
-      }}
-    >
-      <Stack
-        direction={{ xs: 'column-reverse', md: 'row' }}
-        sx={{
-          justifyContent: 'center',
-          gap: { xs: 6, sm: 6 },
-          height: { xs: '100%', md: 'calc(100vh - 44px)' },
-          p: 1
-        }}
-      >
+    <div className="flex flex-col justify-between pt-4 h-auto md:h-[calc(100vh-44px)]">
+      <div className="flex flex-col-reverse md:flex-row justify-center gap-6 h-full md:h-[calc(100vh-44px)] p-1">
         <Content />
         <SignUpCard />
-      </Stack>
-    </Stack>
+      </div>
+    </div>
   );
 }

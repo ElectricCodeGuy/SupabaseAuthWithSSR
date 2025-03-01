@@ -1,19 +1,13 @@
 'use client';
 import React, { useState, useCallback } from 'react';
-import {
-  Box,
-  Button,
-  Card,
-  Checkbox,
-  Divider,
-  FormLabel,
-  FormControl,
-  FormControlLabel,
-  TextField,
-  Typography,
-  CircularProgress,
-  Alert
-} from '@mui/material';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Label } from '@/components/ui/label';
+import { Loader2 } from 'lucide-react';
 import ForgotPassword from '../ForgotPassword';
 import { GoogleIcon } from '../CustomIcons';
 import { login } from '../action';
@@ -26,7 +20,7 @@ export default function SignInCard() {
   const router = useRouter();
   const [email, setEmail] = useState(
     typeof window !== 'undefined'
-      ? (localStorage.getItem('rememberedEmail') ?? '')
+      ? localStorage.getItem('rememberedEmail') ?? ''
       : ''
   );
   const [password, setPassword] = useState('');
@@ -47,10 +41,10 @@ export default function SignInCard() {
     setOpen(false);
   };
 
-  const [alertMessage, setAlertMessage] = useState<{
-    type: 'error' | 'success' | null;
-    message: string;
-  }>({ type: null, message: '' });
+  const [alertMessage, setAlertMessage] = useState({
+    type: '',
+    message: ''
+  });
 
   const handleSubmit = async (formData: FormData) => {
     if (validateInputs()) {
@@ -94,137 +88,118 @@ export default function SignInCard() {
   }, [email, password]);
 
   return (
-    <Card
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignSelf: 'center',
-        width: { xs: '100%', sm: '450px' },
-        p: { xs: 2, sm: 3 },
-        gap: 1,
-        boxShadow:
-          'rgba(0, 0, 0, 0.05) 0px 5px 15px 0px, rgba(25, 28, 33, 0.05) 0px 15px 35px -5px, rgba(0, 0, 0, 0.05) 0px 0px 0px 1px'
-      }}
-    >
-      <Typography
-        component="h1"
-        variant="h4"
-        sx={{ width: '100%', fontSize: 'clamp(2rem, 10vw, 2.15rem)' }}
-      >
-        Sign In
-      </Typography>
-      <Box
-        component="form"
+    <Card className="flex flex-col self-center w-full sm:w-[450px] p-4 sm:p-6 gap-4 shadow-[0px_5px_15px_rgba(0,0,0,0.05),0px_15px_35px_-5px_rgba(25,28,33,0.05),0px_0px_0px_1px_rgba(0,0,0,0.05)]">
+      <h1 className="text-[clamp(2rem,10vw,2.15rem)] font-bold">Sign In</h1>
+
+      <form
         action={handleSubmit}
         noValidate
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          width: '100%',
-          gap: 1
-        }}
+        className="flex flex-col w-full gap-4"
       >
-        <FormControl>
-          <FormLabel htmlFor="email">Email</FormLabel>
-          <TextField
-            error={emailError}
-            helperText={emailErrorMessage}
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
             id="email"
             type="email"
             name="email"
             placeholder="your@email.com"
             autoComplete="email"
             required
-            fullWidth
-            variant="outlined"
-            color={emailError ? 'error' : 'primary'}
-            sx={{ ariaLabel: 'email' }}
+            aria-label="email"
+            className={emailError ? 'border-destructive' : ''}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-        </FormControl>
-        <FormControl>
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between'
-            }}
-          >
-            <FormLabel htmlFor="password">Password</FormLabel>
+          {emailError && (
+            <p className="text-sm text-destructive">{emailErrorMessage}</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex justify-between">
+            <Label htmlFor="password">Password</Label>
             <Button
+              type="button"
+              variant="link"
               onClick={handleClickOpen}
-              variant="text"
-              sx={{ alignSelf: 'baseline', padding: 0, minWidth: 'auto' }}
+              className="p-0 h-auto"
             >
               Forgot your password?
             </Button>
-          </Box>
-          <TextField
-            error={passwordError}
-            helperText={passwordErrorMessage}
-            name="password"
-            placeholder="••••••"
-            type="password"
+          </div>
+          <Input
             id="password"
+            name="password"
+            type="password"
+            placeholder="••••••"
             autoComplete="current-password"
             required
-            fullWidth
-            variant="outlined"
-            color={passwordError ? 'error' : 'primary'}
+            className={passwordError ? 'border-destructive' : ''}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-        </FormControl>
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-              color="primary"
-            />
-          }
-          label="Remember me"
-        />
+          {passwordError && (
+            <p className="text-sm text-destructive">{passwordErrorMessage}</p>
+          )}
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="remember-me"
+            checked={rememberMe}
+            onCheckedChange={(checked) => setRememberMe(checked === true)}
+          />
+          <Label
+            htmlFor="remember-me"
+            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          >
+            Remember me
+          </Label>
+        </div>
+
         <ForgotPassword open={open} handleClose={handleClose} />
+
         <SubmitButton />
+
         {alertMessage.type && (
-          <Box sx={{ width: '100%', mb: 1 }}>
+          <div className="w-full mb-1">
             <Alert
-              severity={alertMessage.type}
-              sx={{
-                width: '100%',
-                '& .MuiAlert-message': {
-                  width: '100%'
-                }
-              }}
+              variant={
+                alertMessage.type === 'error' ? 'destructive' : 'default'
+              }
             >
-              {alertMessage.message}
+              <AlertDescription>{alertMessage.message}</AlertDescription>
             </Alert>
-          </Box>
+          </div>
         )}
-        <Button
-          component={Link}
-          href="/signup"
-          replace
-          variant="outlined"
-          sx={{ alignSelf: 'center' }}
-        >
-          Don&apos;t have an account? Sign up
+
+        <Button asChild variant="outline" className="self-center">
+          <Link href="/signup" replace>
+            Don&apos;t have an account? Sign up
+          </Link>
         </Button>
-      </Box>
-      <Divider>or</Divider>
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+      </form>
+
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <Separator className="w-full" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-background px-2 text-muted-foreground">or</span>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-4">
         <Button
-          type="submit"
-          fullWidth
-          variant="outlined"
-          color="secondary"
+          type="button"
+          variant="outline"
           onClick={() => signInWithGoogle()}
-          startIcon={<GoogleIcon />}
+          className="w-full"
         >
+          <GoogleIcon />
           Sign in with Google
         </Button>
-      </Box>
+      </div>
     </Card>
   );
 }
@@ -233,14 +208,8 @@ function SubmitButton() {
   const { pending } = useFormStatus();
 
   return (
-    <Button
-      type="submit"
-      fullWidth
-      variant="contained"
-      disabled={pending}
-      sx={{ mb: 1 }}
-    >
-      {pending ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
+    <Button type="submit" className="w-full mb-1" disabled={pending}>
+      {pending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : 'Sign In'}
     </Button>
   );
 }

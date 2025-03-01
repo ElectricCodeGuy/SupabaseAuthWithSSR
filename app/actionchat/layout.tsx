@@ -1,6 +1,5 @@
 // app/chat/[chatId]/layout.tsx
 import React from 'react';
-import { Box } from '@mui/material';
 import { createServerSupabaseClient } from '@/lib/server/server';
 import { getUserInfo } from '@/lib/server/supabase';
 import ChatHistoryDrawer from './component/UserChatList';
@@ -70,7 +69,7 @@ export default async function Layout(props: { children: React.ReactNode }) {
   }
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <div style={{ display: 'flex' }}>
       <UploadProvider userId={userInfo.id}>
         <AiProvider>
           <ChatHistoryDrawer
@@ -80,6 +79,6 @@ export default async function Layout(props: { children: React.ReactNode }) {
         </AiProvider>
         {props.children}
       </UploadProvider>
-    </Box>
+    </div>
   );
 }

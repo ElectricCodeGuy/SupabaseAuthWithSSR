@@ -1,14 +1,16 @@
 import React from 'react';
 import { type Metadata } from 'next';
-import { Typography, Box, Button, TextField } from '@mui/material';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
-  SentimentDissatisfied as SentimentDissatisfiedIcon,
-  SentimentVeryDissatisfied as SentimentVeryDissatisfiedIcon,
-  Report as ReportIcon,
-  Warning as WarningIcon,
-  Error as ErrorIcon,
-  Lock as LockIcon
-} from '@mui/icons-material';
+  AlertTriangle,
+  AlertCircle,
+  ShieldAlert,
+  ShieldX,
+  AlertOctagon,
+  Lock,
+  Loader2
+} from 'lucide-react';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
@@ -30,280 +32,93 @@ export const metadata: Metadata = {
     index: true
   }
 };
+
 export default function AdminPage() {
   return (
-    <Box
-      sx={{
-        minHeight: {
-          xs: '100vh',
-          sm: '100vh',
-          md: 'calc(100vh - 44px)' // 44px is the height of the app bar so we subtract it from the viewport height
-        },
-        display: 'flex',
-        flexDirection: 'column',
-        background:
-          'linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab)',
-        backgroundSize: '400% 400%',
-        animation: 'gradientBG 15s ease infinite',
-        position: 'relative',
-        '@keyframes gradientBG': {
-          '0%': { backgroundPosition: '0% 50%' },
-          '50%': { backgroundPosition: '100% 50%' },
-          '100%': { backgroundPosition: '0% 50%' }
-        },
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
-          opacity: 0.08,
-          pointerEvents: 'none',
-          '@keyframes noise': {
-            '0%': { transform: 'translate(0, 0) rotate(0deg)' },
-            '10%': { transform: 'translate(-8%, -8%) rotate(1deg)' },
-            '20%': { transform: 'translate(-15%, 5%) rotate(-1deg)' },
-            '30%': { transform: 'translate(8%, -15%) rotate(2deg)' },
-            '40%': { transform: 'translate(-8%, 20%) rotate(-2deg)' },
-            '50%': { transform: 'translate(-15%, 8%) rotate(1deg)' },
-            '60%': { transform: 'translate(20%, 0) rotate(-1deg)' },
-            '70%': { transform: 'translate(0, 15%) rotate(2deg)' },
-            '80%': { transform: 'translate(-20%, 0) rotate(-2deg)' },
-            '90%': { transform: 'translate(15%, 8%) rotate(1deg)' },
-            '100%': { transform: 'translate(8%, 0) rotate(0deg)' }
-          }
-        }
-      }}
-    >
-      <Box
-        sx={{
-          flex: '1 0 auto',
-          maxWidth: '1200px',
-          mx: 'auto',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          my: 10,
-          p: 4, // Add padding
-          borderRadius: 4,
-          textAlign: 'center',
-          width: '100%',
-          backgroundColor: 'rgba(255, 255, 255, 0.9)',
-          boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
-          border: '1px solid rgba(255, 255, 255, 0.18)',
-          position: 'relative',
-          zIndex: 1, // Add z-index to ensure content is clickable
-          animation: 'fadeIn 1s ease-out',
-          '@keyframes fadeIn': {
-            from: { opacity: 0, transform: 'translateY(-20px)' },
-            to: { opacity: 1, transform: 'translateY(0)' }
-          },
-          '&::after': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            border: '2px solid transparent',
-            borderRadius: 4,
-            animation: 'borderGlow 4s linear infinite',
-            pointerEvents: 'none', // Add this to ensure clicks go through
-            zIndex: -1 // Place behind content
-          },
-          '@keyframes borderGlow': {
-            '0%': { borderColor: 'rgba(255, 0, 0, 0)' },
-            '50%': { borderColor: 'rgba(255, 0, 0, 0.5)' },
-            '100%': { borderColor: 'rgba(255, 0, 0, 0)' }
-          }
+    <div className="min-h-[calc(100vh-44px)] md:min-h-[calc(100vh-44px)] flex flex-col bg-gradient-to-br from-[#ee7752] via-[#e73c7e] to-[#23a6d5] to-[#23d5ab] bg-[length:400%_400%] animate-gradient relative">
+      {/* Noise overlay */}
+      <div
+        className="absolute inset-0 opacity-10 pointer-events-none"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`
         }}
-      >
+      />
+
+      <div className="flex-1 max-w-[1200px] mx-auto flex flex-col items-center justify-center my-10 p-4 md:p-8 rounded-xl text-center w-full bg-white/90 shadow-2xl border border-white/20 relative z-10 animate-fadeIn">
+        {/* Glowing border */}
+        <div className="absolute inset-0 rounded-xl border-2 border-transparent animate-borderGlow pointer-events-none -z-10" />
+
+        {/* Floating warnings */}
         {[...Array(10)].map((_, i) => (
-          <Box
+          <div
             key={i}
-            sx={{
-              position: 'absolute',
-              color: 'rgba(255, 0, 0, 0.4)',
-              fontSize: '2rem',
-              animation: `float ${Math.random() * 10 + 5}s ease-in-out infinite`,
+            className="absolute text-2xl text-red-500/40"
+            style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
-              '@keyframes float': {
-                '0%, 100%': { transform: 'translateY(0) rotate(0deg)' },
-                '50%': { transform: 'translateY(-20px) rotate(180deg)' }
-              }
+              animation: `float ${Math.random() * 10 + 5}s ease-in-out infinite`
             }}
           >
             ⚠️
-          </Box>
+          </div>
         ))}
-        <WarningIcon
-          sx={{
-            fontSize: 100,
-            color: 'error.main',
-            animation: 'shake 0.5s ease-in-out infinite',
-            '@keyframes shake': {
-              '0%, 100%': { transform: 'rotate(0deg)' },
-              '25%': { transform: 'rotate(-20deg)' },
-              '75%': { transform: 'rotate(20deg)' }
-            }
-          }}
-        />
 
-        <Typography
-          variant="h2"
-          gutterBottom
-          component="div"
-          sx={{
-            display: 'inline',
-            fontWeight: 'bold',
-            color: 'error.main',
-            verticalAlign: 'middle',
-            textShadow: '2px 2px 4px rgba(0,0,0,0.2)',
-            animation: 'glowText 2s ease-in-out infinite',
-            '@keyframes glowText': {
-              '0%, 100%': { textShadow: '2px 2px 4px rgba(255,0,0,0.2)' },
-              '50%': { textShadow: '2px 2px 20px rgba(255,0,0,0.5)' }
-            }
-          }}
-        >
+        <AlertTriangle className="w-24 h-24 text-red-600 animate-shake" />
+
+        <h1 className="text-3xl md:text-5xl font-bold text-red-600 mt-4 inline-block align-middle animate-glowText">
           🚨 Access Denied! 🚫
-        </Typography>
+        </h1>
 
-        <Typography
-          variant="h4"
-          gutterBottom
-          sx={{
-            mt: 2,
-            color: 'text.primary',
-            fontWeight: 'bold',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        >
-          <ErrorIcon sx={{ fontSize: 40, mr: 1 }} />
+        <h2 className="text-xl md:text-3xl mt-6 text-gray-800 font-bold flex items-center justify-center flex-wrap">
+          <AlertOctagon className="w-6 h-6 md:w-8 md:h-8 mr-2 shrink-0" />
           You do not have permission to access this page! 😠
-        </Typography>
-        <Typography
-          variant="subtitle1"
-          gutterBottom
-          sx={{
-            fontSize: { xs: '1rem', sm: '1.25rem' },
-            color: 'text.secondary',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexWrap: 'wrap'
-          }}
-        >
-          <SentimentDissatisfiedIcon sx={{ fontSize: 30, mr: 1 }} />
+        </h2>
+
+        <p className="text-base md:text-xl text-gray-600 flex items-center justify-center flex-wrap mt-2 mb-6">
+          <ShieldAlert className="w-5 h-5 mr-2 shrink-0" />
           Don&apos;t worry, we have already sent a notification to our security
           department.
-          <SentimentVeryDissatisfiedIcon sx={{ fontSize: 30, ml: 1 }} />
-        </Typography>
+          <ShieldX className="w-5 h-5 ml-2 shrink-0" />
+        </p>
 
-        <TextField
-          label="Username"
-          variant="outlined"
-          sx={{
-            mb: 2,
-            width: 400
-          }}
-          placeholder="Hint: It doesn't work"
-        />
-        <TextField
-          label="Password"
-          variant="outlined"
-          sx={{ mb: 2, width: 400 }}
-          placeholder="Try 123456 (it still doesn't work)"
-        />
-        <Button
-          component={Link}
-          variant="contained"
-          color="primary"
-          href="/admin"
-          target="_blank"
-          sx={{
-            transition: 'all 0.3s ease',
-            '&:hover': {
-              backgroundColor: 'error.main',
-              transform: 'translateY(-3px)',
-              boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)'
-            }
-          }}
-        >
-          Try to log in
-        </Button>
-        <Button
-          component={Link}
-          variant="contained"
-          color="error"
-          sx={{
-            mt: 2,
-            background: 'linear-gradient(45deg, #FF0000, #FF6B6B)',
-            animation: 'glowButton 1.5s ease-in-out infinite',
-            '@keyframes glowButton': {
-              '0%, 100%': {
-                boxShadow: '0 0 5px #FF0000, 0 0 10px #FF0000, 0 0 15px #FF0000'
-              },
-              '50%': {
-                boxShadow:
-                  '0 0 20px #FF0000, 0 0 25px #FF0000, 0 0 30px #FF0000'
-              }
-            },
-            '&:hover': {
-              background: 'linear-gradient(45deg, #FF6B6B, #FF0000)',
-              transform: 'scale(1.1) rotate(5deg)'
-            }
-          }}
-          href="/"
-          startIcon={<ReportIcon />}
-        >
-          <span>Leave this page now!</span>
-        </Button>
+        <div className="w-full max-w-md space-y-4 mb-6">
+          <Input placeholder="Hint: It doesn't work" className="bg-white" />
 
-        <Box
-          sx={{
-            mt: 4,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            animation: 'fadeInOut 2s infinite',
-            '@keyframes fadeInOut': {
-              '0%, 100%': { opacity: 0.5 },
-              '50%': { opacity: 1 }
-            }
-          }}
-        >
-          <LockIcon
-            sx={{
-              fontSize: 20,
-              color: 'error.main',
-              animation: 'glitch 1s ease infinite',
-              '@keyframes glitch': {
-                '0%, 100%': { transform: 'translate(0)' },
-                '20%': { transform: 'translate(-5px, 5px)' },
-                '40%': { transform: 'translate(-5px, -5px)' },
-                '60%': { transform: 'translate(5px, 5px)' },
-                '80%': { transform: 'translate(5px, -5px)' }
-              }
-            }}
+          <Input
+            type="password"
+            placeholder="Try 123456 (it still doesn't work)"
+            className="bg-white"
           />
-          <Typography
-            variant="body2"
-            sx={{
-              color: 'text.secondary',
-              position: 'relative'
-            }}
-          >
+        </div>
+
+        <Button
+          asChild
+          className="transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+        >
+          <Link href="/admin" target="_blank" className="flex items-center">
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Try to log in
+          </Link>
+        </Button>
+
+        <Button
+          asChild
+          variant="destructive"
+          className="mt-4 bg-gradient-to-r from-red-600 to-red-400 animate-glowButton hover:from-red-400 hover:to-red-600 hover:scale-110 hover:rotate-3 transition-all"
+        >
+          <Link href="/" className="flex items-center">
+            <AlertCircle className="w-5 h-5 mr-2" />
+            <span>Leave this page now!</span>
+          </Link>
+        </Button>
+
+        <div className="mt-8 flex items-center justify-center animate-fadePulse">
+          <Lock className="w-5 h-5 text-red-600 animate-glitch" />
+          <p className="text-gray-600 ml-2 relative">
             This page is protected and monitored
-          </Typography>
-        </Box>
-      </Box>
-    </Box>
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }

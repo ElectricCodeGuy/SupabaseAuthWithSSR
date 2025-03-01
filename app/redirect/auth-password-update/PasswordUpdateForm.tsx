@@ -1,17 +1,14 @@
 'use client';
 import React, { useState, type FC, Suspense } from 'react';
-import {
-  Button,
-  Box,
-  Card,
-  Typography,
-  TextField,
-  CircularProgress
-} from '@mui/material';
 import { resetPassword } from './action';
-import { LockOutlined as LockOutlinedIcon } from '@mui/icons-material';
+import { Lock, Loader2 } from 'lucide-react';
 import { useFormStatus } from 'react-dom';
 import Message from './messages';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 const PasswordUpdateForm: FC = () => {
   const [newPassword, setNewPassword] = useState<string>('');
@@ -43,93 +40,69 @@ const PasswordUpdateForm: FC = () => {
   };
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: '100%',
-        maxWidth: '800px',
-        m: 'auto'
-      }}
-    >
-      <Card
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignSelf: 'center',
-          borderRadius: '16px',
-          width: { xs: '100%', sm: '350px', md: '500px' },
-          p: { xs: 1, sm: 1.5, md: 2 },
-          boxShadow:
-            'rgba(0, 0, 0, 0.05) 0px 5px 15px 0px, rgba(25, 28, 33, 0.05) 0px 15px 35px -5px, rgba(0, 0, 0, 0.05) 0px 0px 0px 1px'
-        }}
-      >
-        <Typography variant="h5">Update Password</Typography>
-        <Box
-          component="form"
-          action={handleSubmit}
-          noValidate
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            width: '100%',
-            gap: { xs: 0.5, sm: 0.5, md: 1 }
-          }}
-        >
-          <TextField
-            id="newPassword"
-            label="New Password"
-            type="password"
-            value={newPassword}
-            onChange={(e) => {
-              setNewPassword(e.target.value);
-              validatePassword(e.target.value);
-            }}
-            autoComplete="new-password"
-            variant="outlined"
-            margin="normal"
-            fullWidth
-            slotProps={{
-              input: {
-                startAdornment: <LockOutlinedIcon />
-              }
-            }}
-          />
+    <div className="flex justify-center items-center w-full max-w-[800px] mx-auto">
+      <Card className="flex flex-col self-center rounded-2xl w-full sm:w-[350px] md:w-[500px] shadow-[0px_5px_15px_0px_rgba(0,0,0,0.05),0px_15px_35px_-5px_rgba(25,28,33,0.05),0px_0px_0px_1px_rgba(0,0,0,0.05)]">
+        <CardHeader className="pb-2">
+          <CardTitle>Update Password</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form
+            action={handleSubmit}
+            noValidate
+            className="flex flex-col w-full gap-y-2 md:gap-y-4"
+          >
+            <div className="space-y-2">
+              <Label htmlFor="newPassword">New Password</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                  <Lock className="h-4 w-4" />
+                </span>
+                <Input
+                  id="newPassword"
+                  name="newPassword"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => {
+                    setNewPassword(e.target.value);
+                    validatePassword(e.target.value);
+                  }}
+                  autoComplete="new-password"
+                  className="pl-10 py-5"
+                />
+              </div>
+            </div>
 
-          <TextField
-            id="confirmPassword"
-            label="Confirm New Password"
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            autoComplete="new-password"
-            variant="outlined"
-            margin="normal"
-            fullWidth
-            slotProps={{
-              input: {
-                startAdornment: <LockOutlinedIcon />
-              }
-            }}
-          />
-          <Suspense fallback={null}>
-            <Message />
-          </Suspense>
-          <SubmitButton />
-        </Box>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm New Password</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                  <Lock className="h-4 w-4" />
+                </span>
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  autoComplete="new-password"
+                  className="pl-10 py-5"
+                />
+              </div>
+            </div>
+
+            <Suspense fallback={null}>
+              <Message />
+            </Suspense>
+
+            <SubmitButton />
+          </form>
+        </CardContent>
       </Card>
-      <Box
-        sx={{
-          display: { xs: 'none', sm: 'flex' },
-          justifyContent: 'center',
-          alignItems: 'center',
-          ml: 2
-        }}
-      >
+
+      <div className="hidden sm:flex justify-center items-center ml-2">
         <PasswordRequirements requirements={passwordRequirements} />
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 };
 
@@ -139,20 +112,15 @@ function SubmitButton() {
   const { pending } = useFormStatus();
 
   return (
-    <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-      <Button
-        type="submit"
-        variant="contained"
-        disabled={pending}
-        sx={{ width: '200px' }} // Adjust the width as needed
-      >
+    <div className="flex justify-center mt-2">
+      <Button type="submit" disabled={pending} className="w-[200px]">
         {pending ? (
-          <CircularProgress size={24} color="inherit" />
+          <Loader2 className="h-5 w-5 animate-spin mr-2" />
         ) : (
           'Update Password'
         )}
       </Button>
-    </Box>
+    </div>
   );
 }
 
@@ -167,31 +135,26 @@ interface PasswordRequirementsProps {
 
 function PasswordRequirements({ requirements }: PasswordRequirementsProps) {
   return (
-    <Box
-      sx={{
-        width: '240px',
-        backgroundColor: 'white',
-        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-        borderRadius: '16px',
-        padding: '8px',
-        ml: 2
-      }}
-    >
-      <Typography variant="subtitle2" gutterBottom>
-        Password Requirements:
-      </Typography>
-      <ul style={{ paddingLeft: '20px', margin: 0 }}>
-        <li style={{ color: requirements.length ? 'green' : 'red' }}>
+    <div className="w-[240px] bg-white shadow-md rounded-2xl p-4 ml-2">
+      <p className="text-sm font-semibold mb-2">Password Requirements:</p>
+      <ul className="pl-5 m-0 space-y-1">
+        <li className={requirements.length ? 'text-green-600' : 'text-red-600'}>
           Length (at least 6 characters)
         </li>
-        <li style={{ color: requirements.uppercase ? 'green' : 'red' }}>
+        <li
+          className={requirements.uppercase ? 'text-green-600' : 'text-red-600'}
+        >
           Uppercase letter
         </li>
-        <li style={{ color: requirements.lowercase ? 'green' : 'red' }}>
+        <li
+          className={requirements.lowercase ? 'text-green-600' : 'text-red-600'}
+        >
           Lowercase letter
         </li>
-        <li style={{ color: requirements.number ? 'green' : 'red' }}>Number</li>
+        <li className={requirements.number ? 'text-green-600' : 'text-red-600'}>
+          Number
+        </li>
       </ul>
-    </Box>
+    </div>
   );
 }

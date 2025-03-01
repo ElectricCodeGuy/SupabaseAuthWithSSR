@@ -1,33 +1,37 @@
 import React from 'react';
-import { Button, Box, CircularProgress } from '@mui/material';
 import { signout } from '@/app/(auth)/action';
 import { useFormStatus } from 'react-dom';
-import ExitToAppIcon from '@mui/icons-material/ExitToApp';
+import { Button } from '@/components/ui/button';
+import { Loader2, LogOut } from 'lucide-react';
 
 export default function SignOut() {
   return (
-    <Box
-      component="form"
-      action={signout}
-      sx={{ display: 'flex', justifyContent: 'center' }}
-    >
-      <SubmitButton />
-    </Box>
+    <div className="flex justify-center">
+      <form action={signout}>
+        <SubmitButton />
+      </form>
+    </div>
   );
 }
 
 function SubmitButton() {
   const { pending } = useFormStatus();
+
   return (
     <Button
       type="submit"
-      fullWidth
-      variant="outlined"
+      variant="outline"
       disabled={pending}
-      startIcon={<ExitToAppIcon />}
-      sx={{ borderRadius: '50px' }}
+      className="w-full rounded-full"
     >
-      {pending ? <CircularProgress size={24} color="inherit" /> : 'Sign out'}
+      {pending ? (
+        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+      ) : (
+        <>
+          <LogOut className="h-4 w-4 mr-2" />
+          Sign out
+        </>
+      )}
     </Button>
   );
 }

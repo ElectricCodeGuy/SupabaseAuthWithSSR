@@ -1,6 +1,5 @@
 // app/chat/[chatId]/layout.tsx
 import React from 'react';
-import { Box } from '@mui/material';
 import { createServerSupabaseClient } from '@/lib/server/server';
 import ChatHistoryDrawer from './components/UserCharListDrawer';
 import { unstable_noStore as noStore } from 'next/cache';
@@ -66,12 +65,12 @@ export default async function Layout(props: { children: React.ReactNode }) {
     };
   }
   return (
-    <Box sx={{ display: 'flex' }}>
+    <div style={{ display: 'flex' }}>
       <ChatHistoryDrawer
         userInfo={userInfo}
         initialChatPreviews={initialChatPreviews}
       />
       {props.children}
-    </Box>
+    </div>
   );
 }

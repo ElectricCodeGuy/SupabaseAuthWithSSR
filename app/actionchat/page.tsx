@@ -1,5 +1,4 @@
 import 'server-only';
-import { Box } from '@mui/material';
 import { getUserInfo } from '@/lib/server/supabase';
 import ChatComponentPage from './component/ChatComponent';
 import { AI as AiProvider } from './action_chat/AIProvider';
@@ -17,25 +16,25 @@ export default async function Page(props: PageProps) {
   const userInfo = await getUserInfo();
 
   return (
-    <Box
-      sx={{
+    <div
+      style={{
         display: 'flex',
         width: '100%',
         overflow: 'hidden'
       }}
     >
-      <Box sx={{ flex: 1 }}>
+      <div style={{ flex: 1 }}>
         <AiProvider>
           <ChatComponentPage userInfo={userInfo} />{' '}
         </AiProvider>
-      </Box>
+      </div>
 
       {searchParams.url ? (
         <WebsiteWiever url={decodeURIComponent(searchParams.url)} />
       ) : searchParams.pdf ? (
         <DocumentComponent fileName={decodeURIComponent(searchParams.pdf)} />
       ) : null}
-    </Box>
+    </div>
   );
 }
 

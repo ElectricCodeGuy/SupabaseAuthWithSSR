@@ -1,6 +1,7 @@
 import React from 'react';
-import { Box, Grid2, Typography, Divider } from '@mui/material';
 import Link from 'next/link';
+import { Card, CardContent } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 
 const features = [
   {
@@ -43,7 +44,7 @@ const features = [
           href="#models"
           target="_blank"
           rel="noopener noreferrer"
-          style={{ textDecoration: 'none' }}
+          className="text-primary hover:underline"
         >
           Financial Info
         </Link>
@@ -56,94 +57,36 @@ const features = [
 
 export default function Component() {
   return (
-    <Box
+    <div
       id="models"
-      sx={{
-        pt: [1, 2, 3, 4],
-        pb: [1, 2, 3, 6],
-        maxWidth: '1800px',
-        mx: 'auto'
-      }}
+      className="pt-1 sm:pt-2 md:pt-3 lg:pt-4 pb-1 sm:pb-2 md:pb-3 lg:pb-6 max-w-[1800px] mx-auto px-4"
     >
-      <Typography
-        variant="h2"
-        sx={{
-          textAlign: 'center',
-          fontWeight: 'bold',
-          fontFamily: 'Monospace',
-          letterSpacing: '0.1em',
-          backgroundClip: 'text',
-          WebkitBackgroundClip: 'text',
-          backgroundGradient: 'linear(to r, white, grey.500)'
-        }}
-      >
+      <h2 className="text-center font-bold font-mono tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-500 text-3xl mb-2">
         Discover Our Features
-      </Typography>
-      <Typography
-        variant="body1"
-        sx={{
-          fontWeight: 'bold',
-          textAlign: 'center',
-          maxWidth: 800,
-          mx: 'auto',
-          fontFamily: 'Monospace',
-          letterSpacing: '0.05em',
-          mb: 2
-        }}
-      >
+      </h2>
+      <p className="font-bold text-center max-w-[800px] mx-auto font-mono tracking-wider mb-8">
         Harnessing Advanced AI for Better Insights and Efficient Operations
-      </Typography>
+      </p>
 
-      <Grid2 container spacing={4}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
         {features.map((feature, index) => (
-          <Grid2
+          <Card
             key={index}
-            style={{ display: 'flex' }}
-            size={{
-              xs: 12,
-              sm: 6,
-              md: 4
-            }}
-            sx={{
-              p: 2,
-              textAlign: 'center',
-              borderRadius: '12px',
-              borderColor: 'grey.800',
-              height: '100%',
-              minHeight: 350,
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-              width: '100%',
-              boxShadow: 3,
-              backgroundColor: 'background.paper'
-            }}
+            className="h-full min-h-[350px] flex flex-col shadow-md"
           >
-            <Box sx={{ fontSize: 50, opacity: 0.9 }}>{feature.Icon}</Box>
-            <Typography
-              variant="h6"
-              color="primary"
-              gutterBottom
-              sx={{
-                fontWeight: 'bold'
-              }}
-            >
-              {feature.title}
-            </Typography>
-            <Divider variant="middle" />
-            <Typography
-              variant="body2"
-              component="div"
-              sx={{
-                color: 'text.secondary',
-                mt: 2
-              }}
-            >
-              {feature.description}
-            </Typography>
-          </Grid2>
+            <CardContent className="flex flex-col items-center justify-center text-center h-full p-6">
+              <div className="text-5xl opacity-90 mb-4">{feature.Icon}</div>
+              <h6 className="text-primary font-bold text-lg mb-2">
+                {feature.title}
+              </h6>
+              <Separator className="w-1/2 my-2" />
+              <div className="text-muted-foreground mt-4 text-sm">
+                {feature.description}
+              </div>
+            </CardContent>
+          </Card>
         ))}
-      </Grid2>
-    </Box>
+      </div>
+    </div>
   );
 }

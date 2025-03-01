@@ -4,35 +4,45 @@ import React, { useState } from 'react';
 import { useUIState, useActions, readStreamableValue } from 'ai/rsc';
 import { type AI } from '../action_chat/shared';
 import { UserMessage } from './ChatWrapper';
-import {
-  IconButton,
-  InputAdornment,
-  TextField,
-  Box,
-  CircularProgress,
-  Typography,
-  Tooltip,
-  FormControl,
-  Select,
-  Link as MuiLink,
-  MenuItem,
-  Popover,
-  Button
-} from '@mui/material';
-import {
-  Send as SendIcon,
-  Stop as StopIcon,
-  Chat as ChatIcon,
-  PictureAsPdf as PdfIcon,
-  Search as SearchIcon
-} from '@mui/icons-material';
 import { useRouter, useParams } from 'next/navigation';
 import { ChatScrollAnchor } from '../hooks/chat-scroll-anchor';
 import type { Tables } from '@/types/database';
 import ErrorBoundary from './ErrorBoundary';
-import { useUpload } from '../context/uploadContext'; // Add this import
+import { useUpload } from '../context/uploadContext';
 import Link from 'next/link';
 import { useSWRConfig } from 'swr';
+
+// Shadcn UI components
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@/components/ui/tooltip';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger
+} from '@/components/ui/popover';
+
+// Lucide icons
+import {
+  Send,
+  StopCircle,
+  MessageSquare,
+  FileText,
+  Search,
+  Loader2
+} from 'lucide-react';
 
 type UserData = Pick<Tables<'users'>, 'email' | 'full_name'>;
 
@@ -60,20 +70,12 @@ export default function ChatComponentPage({
   const [loadingState, setLoadingState] = useState<'searching' | 'done' | null>(
     null
   );
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const open = Boolean(anchorEl);
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
-  // Add these handlers
-  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
   const { id } = useParams();
   const currentChatId = (id as string) || '';
-  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && event.shiftKey) {
       // Allow newline on Shift + Enter
     } else if (event.key === 'Enter') {
@@ -83,555 +85,10 @@ export default function ChatComponentPage({
   };
 
   const { mutate } = useSWRConfig();
-  return (
-    <ErrorBoundary>
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          height: {
-            xs: '100vh',
-            sm: '100vh',
-            md: 'calc(100vh - 44px)'
-          },
-          overflow: 'hidden',
-          mx: 'auto',
-          position: 'relative'
-        }}
-      >
-        {/* Add the model selector at the top */}
-        {userInfo && (
-          <FormControl
-            size="small"
-            variant="standard"
-            sx={{
-              maxWidth: 120,
-              backgroundColor: 'white',
-              borderRadius: 1,
-              m: 1,
-              position: 'absolute',
-              alignSelf: {
-                xs: 'flex-end',
-                sm: 'flex-end',
-                md: 'flex-start'
-              }
-            }}
-          >
-            <Select
-              labelId="model-select-label"
-              id="model-select"
-              value={selectedModel}
-              label="Model"
-              onChange={(event) =>
-                setSelectedModel(event.target.value as 'claude3' | 'chatgpt4')
-              }
-              size="small"
-            >
-              <MenuItem value="claude3" sx={{ fontSize: '0.875rem' }}>
-                Claude
-              </MenuItem>
-              <MenuItem value="chatgpt4" sx={{ fontSize: '0.875rem' }}>
-                GPT-4
-              </MenuItem>
-            </Select>
-          </FormControl>
-        )}
-        {messages.length === 0 ? (
-          <Box
-            sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-              alignItems: 'center',
-              height: '100%',
-              textAlign: 'center',
-              p: 1
-            }}
-          >
-            <Typography
-              variant="h4"
-              sx={{
-                color: 'textSecondary',
-                mb: 2
-              }}
-            >
-              Chat with our AI Assistant
-            </Typography>
-            <>
-              <Typography
-                variant="body1"
-                sx={{
-                  color: 'textSecondary',
-                  mb: 2
-                }}
-              >
-                Experience the power of AI-driven conversations with our chat
-                template. Ask questions on any topic and get informative
-                responses instantly.
-              </Typography>
 
-              {/* Add this new Typography section for Tavily */}
-              <Typography
-                variant="body1"
-                sx={{
-                  color: 'textSecondary',
-                  mb: 2,
-                  maxWidth: '600px',
-                  border: '1px solid #e0e0e0',
-                  borderRadius: '8px',
-                  padding: 2,
-                  backgroundColor: 'rgba(25, 118, 210, 0.04)'
-                }}
-              >
-                <strong>🔍 Web Search Mode:</strong> Powered by{' '}
-                <MuiLink
-                  href="https://tavily.com/"
-                  target="_blank"
-                  rel="noopener"
-                  style={{ color: 'blue' }}
-                >
-                  Tavily AI
-                </MuiLink>
-                , our search feature provides real-time, accurate information
-                from across the web. Get up-to-date answers with reliable
-                sources and citations. Perfect for current events,
-                fact-checking, and research queries.
-              </Typography>
-
-              <Typography
-                variant="body1"
-                sx={{
-                  color: 'textSecondary',
-                  mb: 2
-                }}
-              >
-                <strong>
-                  Check out{' '}
-                  <MuiLink
-                    href="https://www.lovguiden.dk/"
-                    target="_blank"
-                    rel="noopener"
-                    style={{ fontSize: '1.2rem', color: 'blue' }}
-                  >
-                    Lovguiden
-                  </MuiLink>
-                  , a Danish legal AI platform, for a real-world example of AI
-                  in action.
-                </strong>
-              </Typography>
-            </>
-            <>
-              <Box
-                sx={{
-                  display: 'flex',
-                  gap: 2,
-                  mt: 4,
-                  justifyContent: 'center'
-                }}
-              >
-                <Tooltip title="Regular Chat Mode">
-                  <IconButton
-                    onClick={() => setSelectedMode('default')}
-                    sx={{
-                      width: 80,
-                      height: 80,
-                      border:
-                        selectedMode === 'default'
-                          ? '2px solid #1976d2'
-                          : '1px solid #ccc',
-                      borderRadius: '12px',
-                      '&:hover': { backgroundColor: 'rgba(25, 118, 210, 0.04)' }
-                    }}
-                  >
-                    <ChatIcon
-                      sx={{
-                        fontSize: 40,
-                        color: selectedMode === 'default' ? '#1976d2' : '#666'
-                      }}
-                    />
-                  </IconButton>
-                </Tooltip>
-
-                <Tooltip title="PDF Chat Mode">
-                  <IconButton
-                    onClick={() => setSelectedMode('pdf')}
-                    sx={{
-                      width: 80,
-                      height: 80,
-                      border:
-                        selectedMode === 'pdf'
-                          ? '2px solid #1976d2'
-                          : '1px solid #ccc',
-                      borderRadius: '12px',
-                      '&:hover': { backgroundColor: 'rgba(25, 118, 210, 0.04)' }
-                    }}
-                  >
-                    <PdfIcon
-                      sx={{
-                        fontSize: 40,
-                        color: selectedMode === 'pdf' ? '#1976d2' : '#666'
-                      }}
-                    />
-                  </IconButton>
-                </Tooltip>
-
-                <Tooltip title="Web Search Mode (Powered by Tavily AI)">
-                  <IconButton
-                    onClick={() => setSelectedMode('search')}
-                    sx={{
-                      width: 80,
-                      height: 80,
-                      border:
-                        selectedMode === 'search'
-                          ? '2px solid #1976d2'
-                          : '1px solid #ccc',
-                      borderRadius: '12px',
-                      '&:hover': { backgroundColor: 'rgba(25, 118, 210, 0.04)' }
-                    }}
-                  >
-                    <SearchIcon
-                      sx={{
-                        fontSize: 40,
-                        color: selectedMode === 'search' ? '#1976d2' : '#666'
-                      }}
-                    />
-                  </IconButton>
-                </Tooltip>
-              </Box>
-
-              <Typography
-                variant="body2"
-                sx={{
-                  color: 'textSecondary',
-                  mt: 2
-                }}
-              >
-                Select your preferred chat mode
-              </Typography>
-            </>
-          </Box>
-        ) : (
-          <Box
-            sx={{
-              flex: 1,
-              overflow: 'auto',
-              width: '100%',
-              px: {
-                xs: 1,
-                sm: 1,
-                md: 2
-              },
-              py: 1
-            }}
-          >
-            {messages.map((message) => (
-              <Box
-                key={message.id}
-                sx={{
-                  width: '100%',
-                  maxWidth: '700px',
-                  mx: 'auto',
-                  padding: {
-                    xs: '0px',
-                    sm: '0px',
-                    md: '2px',
-                    lg: '1px',
-                    xl: '1px'
-                  }
-                }}
-              >
-                {message.display}
-              </Box>
-            ))}
-            <ChatScrollAnchor trackVisibility />
-          </Box>
-        )}
-        {rateLimitInfo &&
-          !rateLimitInfo.success &&
-          rateLimitInfo.reset &&
-          userInfo && (
-            <Box
-              sx={{
-                backgroundColor: 'rgba(0, 0, 0, 0.1)',
-                borderRadius: '8px',
-                maxWidth: '800px',
-                padding: {
-                  xs: '1px',
-                  sm: '1px',
-                  md: '2px',
-                  lg: '4px',
-                  xl: '4px'
-                },
-                my: 1,
-                textAlign: 'center',
-                mx: 'auto'
-              }}
-            >
-              <Typography variant="body1" component="p" sx={{ mb: 1 }}>
-                {rateLimitInfo.message}
-              </Typography>
-              <Typography variant="body2" component="p" sx={{ mb: 1 }}>
-                Please wait until{' '}
-                {new Date(rateLimitInfo.reset * 1000).toLocaleTimeString()} to
-                send more messages.
-              </Typography>
-              <Button
-                component={Link}
-                href="#"
-                variant="contained"
-                color="primary"
-                size="small"
-                sx={{
-                  textTransform: 'none',
-                  borderRadius: '8px',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: '0 4px 8px rgba(0,0,0,0.2)'
-                  },
-                  transition: 'all 0.2s ease-in-out'
-                }}
-              >
-                Buy more credits
-              </Button>
-            </Box>
-          )}
-        <Box
-          component="form"
-          onSubmit={handleSubmit}
-          sx={{
-            alignItems: 'center',
-            maxWidth: '700px',
-            mx: 'auto',
-            width: '100%',
-            marginTop: 'auto',
-            pb: '8px',
-            px: {
-              xs: '4px',
-              sm: '4px',
-              md: '12px'
-            },
-            '@media (min-width: 2000px)': {
-              px: '2px',
-              maxWidth: '725px'
-            },
-            gap: 1,
-            display: 'flex',
-            flexDirection: 'row',
-            position: 'sticky'
-          }}
-        >
-          <TextField
-            value={inputValue}
-            onChange={(event) => setInputValue(event.target.value)}
-            onKeyDown={handleKeyDown}
-            variant="outlined"
-            multiline
-            maxRows={4}
-            disabled={loadingState === 'searching'}
-            fullWidth
-            size="small"
-            sx={{
-              '.MuiOutlinedInput-root': {
-                backgroundColor: 'white',
-                borderRadius: '16px',
-                pt: {
-                  xs: 0.5,
-                  sm: 0.5,
-                  md: 0.5,
-                  lg: 0.75,
-                  xl: 0.75
-                },
-                pb: {
-                  xs: 0.5,
-                  sm: 0.5,
-                  md: 0.5,
-                  lg: 0.75,
-                  xl: 0.75
-                },
-                '& .MuiOutlinedInput-inputMultiline': {
-                  padding: '0px'
-                }
-              }
-            }}
-            slotProps={{
-              input: {
-                endAdornment: (
-                  <InputAdornment position="end">
-                    {loadingState === 'searching' ? (
-                      <IconButton
-                        onClick={stop}
-                        color="primary"
-                        sx={{
-                          '&:hover .MuiCircularProgress-root': {
-                            display: 'none'
-                          },
-                          '&:hover .stop-icon': {
-                            display: 'inline-flex'
-                          }
-                        }}
-                      >
-                        <CircularProgress
-                          size={24}
-                          sx={{
-                            display: 'inline-flex',
-                            '&:hover': {
-                              display: 'none'
-                            }
-                          }}
-                        />
-                        <StopIcon
-                          className="stop-icon"
-                          sx={{
-                            display: 'none',
-                            '&:hover': {
-                              display: 'inline-flex'
-                            }
-                          }}
-                        />
-                      </IconButton>
-                    ) : (
-                      <IconButton
-                        aria-label="send message"
-                        color="primary"
-                        onClick={handleSubmit}
-                      >
-                        <SendIcon />
-                      </IconButton>
-                    )}
-                  </InputAdornment>
-                )
-              }
-            }}
-          />
-          {messages.length > 0 && (
-            <>
-              <Tooltip title="Change mode" arrow placement="top">
-                <IconButton
-                  onClick={handleClick}
-                  sx={{
-                    p: 0.5,
-                    height: 'fit-content',
-                    border: '1px solid rgba(0, 0, 0, 0.12)',
-                    borderRadius: '8px',
-                    '&:hover': {
-                      backgroundColor: 'rgba(0, 0, 0, 0.04)'
-                    }
-                  }}
-                >
-                  {selectedMode === 'default' ? (
-                    <ChatIcon sx={{ width: 24, height: 24 }} />
-                  ) : selectedMode === 'pdf' ? (
-                    <PdfIcon sx={{ width: 24, height: 24 }} />
-                  ) : (
-                    <SearchIcon sx={{ width: 24, height: 24 }} />
-                  )}
-                </IconButton>
-              </Tooltip>
-              <Popover
-                open={open}
-                anchorEl={anchorEl}
-                onClose={handleClose}
-                anchorOrigin={{
-                  vertical: 'top',
-                  horizontal: 'left'
-                }}
-                transformOrigin={{
-                  vertical: 'bottom',
-                  horizontal: 'left'
-                }}
-              >
-                <Box
-                  sx={{
-                    width: 'fit-content',
-                    display: 'flex',
-                    flexDirection: 'row'
-                  }}
-                >
-                  {[
-                    {
-                      mode: 'default',
-                      icon: <ChatIcon sx={{ width: 40, height: 40 }} />,
-                      title: 'Regular Chat'
-                    },
-                    {
-                      mode: 'pdf',
-                      icon: <PdfIcon sx={{ width: 40, height: 40 }} />,
-                      title: 'PDF Chat'
-                    },
-                    {
-                      mode: 'search',
-                      icon: <SearchIcon sx={{ width: 40, height: 40 }} />,
-                      title: 'Web Search'
-                    }
-                  ].map((item, index) => (
-                    <MenuItem
-                      key={item.mode}
-                      onClick={() => {
-                        setSelectedMode(
-                          item.mode as 'default' | 'pdf' | 'search'
-                        );
-                        handleClose();
-                      }}
-                      selected={selectedMode === item.mode}
-                      sx={{
-                        width: '50%', // Make each item take up 50% of the space
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: 1,
-                        py: 1.5,
-                        borderRight:
-                          index === 0
-                            ? '1px solid rgba(0, 0, 0, 0.12)'
-                            : 'none', // Add border between items
-                        '&.Mui-selected': {
-                          backgroundColor: 'rgba(0, 0, 0, 0.08)',
-                          border: '1px solid rgba(0, 0, 0, 0.12)',
-                          '&:hover': {
-                            backgroundColor: 'rgba(0, 0, 0, 0.08)'
-                          },
-                          '& .MuiTypography-root': {
-                            color: 'text.primary'
-                          }
-                        },
-                        '&:hover': {
-                          backgroundColor:
-                            selectedMode === item.mode
-                              ? 'rgba(0, 0, 0, 0.08)'
-                              : 'rgba(0, 0, 0, 0.04)'
-                        }
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          color:
-                            selectedMode === item.mode
-                              ? 'primary.main'
-                              : 'text.secondary'
-                        }}
-                      >
-                        {item.icon}
-                      </Box>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          fontWeight: selectedMode === item.mode ? 600 : 400,
-                          textAlign: 'center',
-                          color: 'text.primary'
-                        }}
-                      >
-                        {item.title}
-                      </Typography>
-                    </MenuItem>
-                  ))}
-                </Box>
-              </Popover>
-            </>
-          )}
-        </Box>
-      </Box>
-    </ErrorBoundary>
-  );
+  function stop() {
+    setLoadingState(null);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -688,14 +145,12 @@ export default function ChatComponentPage({
     if (response.success === false) {
       // Only set rate limit info if it's actually a rate limit issue
       if (response.reset) {
-        // Rate limit messages typically include a reset timestamp
         setRateLimitInfo({
           success: response.success,
           message: response.message,
           reset: response.reset
         });
       } else {
-        // For other errors, just reset the state
         setRateLimitInfo(null);
       }
       setLoadingState(null);
@@ -710,6 +165,7 @@ export default function ChatComponentPage({
         }
       ]);
     }
+
     for await (const status of readStreamableValue(response.status)) {
       switch (status) {
         case 'searching':
@@ -722,6 +178,7 @@ export default function ChatComponentPage({
           setLoadingState(null);
       }
     }
+
     if (response.chatId && !currentChatId) {
       const currentSearchParams = new URLSearchParams(window.location.search);
       let newUrl = `/actionchat/${response.chatId}`;
@@ -729,7 +186,6 @@ export default function ChatComponentPage({
       if (currentSearchParams.toString()) {
         newUrl += `?${currentSearchParams.toString()}`;
       }
-      // Refresh the chat previews to show the new chat in the list of chats
       mutate((key) => Array.isArray(key) && key[0] === 'chatPreviews');
       router.replace(newUrl, { scroll: false });
       router.refresh();
@@ -738,4 +194,328 @@ export default function ChatComponentPage({
     setInputValue('');
     setLoadingState(null);
   }
+
+  return (
+    <ErrorBoundary>
+      <div className="flex flex-col h-[100vh] md:h-[calc(100vh-48px)] overflow-hidden mx-auto relative">
+        {/* Model selector */}
+        {userInfo && (
+          <div className="max-w-[120px] bg-white rounded m-1 absolute self-end md:self-start">
+            <Select
+              value={selectedModel}
+              onValueChange={(value) =>
+                setSelectedModel(value as 'claude3' | 'chatgpt4')
+              }
+            >
+              <SelectTrigger className="w-full h-8 text-sm">
+                <SelectValue placeholder="Select model" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="claude3" className="text-sm">
+                  Claude
+                </SelectItem>
+                <SelectItem value="chatgpt4" className="text-sm">
+                  GPT-4
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {messages.length === 0 ? (
+          <div className="flex flex-col justify-center items-center h-full text-center p-1">
+            <h2 className="text-2xl mb-2 text-gray-500">
+              Chat with our AI Assistant
+            </h2>
+            <p className="text-gray-500 mb-2">
+              Experience the power of AI-driven conversations with our chat
+              template. Ask questions on any topic and get informative responses
+              instantly.
+            </p>
+
+            {/* Tavily info */}
+            <div className="text-gray-500 mb-2 max-w-[600px] border border-gray-200 rounded-lg p-4 bg-blue-50/30">
+              <strong>🔍 Web Search Mode:</strong> Powered by{' '}
+              <a
+                href="https://tavily.com/"
+                target="_blank"
+                rel="noopener"
+                className="text-blue-600"
+              >
+                Tavily AI
+              </a>
+              , our search feature provides real-time, accurate information from
+              across the web. Get up-to-date answers with reliable sources and
+              citations. Perfect for current events, fact-checking, and research
+              queries.
+            </div>
+
+            <p className="text-gray-500 mb-2">
+              <strong>
+                Check out{' '}
+                <a
+                  href="https://www.lovguiden.dk/"
+                  target="_blank"
+                  rel="noopener"
+                  className="text-lg text-blue-600"
+                >
+                  Lovguiden
+                </a>
+                , a Danish legal AI platform, for a real-world example of AI in
+                action.
+              </strong>
+            </p>
+
+            {/* Mode selection */}
+            <div className="flex gap-2 mt-4 justify-center">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={`w-20 h-20 rounded-xl ${
+                        selectedMode === 'default'
+                          ? 'border-2 border-blue-600'
+                          : 'border border-gray-300'
+                      } hover:bg-blue-50/50`}
+                      onClick={() => setSelectedMode('default')}
+                    >
+                      <MessageSquare
+                        className={`w-10 h-10 ${
+                          selectedMode === 'default'
+                            ? 'text-blue-600'
+                            : 'text-gray-600'
+                        }`}
+                      />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Regular Chat Mode</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={`w-20 h-20 rounded-xl ${
+                        selectedMode === 'pdf'
+                          ? 'border-2 border-blue-600'
+                          : 'border border-gray-300'
+                      } hover:bg-blue-50/50`}
+                      onClick={() => setSelectedMode('pdf')}
+                    >
+                      <FileText
+                        className={`w-10 h-10 ${
+                          selectedMode === 'pdf'
+                            ? 'text-blue-600'
+                            : 'text-gray-600'
+                        }`}
+                      />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>PDF Chat Mode</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={`w-20 h-20 rounded-xl ${
+                        selectedMode === 'search'
+                          ? 'border-2 border-blue-600'
+                          : 'border border-gray-300'
+                      } hover:bg-blue-50/50`}
+                      onClick={() => setSelectedMode('search')}
+                    >
+                      <Search
+                        className={`w-10 h-10 ${
+                          selectedMode === 'search'
+                            ? 'text-blue-600'
+                            : 'text-gray-600'
+                        }`}
+                      />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Web Search Mode (Powered by Tavily AI)
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+
+            <p className="text-sm text-gray-500 mt-2">
+              Select your preferred chat mode
+            </p>
+          </div>
+        ) : (
+          // Messages display
+          <div className="flex-1 overflow-auto w-full px-1 md:px-2 py-1">
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className="w-full max-w-[700px] mx-auto p-0 md:p-[2px] lg:p-[1px] xl:p-[1px]"
+              >
+                {message.display}
+              </div>
+            ))}
+            <ChatScrollAnchor trackVisibility />
+          </div>
+        )}
+
+        {/* Rate limit info */}
+        {rateLimitInfo &&
+          !rateLimitInfo.success &&
+          rateLimitInfo.reset &&
+          userInfo && (
+            <div className="bg-black/10 rounded-lg max-w-[800px] p-1 md:p-2 lg:p-4 xl:p-4 my-1 text-center mx-auto">
+              <p className="mb-1">{rateLimitInfo.message}</p>
+              <p className="text-sm mb-1">
+                Please wait until{' '}
+                {new Date(rateLimitInfo.reset * 1000).toLocaleTimeString()} to
+                send more messages.
+              </p>
+              <Button
+                asChild
+                className="rounded-lg transform transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+              >
+                <Link href="#">Buy more credits</Link>
+              </Button>
+            </div>
+          )}
+
+        {/* Input area */}
+        <form
+          onSubmit={handleSubmit}
+          className="items-center max-w-[700px] mx-auto w-full mt-auto pb-2 px-1 md:px-3 gap-1 flex flex-row sticky"
+        >
+          <div className="relative w-full">
+            <Textarea
+              value={inputValue}
+              onChange={(event) => setInputValue(event.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={loadingState === 'searching'}
+              placeholder="Type a message..."
+              className="w-full rounded-2xl bg-white resize-none py-2 pr-10 pl-2 min-h-[40px]"
+            />
+
+            <div className="absolute right-2 bottom-1.5">
+              {loadingState === 'searching' ? (
+                <Button
+                  onClick={stop}
+                  size="icon"
+                  variant="ghost"
+                  className="h-10 w-10 rounded-full p-0 group"
+                >
+                  <span className="group-hover:hidden">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  </span>
+                  <span className="hidden group-hover:inline">
+                    <StopCircle className="h-5 w-5" />
+                  </span>
+                </Button>
+              ) : (
+                <Button
+                  type="submit"
+                  size="icon"
+                  variant="ghost"
+                  className="h-4 w-10 rounded-full p-0"
+                >
+                  <Send className="h-10 w-10" />
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Mode switcher for active chat */}
+          {messages.length > 0 && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="p-1 h-fit border border-gray-200 rounded-lg hover:bg-gray-100"
+                      >
+                        {selectedMode === 'default' ? (
+                          <MessageSquare className="w-6 h-6" />
+                        ) : selectedMode === 'pdf' ? (
+                          <FileText className="w-6 h-6" />
+                        ) : (
+                          <Search className="w-6 h-6" />
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="p-0 w-auto" align="start">
+                      <div className="flex flex-row w-fit">
+                        {[
+                          {
+                            mode: 'default',
+                            icon: <MessageSquare className="w-10 h-10" />,
+                            title: 'Regular Chat'
+                          },
+                          {
+                            mode: 'pdf',
+                            icon: <FileText className="w-10 h-10" />,
+                            title: 'PDF Chat'
+                          },
+                          {
+                            mode: 'search',
+                            icon: <Search className="w-10 h-10" />,
+                            title: 'Web Search'
+                          }
+                        ].map((item, index) => (
+                          <Button
+                            key={item.mode}
+                            variant="ghost"
+                            className={`
+                              flex-1 flex-col items-center gap-1 py-6 px-4 rounded-none h-auto
+                              ${selectedMode === item.mode ? 'bg-gray-100' : ''}
+                              ${index === 0 ? 'border-r border-gray-200' : ''}
+                              ${index === 1 ? 'border-r border-gray-200' : ''}
+                            `}
+                            onClick={() => {
+                              setSelectedMode(
+                                item.mode as 'default' | 'pdf' | 'search'
+                              );
+                              setIsPopoverOpen(false);
+                            }}
+                          >
+                            <div
+                              className={
+                                selectedMode === item.mode
+                                  ? 'text-blue-600'
+                                  : 'text-gray-500'
+                              }
+                            >
+                              {item.icon}
+                            </div>
+                            <p
+                              className={`text-sm text-center mt-1 ${
+                                selectedMode === item.mode
+                                  ? 'font-semibold'
+                                  : ''
+                              }`}
+                            >
+                              {item.title}
+                            </p>
+                          </Button>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </TooltipTrigger>
+                <TooltipContent>Change mode</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </form>
+      </div>
+    </ErrorBoundary>
+  );
 }

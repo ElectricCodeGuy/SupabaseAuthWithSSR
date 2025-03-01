@@ -1,222 +1,123 @@
 'use client';
 import React from 'react';
-import {
-  Box,
-  Grid2,
-  Typography,
-  IconButton,
-  Divider,
-  Button,
-  Link as MuiLink
-} from '@mui/material';
-import LinkedInIcon from '@mui/icons-material/LinkedIn';
-import YouTubeIcon from '@mui/icons-material/YouTube';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import { Linkedin, Youtube } from 'lucide-react';
 
 const Footer: React.FC = () => {
-  const pathname = usePathname(); // Use the usePathname hook to access the router object
+  const pathname = usePathname();
 
   // If the current pathname is '/aichat', or '/actionchat' do not render the component
   if (pathname.startsWith('/aichat') || pathname.startsWith('/actionchat')) {
     return null;
   }
+
   return (
-    <Box
-      component="footer"
-      sx={{
-        backgroundColor: '#333',
-        paddingTop: {
-          xs: '1rem'
-        },
-        color: 'white',
-        mt: 'auto'
-      }}
-    >
-      <Grid2
-        container
-        spacing={2}
-        sx={{
-          maxWidth: '1600px',
-          mx: 'auto',
-          px: 1,
-          justifyContent: 'center',
-          alignItems: 'flex-start'
-        }}
-      >
-        <Grid2
-          size={{
-            xs: 6,
-            sm: 6,
-            md: 3.5,
-            lg: 3.8,
-            xl: 3.9
-          }}
-          sx={{
-            p: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 1
-          }}
-        >
-          <Typography variant="h5">Contact</Typography>
-          <Typography variant="body2" sx={{ color: 'white' }}>
-            Example Company Name
-          </Typography>
-          <Typography variant="body2" sx={{ color: 'white' }}>
-            123 Example Street, City 12345
-          </Typography>
-          <Typography variant="body2" sx={{ color: 'white', mb: 1 }}>
-            ID: 12345678
-          </Typography>
-          <MuiLink component={Link} href="#" style={{ color: 'lightblue' }}>
+    <footer className="bg-gray-800 text-white mt-auto pt-4">
+      <div className="max-w-[1600px] mx-auto px-4 flex flex-wrap justify-center items-start gap-4">
+        {/* Contact Section */}
+        <div className="w-[48%] sm:w-[48%] md:w-[21%] lg:w-[21%] xl:w-[30%] flex flex-col gap-3 p-0">
+          <h5 className="text-xl font-bold">Contact</h5>
+          <p className="text-sm text-white">Example Company Name</p>
+          <p className="text-sm text-white">123 Example Street, City 12345</p>
+          <p className="text-sm text-white mb-1">ID: 12345678</p>
+          <Link href="#" className="text-sky-300 hover:text-sky-200">
             Privacy Policy
-          </MuiLink>
-          <MuiLink component={Link} href="#" style={{ color: 'lightblue' }}>
+          </Link>
+          <Link href="#" className="text-sky-300 hover:text-sky-200">
             Terms of Service
-          </MuiLink>
-        </Grid2>
-        <Divider orientation="vertical" flexItem sx={{ bgcolor: 'white' }} />
-        <Grid2
-          size={{
-            xs: 5,
-            sm: 5,
-            md: 2.8,
-            lg: 2.8,
-            xl: 2.8
-          }}
-          sx={{
-            p: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 1
-          }}
-        >
-          <Typography variant="h5">Information:</Typography>
-          <MuiLink component={Link} href="#" style={{ color: 'lightblue' }}>
+          </Link>
+        </div>
+
+        {/* Vertical Divider */}
+        <div className="hidden md:block">
+          <div className="h-auto w-px bg-white" />
+        </div>
+
+        {/* Information Section */}
+        <div className="w-[42%] sm:w-[42%] md:w-[23%] lg:w-[23%] xl:w-[23%] flex flex-col gap-3 p-0">
+          <h5 className="text-xl font-bold">Information:</h5>
+          <Link href="#" className="text-sky-300 hover:text-sky-200">
             About Us
-          </MuiLink>
-          <MuiLink component={Link} href="#" style={{ color: 'lightblue' }}>
+          </Link>
+          <Link href="#" className="text-sky-300 hover:text-sky-200">
             Services
-          </MuiLink>
-          <MuiLink component={Link} href="#" style={{ color: 'lightblue' }}>
+          </Link>
+          <Link href="#" className="text-sky-300 hover:text-sky-200">
             FAQ
-          </MuiLink>
-          <MuiLink component={Link} href="#" style={{ color: 'lightblue' }}>
+          </Link>
+          <Link href="#" className="text-sky-300 hover:text-sky-200">
             How It Works
-          </MuiLink>
-          <MuiLink component={Link} href="#" style={{ color: 'lightblue' }}>
+          </Link>
+          <Link href="#" className="text-sky-300 hover:text-sky-200">
             Support
-          </MuiLink>
-        </Grid2>
-        <Divider
-          sx={{
-            display: { xs: 'block', sm: 'block', md: 'none' },
-            width: '100%',
-            my: 1,
-            bgcolor: 'white'
-          }}
-        />
-        <Divider
-          orientation="vertical"
-          flexItem
-          sx={{
-            display: { xs: 'none', md: 'block' },
-            height: 'auto',
-            bgcolor: 'white'
-          }}
-        />
-        <Grid2
-          size={{
-            xs: 12,
-            sm: 12,
-            md: 5,
-            lg: 5,
-            xl: 5
-          }}
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 1,
-            px: 1
-          }}
-        >
-          <Typography variant="h5">Subscribe to Our Newsletter</Typography>
-          <Typography variant="body1" sx={{ color: 'white' }}>
+          </Link>
+        </div>
+
+        {/* Horizontal Divider for Mobile */}
+        <div className="w-full block sm:block md:hidden">
+          <Separator className="bg-white my-2" />
+        </div>
+
+        {/* Vertical Divider */}
+        <div className="hidden md:block">
+          <div className="h-auto w-px bg-white" />
+        </div>
+
+        {/* Newsletter Section */}
+        <div className="w-full sm:w-full md:w-[41%] lg:w-[41%] xl:w-[41%] flex flex-col gap-3 px-1">
+          <h5 className="text-xl font-bold">Subscribe to Our Newsletter</h5>
+          <p className="text-base text-white">
             📧 Regular updates about our services
-          </Typography>
-          <Typography variant="body1" sx={{ color: 'white' }}>
+          </p>
+          <p className="text-base text-white">
             🔔 Special offers and promotions
-          </Typography>
-          <Typography variant="body1" sx={{ color: 'white' }}>
-            💼 Industry news and insights
-          </Typography>
+          </p>
+          <p className="text-base text-white">💼 Industry news and insights</p>
 
           <Button
-            variant="contained"
-            color="primary"
-            href="#"
-            sx={{
-              mt: 2,
-              maxWidth: 200,
-              alignSelf: {
-                xs: 'center',
-                sm: 'center',
-                md: 'flex-start',
-                lg: 'flex-start'
-              }
-            }}
+            className="mt-4 max-w-[200px] self-center md:self-start"
+            asChild
           >
-            Subscribe Now
+            <Link href="#">Subscribe Now</Link>
           </Button>
-        </Grid2>
-      </Grid2>
-      <Divider
-        sx={{ mt: 1, bgcolor: 'white', maxWidth: '1580px', mx: 'auto' }}
-      />
-      <Grid2
-        container
-        sx={{
-          maxWidth: '1600px',
-          mx: 'auto',
-          px: 1,
-          alignItems: 'center',
-          justifyContent: 'space-between'
-        }}
-      >
-        <Grid2 size="grow">
-          <MuiLink component={Link} href="#" style={{ color: 'white' }}>
+        </div>
+      </div>
+
+      <Separator className="mt-4 bg-white max-w-[1580px] mx-auto" />
+
+      <div className="max-w-[1600px] mx-auto px-4 flex justify-between items-center py-2">
+        <div className="flex-grow">
+          <Link href="#" className="text-white hover:text-gray-200">
             Example Company &copy; {new Date().getFullYear()}
-          </MuiLink>
-        </Grid2>
-        <Grid2 sx={{ display: 'flex', alignItems: 'center' }}>
-          <IconButton
-            color="inherit"
-            href="#"
-            aria-label="LinkedIn"
-            sx={{
-              '&:hover': {
-                backgroundColor: 'rgba(255, 255, 255, 0.1)'
-              }
-            }}
+          </Link>
+        </div>
+        <div className="flex items-center">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="text-white hover:bg-white/10"
+            asChild
           >
-            <LinkedInIcon />
-          </IconButton>
-          <IconButton
-            color="inherit"
-            href="#"
-            aria-label="YouTube"
-            sx={{
-              '&:hover': {
-                backgroundColor: 'rgba(255, 255, 255, 0.1)'
-              }
-            }}
+            <Link href="#" aria-label="LinkedIn">
+              <Linkedin className="h-5 w-5" />
+            </Link>
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="text-white hover:bg-white/10"
+            asChild
           >
-            <YouTubeIcon />
-          </IconButton>
-        </Grid2>
-      </Grid2>
-    </Box>
+            <Link href="#" aria-label="YouTube">
+              <Youtube className="h-5 w-5" />
+            </Link>
+          </Button>
+        </div>
+      </div>
+    </footer>
   );
 };
 

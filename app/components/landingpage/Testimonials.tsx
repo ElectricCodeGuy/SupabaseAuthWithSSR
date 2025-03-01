@@ -1,7 +1,7 @@
 import React from 'react';
-import { Box, Grid2, Typography } from '@mui/material';
-import ChikenImage from '@/public/images/chiken image.jpg';
 import Image from 'next/image';
+import ChikenImage from '@/public/images/chiken image.jpg';
+import { Card, CardContent } from '@/components/ui/card';
 
 const testimonials = [
   {
@@ -50,100 +50,39 @@ const testimonials = [
 
 const Testimonials: React.FC = () => {
   return (
-    <Box
-      id="testimonials"
-      sx={{
-        maxWidth: '1800px',
-        mx: 'auto',
-        mt: 2,
-        mb: 4,
-        px: 1
-      }}
-    >
-      <Typography
-        variant="h3"
-        sx={{
-          textAlign: 'center',
-          fontWeight: 'bold',
-          fontFamily: 'Monospace',
-          letterSpacing: '0.1em',
-          backgroundClip: 'text',
-          WebkitBackgroundClip: 'text',
-          backgroundGradient: 'linear(to r, white, grey.500)',
-          pb: 2
-        }}
-      >
+    <div id="testimonials" className="max-w-[1800px] mx-auto mt-2 mb-4 px-1">
+      <h3 className="text-center font-bold font-mono tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-500 pb-2 text-3xl">
         What Our Users Say
-      </Typography>
-      <Typography
-        variant="body1"
-        sx={{
-          textAlign: 'center',
-          fontWeight: 'bold',
-          maxWidth: 800,
-          mx: 'auto',
-          fontFamily: 'Monospace',
-          letterSpacing: '0.05em',
-          pb: 2
-        }}
-      >
+      </h3>
+      <p className="text-center font-bold max-w-[800px] mx-auto font-mono tracking-wider pb-2">
         Real Experiences from Satisfied Customers
-      </Typography>
+      </p>
 
-      <Grid2 container spacing={2} alignItems="stretch">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 items-stretch">
         {testimonials.map((testimonial, index) => (
-          <Grid2
-            size={{
-              xs: 12,
-              sm: 6,
-              md: 4
-            }}
-            key={index}
-            sx={{
-              display: 'flex',
-              p: 2,
-              borderRadius: '8px',
-              height: '100%',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              boxShadow: 3,
-              backgroundColor: 'background.paper'
-            }}
-          >
-            <Typography
-              variant="body1"
-              sx={{
-                color: 'text.secondary',
-                mb: 2,
-                flexGrow: 1
-              }}
-            >
-              &ldquo;{testimonial.content}&rdquo;
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Image
-                src={testimonial.avatar}
-                alt={testimonial.name}
-                style={{
-                  objectFit: 'contain',
-                  width: 100,
-                  height: 100
-                }}
-              />
-
-              <Box>
-                <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
-                  {testimonial.name}
-                </Typography>
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  {testimonial.role}
-                </Typography>
-              </Box>
-            </Box>
-          </Grid2>
+          <Card key={index} className="h-full shadow-md">
+            <CardContent className="p-6 flex flex-col justify-between h-full">
+              <p className="text-muted-foreground mb-4 flex-grow">
+                &ldquo;{testimonial.content}&rdquo;
+              </p>
+              <div className="flex items-center mt-2">
+                <Image
+                  src={testimonial.avatar}
+                  alt={testimonial.name}
+                  className="object-contain w-[100px] h-[100px]"
+                />
+                <div className="ml-4">
+                  <p className="font-bold">{testimonial.name}</p>
+                  <p className="text-muted-foreground text-sm">
+                    {testimonial.role}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         ))}
-      </Grid2>
-    </Box>
+      </div>
+    </div>
   );
 };
 

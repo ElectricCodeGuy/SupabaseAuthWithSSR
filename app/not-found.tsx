@@ -1,50 +1,36 @@
 // pages/404.tsx
 import React from 'react';
-import { Container, Typography, Button, Box } from '@mui/material';
-import HomeIcon from '@mui/icons-material/Home';
 import Link from 'next/link';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import { Button } from '@/components/ui/button';
+import { Loader2, Home } from 'lucide-react';
 
 const Custom404: React.FC = () => {
   return (
-    <Container
-      maxWidth="sm"
-      sx={{
-        textAlign: 'center',
-        paddingTop: { xs: '5rem', md: '10rem' },
-        paddingBottom: '5rem'
-      }}
-      className="custom-404-page"
-    >
-      <Box sx={{ marginBottom: '2rem' }}>
-        <HelpOutlineIcon
-          sx={{
-            fontSize: { xs: 80, md: 150 },
-            color: 'primary.main'
-          }}
-        />
-      </Box>
-      <Typography variant="h4" gutterBottom>
+    <div className="container max-w-sm mx-auto text-center py-20 md:py-40">
+      <div className="mb-8">
+        <Loader2 className="h-20 w-20 md:h-36 md:w-36 text-primary mx-auto animate-spin" />
+      </div>
+
+      <h2 className="text-2xl md:text-3xl font-bold mb-3">
         Oops! We couldn&apos;t find that page.
-      </Typography>
-      <Typography variant="body1">
+      </h2>
+
+      <p className="text-muted-foreground mb-2">
         It looks like the page you&apos;re looking for doesn&apos;t exist or has
         been moved.
-      </Typography>
-      <Typography variant="body2" sx={{ marginBottom: '2rem' }}>
-        You can try searching for what you need or go back to the homepage.
-      </Typography>
+      </p>
 
-      <Button
-        component={Link}
-        href="/"
-        variant="contained"
-        startIcon={<HomeIcon />}
-        color="primary"
-      >
-        Back to Home
+      <p className="text-sm text-muted-foreground mb-8">
+        You can try searching for what you need or go back to the homepage.
+      </p>
+
+      <Button asChild>
+        <Link href="/">
+          <Home className="mr-2 h-4 w-4" />
+          Back to Home
+        </Link>
       </Button>
-    </Container>
+    </div>
   );
 };
 

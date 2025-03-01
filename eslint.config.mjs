@@ -10,7 +10,7 @@ const compat = new FlatCompat({
 
 const config = tseslint.config(
   {
-    ignores: ['.next', 'node_modules', '**/*.d.ts']
+    ignores: ['.next', 'node_modules', '**/*.d.ts', '/components/**/*']
   },
   // Base configs
   js.configs.recommended,
@@ -59,6 +59,7 @@ const config = tseslint.config(
         { prefer: 'type-imports', fixStyle: 'separate-type-imports' }
       ],
       '@typescript-eslint/no-non-null-assertion': 'off',
+      '@typescript-eslint/prefer-nullish-coalescing': 'off',
       // Next.js specific rules
       '@next/next/no-html-link-for-pages': 'error',
       '@next/next/no-img-element': 'error',

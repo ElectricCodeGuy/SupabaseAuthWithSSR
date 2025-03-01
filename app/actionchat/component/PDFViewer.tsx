@@ -1,19 +1,14 @@
 'use client';
 
 import React from 'react';
-import {
-  Box,
-  CircularProgress,
-  Typography,
-  Button,
-  IconButton
-} from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
+import { Button } from '@/components/ui/button';
+import { Loader2, X } from 'lucide-react';
 import useSWRImmutable from 'swr/immutable';
 import { createClient } from '@/lib/client/client';
 import Link from 'next/link';
 import { decodeBase64 } from '../lib/base64';
 import { useSearchParams, useRouter } from 'next/navigation';
+
 const supabase = createClient();
 
 const fetcher = async (
@@ -61,12 +56,10 @@ export default function DocumentViewer({
   userId: string | undefined;
   hasActiveSubscription: boolean;
 }) {
-  const router = useRouter(); // Add router
+  const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Add handler for close button
   const handleClose = () => {
-    // Create new URL without pdf and p parameters
     const url = new URL(window.location.href);
     url.searchParams.delete('pdf');
     url.searchParams.delete('p');
@@ -88,138 +81,65 @@ export default function DocumentViewer({
 
   if (!userId || !hasActiveSubscription) {
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '97vh',
-          textAlign: 'center'
-        }}
-      >
-        <Typography>
+      <div className="flex flex-col justify-center items-center h-[97vh] text-center">
+        <p className="text-base">
           You need to be logged in with an active subscription to view this
-        </Typography>
-        <Button
-          component={Link}
-          href="/signin"
-          variant="contained"
-          sx={{ mt: 2 }}
-        >
-          Sign in
+        </p>
+        <Button asChild className="mt-2">
+          <Link href="/signin">Sign in</Link>
         </Button>
-      </Box>
+      </div>
     );
   }
 
   if (error) {
     console.error('Error loading document:', error);
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '97vh',
-          textAlign: 'center'
-        }}
-      >
-        <Typography>
+      <div className="flex flex-col justify-center items-center h-[97vh] text-center">
+        <p className="text-base">
           There was an error loading the document. Please try again later.
-        </Typography>
-      </Box>
+        </p>
+      </div>
     );
   }
 
   if (isLoading) {
     return (
-      <Box
-        sx={{
-          width: '55%',
-          borderLeft: '1px solid rgba(0, 0, 0, 0.12)',
-          display: {
-            xs: 'none',
-            sm: 'flex'
-          },
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '97vh',
-          textAlign: 'center'
-        }}
-      >
-        <CircularProgress />
-      </Box>
+      <div className="w-[55%] border-l border-slate-200 hidden sm:flex flex-col justify-center items-center h-[97vh] text-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
     );
   }
 
   if (!fileUrl) {
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '97vh',
-          textAlign: 'center'
-        }}
-      >
-        <Typography>No file available.</Typography>
-      </Box>
+      <div className="flex flex-col justify-center items-center h-[97vh] text-center">
+        <p className="text-base">No file available.</p>
+      </div>
     );
   }
 
   const isPdf = fileExtension === 'pdf';
   const isOfficeDocument = ['doc', 'docx'].includes(fileExtension);
   const iframeId = `document-viewer-${fileName.replace(/[^a-zA-Z0-9]/g, '-')}`;
+
   return (
-    <Box
-      sx={{
-        width: '55%',
-        borderLeft: '1px solid rgba(0, 0, 0, 0.12)',
-        display: {
-          xs: 'none',
-          sm: 'flex'
-        },
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'flex-start',
-        overflow: 'hidden',
-        position: 'relative' // Add this for absolute positioning of close button
-      }}
-    >
-      {/* Add close button */}
-      <IconButton
+    <div className="w-[55%] border-l border-slate-200 hidden sm:flex flex-row justify-center items-start overflow-hidden relative h-[97vh]">
+      <Button
+        variant="ghost"
+        size="icon"
         onClick={handleClose}
-        size="small"
-        sx={{
-          position: 'absolute',
-          right: 4,
-          top: 4,
-          p: 0,
-          zIndex: 1000,
-          bgcolor: 'rgba(255, 255, 255, 0.7)',
-          '&:hover': {
-            bgcolor: 'rgba(255, 255, 255, 0.9)'
-          }
-        }}
+        className="absolute right-1 top-1 z-50 bg-white/70 hover:bg-white/90"
       >
-        <CloseIcon />
-      </IconButton>
+        <X className="h-4 w-4" />
+      </Button>
 
       {isPdf ? (
         <iframe
           key={`pdf-viewer-${page}`}
           id={iframeId}
           src={`${fileUrl}#page=${page}`}
-          style={{
-            width: '100%',
-            height: '100%',
-            border: 'none'
-          }}
+          className="w-full h-full border-none"
           title="PDF Viewer"
           referrerPolicy="no-referrer"
           aria-label={`PDF document: ${decodedFileName}`}
@@ -227,19 +147,17 @@ export default function DocumentViewer({
       ) : isOfficeDocument ? (
         <iframe
           id={iframeId}
-          src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(fileUrl)}`}
-          style={{
-            width: '100%',
-            height: '100%',
-            border: 'none'
-          }}
+          src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(
+            fileUrl
+          )}`}
+          className="w-full h-full border-none"
           title="Office Document Viewer"
           referrerPolicy="no-referrer"
           aria-label={`Office document: ${decodedFileName}`}
         />
       ) : (
-        <Typography>This file is not supported.</Typography>
+        <p className="text-base">This file is not supported.</p>
       )}
-    </Box>
+    </div>
   );
 }

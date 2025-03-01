@@ -1,22 +1,21 @@
 'use client';
 import React from 'react';
-import {
-  Box,
-  IconButton,
-  Tooltip,
-  Link as MuiLink,
-  Typography
-} from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import { X, ExternalLink } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@/components/ui/tooltip';
 
-interface DocumentViewerProps {
+interface WebsiteViewerProps {
   url: string;
 }
 
-const WebsiteViewer: React.FC<DocumentViewerProps> = ({ url }) => {
+const WebsiteViewer: React.FC<WebsiteViewerProps> = ({ url }) => {
   const getProxiedUrl = (url: string) => {
     if (url.toLowerCase().includes('pdf')) {
       return `/api/proxy-pdf?url=${encodeURIComponent(url)}`;
@@ -24,99 +23,53 @@ const WebsiteViewer: React.FC<DocumentViewerProps> = ({ url }) => {
     return `/api/proxy-website?url=${encodeURIComponent(url)}`;
   };
   const pathname = usePathname();
+
   // Note: Not all websites can be proxied due to security restrictions.
   // If the website does some sort of POST request after render to get the data, it is not possible to proxy it with this technique.
   // Im also not sure if this might cause some legal issues... So use it at your own risk.
   return (
-    <Box
-      sx={{
-        width: '50%',
-        overflowY: 'auto',
-        height: 'calc(100vh - 44px)',
-        borderLeft: '1px solid rgba(0, 0, 0, 0.12)',
-        position: 'relative',
-        display: 'flex',
-        flexDirection: 'column'
-      }}
-    >
-      <Box
-        sx={{
-          height: '40px',
-          borderBottom: '1px solid rgba(0, 0, 0, 0.12)',
-          display: 'flex',
-          alignItems: 'center',
-          padding: '0 8px',
-          backgroundColor: 'white'
-        }}
-      >
-        <Tooltip title="Close">
-          <IconButton
-            component={Link}
-            href={pathname}
-            replace
-            prefetch={false}
-            sx={{
-              m: 0.1,
-              borderRadius: '6px',
-              padding: '4px',
-              height: '28px',
-              width: '28px',
-              backgroundColor: 'white',
-              color: 'grey.800',
-              transition: 'all 0.2s ease-in-out',
-              border: '1px solid rgba(0, 0, 0, 0.12)',
-              '&:hover': {
-                transform: 'translateY(-1px)',
-                backgroundColor: 'white',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-                color: 'primary.main',
-                borderColor: 'primary.main'
-              }
-            }}
-          >
-            <CloseIcon sx={{ fontSize: 16, fontWeight: 'bold' }} />
-          </IconButton>
-        </Tooltip>
-        <MuiLink
+    <div className="w-1/2 overflow-y-auto h-[calc(100vh-48px)] border-l border-gray-200 relative flex flex-col">
+      <div className="h-10 border-b border-gray-200 flex items-center px-2 bg-white">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                asChild
+                variant="outline"
+                size="icon"
+                className="m-0.5 rounded-md p-1 h-7 w-7 bg-white text-gray-800 transition-all duration-200 
+                         hover:-translate-y-[1px] hover:bg-white hover:shadow-md hover:text-primary hover:border-primary"
+              >
+                <Link href={pathname} replace prefetch={false}>
+                  <X className="h-4 w-4 font-bold" />
+                </Link>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Close</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
+        <a
           href={url}
           target="_blank"
           rel="noopener noreferrer"
           title={url}
-          sx={{
-            ml: 2,
-            display: 'flex',
-            alignItems: 'center',
-            color: 'primary.main',
-            textDecoration: 'none',
-            '&:hover': {
-              textDecoration: 'underline'
-            }
-          }}
+          className="ml-2 flex items-center text-primary no-underline hover:underline"
         >
-          <Typography
-            variant="body2"
-            sx={{
-              maxWidth: '400px',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap'
-            }}
-          >
+          <span className="max-w-[400px] overflow-hidden text-ellipsis whitespace-nowrap text-sm">
             {url}
-          </Typography>
-          <OpenInNewIcon sx={{ ml: 0.5, fontSize: 16 }} />
-        </MuiLink>
-      </Box>
+          </span>
+          <ExternalLink className="ml-0.5 h-4 w-4" />
+        </a>
+      </div>
       <iframe
         src={getProxiedUrl(url)}
-        style={{
-          width: '100%',
-          height: '100%',
-          border: 'none'
-        }}
+        className="w-full h-full border-none"
         title="Website Viewer"
       />
-    </Box>
+    </div>
   );
 };
 

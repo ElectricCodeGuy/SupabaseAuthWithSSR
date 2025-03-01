@@ -1,5 +1,4 @@
 import React from 'react';
-import { Grid2 } from '@mui/material';
 import SignInCard from './SignInCard';
 import Content from '../Content';
 import ModalWrapper from './ModalWrapper';
@@ -13,53 +12,17 @@ export default async function SignInModal() {
   if (session) {
     return null;
   }
+
   return (
     <ModalWrapper>
-      <Grid2
-        container
-        gap={2}
-        sx={{
-          justifyContent: 'center',
-          alignItems: 'center',
-          overflowX: 'hidden'
-        }}
-      >
-        <Grid2
-          size={{ xs: 12, md: 5.5 }}
-          sx={{
-            pb: {
-              xs: 4,
-              sm: 2,
-              md: 0
-            },
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            order: { xs: 2, md: 1 },
-            borderRadius: 2
-          }}
-        >
+      <div className="flex flex-wrap gap-4 justify-center items-center overflow-x-hidden">
+        <div className="w-full md:w-5/12 pb-4 sm:pb-2 md:pb-0 flex justify-center items-center order-2 md:order-1 rounded-md">
           <Content />
-        </Grid2>
-        <Grid2
-          size={{ xs: 12, md: 6 }}
-          sx={{
-            pt: {
-              xs: 4,
-              sm: 2,
-              md: 1
-            },
-            pb: {
-              xs: 0,
-              sm: 0,
-              md: 1
-            },
-            order: { xs: 1, md: 2 }
-          }}
-        >
+        </div>
+        <div className="w-full md:w-6/12 pt-4 sm:pt-2 md:pt-1 pb-0 sm:pb-0 md:pb-1 order-1 md:order-2">
           <SignInCard />
-        </Grid2>
-      </Grid2>
+        </div>
+      </div>
     </ModalWrapper>
   );
 }

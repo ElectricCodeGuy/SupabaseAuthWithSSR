@@ -44,6 +44,7 @@ export const preliminaryAnswerChainAgent = async (
     prompt: content,
     schema: contentAnalysisSchema,
     mode: 'json',
+    abortSignal: AbortSignal.timeout(15000),
     temperature: 0,
     experimental_telemetry: {
       isEnabled: true,

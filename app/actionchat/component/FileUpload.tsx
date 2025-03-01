@@ -1,22 +1,17 @@
 import React, { useCallback, useRef } from 'react';
 import type { FileRejection, FileWithPath } from 'react-dropzone';
 import { useDropzone } from 'react-dropzone';
-import {
-  Typography,
-  Box,
-  Button,
-  IconButton,
-  Paper,
-  LinearProgress,
-  Alert,
-  CircularProgress
-} from '@mui/material';
 import { useUpload } from '../context/uploadContext';
 import {
-  CloudUpload as CloudUploadIcon,
-  Close as CloseIcon,
-  Description as DescriptionIcon
-} from '@mui/icons-material';
+  Loader2,
+  Upload as CloudUploadIcon,
+  X as CloseIcon,
+  FileText as DescriptionIcon
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Card } from '@/components/ui/card';
 
 const SUPPORTED_FILE_TYPES: Record<string, string[]> = {
   'application/pdf': ['.pdf', '.PDF'],
@@ -47,62 +42,29 @@ function LinearProgressWithLabel({
 
   return (
     <>
-      <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', mb: 1 }}>
-        <Box sx={{ width: '100%', mr: 1 }}>
-          <LinearProgress
-            variant="determinate"
+      <div className="flex items-center w-full mb-1">
+        <div className="w-full mr-1">
+          <Progress
             value={value}
-            sx={{
-              height: 6,
-              borderRadius: 2,
-              bgcolor: '#E2E5EF',
-              '& .MuiLinearProgress-bar': {
-                borderRadius: 2,
-                bgcolor: '#6A64F1',
-                transition: 'transform 0.4s linear'
-              }
-            }}
+            className="h-1.5 bg-[#E2E5EF] [&>div]:bg-[#6A64F1] [&>div]:transition-transform [&>div]:duration-400 [&>div]:ease-linear rounded-md"
           />
-        </Box>
-        <Box sx={{ minWidth: 35 }}>
-          <Typography variant="body2" color="text.secondary">
-            {`${Math.round(value)}%`}
-          </Typography>
-        </Box>
-      </Box>
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1,
-          ml: 1,
-          minHeight: '20px'
-        }}
-      >
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{
-            fontWeight: 500,
-            transition: 'opacity 0.3s ease-in-out',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1
-          }}
-        >
+        </div>
+        <div className="min-w-[35px]">
+          <p className="text-sm text-[#6B7280]">{`${Math.round(value)}%`}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-1 ml-1 min-h-[20px]">
+        <p className="text-sm text-[#6B7280] font-medium flex items-center gap-1 transition-opacity duration-300">
           {status}
           {shouldShowSpinner && (
-            <CircularProgress
-              size={16}
-              thickness={4}
-              sx={{ color: '#6A64F1' }}
-            />
+            <Loader2 className="h-4 w-4 animate-spin text-[#6A64F1]" />
           )}
-        </Typography>
-      </Box>
+        </p>
+      </div>
     </>
   );
 }
+
 export default function ServerUploadPage() {
   const formRef = useRef<HTMLFormElement | null>(null);
   const {
@@ -158,212 +120,104 @@ export default function ServerUploadPage() {
   });
 
   return (
-    <Paper
-      component="form"
+    <form
+      className="max-w-[550px] mx-auto bg-white"
       onSubmit={handleSubmit}
       ref={formRef}
-      elevation={0}
-      sx={{
-        maxWidth: '550px',
-        mx: 'auto',
-        bgcolor: 'white'
-      }}
     >
-      <Box
+      <div
         {...getRootProps()}
-        sx={{
-          minHeight: '50px',
-          border: '2px dashed',
-          borderColor: isDragActive ? '#6A64F1' : '#e0e0e0',
-          borderRadius: '8px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          textAlign: 'center',
-          cursor: 'pointer',
-          p: 1,
-          mb: 1,
-          transition: 'all 0.2s ease-in-out',
-          bgcolor: isDragActive ? 'rgba(106, 100, 241, 0.05)' : 'transparent',
-          '&:hover': {
-            borderColor: '#6A64F1',
-            bgcolor: 'rgba(106, 100, 241, 0.05)'
-          }
-        }}
+        className={`min-h-[50px] border-2 border-dashed ${
+          isDragActive
+            ? 'border-[#6A64F1] bg-[rgba(106,100,241,0.05)]'
+            : 'border-[#e0e0e0] hover:border-[#6A64F1] hover:bg-[rgba(106,100,241,0.05)]'
+        } rounded-lg flex items-center justify-center text-center cursor-pointer p-4 mb-4 transition-all duration-200`}
       >
         <input {...getInputProps()} />
-        <Box>
-          <Box
-            sx={{
-              '& .MuiSvgIcon-root': {
-                width: 35,
-                height: 35,
-                color: isDragActive ? '#6A64F1' : '#07074D',
-                transition: 'all 0.2s ease-in-out'
-              }
-            }}
-          >
-            <CloudUploadIcon />
-          </Box>
-          <Typography
-            variant="h6"
-            sx={{
-              color: isDragActive ? '#6A64F1' : '#07074D',
-              fontWeight: 600,
-              mb: 1,
-              transition: 'color 0.2s ease-in-out'
-            }}
+        <div>
+          <div className="flex justify-center">
+            <CloudUploadIcon
+              className={`w-9 h-9 ${
+                isDragActive ? 'text-[#6A64F1]' : 'text-[#07074D]'
+              } transition-colors duration-200`}
+            />
+          </div>
+          <h6
+            className={`text-lg font-semibold mb-1 ${
+              isDragActive ? 'text-[#6A64F1]' : 'text-[#07074D]'
+            } transition-colors duration-200`}
           >
             {isDragActive ? 'Drop the file here...' : 'Drag files here'}
-          </Typography>
-          <Typography sx={{ color: '#6B7280', mb: 0.5 }}>Or</Typography>
+          </h6>
+          <p className="text-[#6B7280] mb-0.5">Or</p>
           <Button
-            variant="outlined"
-            sx={{
-              color: '#07074D',
-              borderColor: '#e0e0e0',
-              px: 3,
-
-              '&:hover': {
-                borderColor: '#6A64F1',
-                bgcolor: 'transparent'
-              }
-            }}
+            variant="outline"
+            className="text-[#07074D] border-[#e0e0e0] px-3 hover:border-[#6A64F1] hover:bg-transparent"
+            type="button"
           >
             Browse
           </Button>
-          <Typography
-            variant="body2"
-            sx={{
-              color: '#6B7280',
-              mt: 1,
-              fontSize: '0.875rem'
-            }}
-          >
+          <p className="text-[#6B7280] mt-1 text-sm">
             Supported formats: PDF, DOCX
-          </Typography>
-          <Typography
-            variant="body2"
-            sx={{
-              color: '#9CA3AF',
-              fontSize: '0.75rem',
-              mt: 0.5,
-              fontStyle: 'italic'
-            }}
-          >
+          </p>
+          <p className="text-[#9CA3AF] text-xs mt-0.5 italic">
             Note that files with more than approximately 600 pages are not
             currently supported.
-          </Typography>
-        </Box>
-      </Box>
+          </p>
+        </div>
+      </div>
 
       {selectedFile && (
-        <Paper
-          elevation={0}
-          sx={{
-            bgcolor: '#F5F7FB',
-            p: 1,
-            mb: 2,
-            borderRadius: '8px'
-          }}
-        >
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Box
-                sx={{
-                  width: 40,
-                  height: 40,
-                  bgcolor: '#6A64F1',
-                  borderRadius: '8px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white'
-                }}
-              >
-                <DescriptionIcon />
-              </Box>
-              <Box sx={{ minWidth: 0, maxWidth: '80%' }}>
-                <Typography
-                  sx={{
-                    color: '#07074D',
-                    fontWeight: 500,
-                    overflow: 'hidden',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 2,
-                    WebkitBoxOrient: 'vertical',
-                    wordBreak: 'break-word',
-                    lineHeight: 1.2,
-                    mb: 0.5
-                  }}
-                >
+        <Card className="bg-[#F5F7FB] p-4 mb-4 rounded-lg shadow-none">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 bg-[#6A64F1] rounded-lg flex items-center justify-center text-white">
+                <DescriptionIcon className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 max-w-[80%]">
+                <p className="text-[#07074D] font-medium overflow-hidden line-clamp-2 break-words leading-tight mb-0.5">
                   {selectedFile.name}
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#6B7280' }}>
+                </p>
+                <p className="text-sm text-[#6B7280]">
                   {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
-                </Typography>
-              </Box>
-            </Box>
-            <IconButton
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={handleRemoveFile}
-              size="small"
               disabled={isUploading}
-              sx={{
-                color: '#07074D',
-                '&:hover': {
-                  color: '#6A64F1'
-                }
-              }}
+              className="text-[#07074D] hover:text-[#6A64F1]"
             >
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          </Box>
-          <Box sx={{ mt: 2 }}>
+              <CloseIcon className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="mt-2">
             <LinearProgressWithLabel
               value={uploadProgress}
               status={uploadStatus}
             />
             {uploadStatus && statusSeverity !== 'info' && (
               <Alert
-                severity={statusSeverity}
-                sx={{ mt: 1, borderRadius: '8px' }}
+                variant={statusSeverity === 'error' ? 'destructive' : 'default'}
+                className="mt-1 rounded-lg"
               >
-                {uploadStatus}
+                <AlertDescription>{uploadStatus}</AlertDescription>
               </Alert>
             )}
-          </Box>
-        </Paper>
+          </div>
+        </Card>
       )}
 
       <Button
         type="submit"
-        fullWidth
         disabled={isUploading || !selectedFile}
-        startIcon={<CloudUploadIcon />}
-        sx={{
-          bgcolor: '#6A64F1',
-          color: 'white',
-          borderRadius: '8px',
-          fontSize: '1rem',
-          fontWeight: 600,
-          textTransform: 'none',
-          '&:hover': {
-            bgcolor: '#5952d4'
-          },
-          '&.Mui-disabled': {
-            bgcolor: '#9EA1CA',
-            color: 'white'
-          }
-        }}
+        className="w-full bg-[#6A64F1] hover:bg-[#5952d4] text-white text-base font-semibold rounded-lg py-2 disabled:bg-[#9EA1CA] disabled:text-white"
       >
+        <CloudUploadIcon className="mr-2 h-5 w-5" />
         {isUploading ? 'Uploading...' : 'Upload File'}
       </Button>
-    </Paper>
+    </form>
   );
 }

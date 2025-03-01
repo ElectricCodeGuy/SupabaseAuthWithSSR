@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import {
-  Button,
   Dialog,
-  DialogTitle,
-  OutlinedInput,
-  CircularProgress,
-  Box,
-  Typography
-} from '@mui/material';
+  DialogContent,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { useFormStatus } from 'react-dom';
 import { resetPasswordForEmail } from './action';
 import { usePathname } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 
 interface ForgotPasswordProps {
   open: boolean;
@@ -37,51 +37,44 @@ export default function ForgotPassword({
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} fullWidth>
-      <Box
-        component="form"
-        action={handleSubmit}
-        noValidate
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          width: '100%',
-          p: 2
-        }}
-      >
-        <DialogTitle sx={{ px: 0, py: 2 }}>Reset Password</DialogTitle>
-        <Typography variant="body1" sx={{ mb: 2 }}>
-          Enter your account&apos;s email address, and we&apos;ll send you a
-          link to reset your password.
-        </Typography>
-        <OutlinedInput
-          required
-          margin="dense"
-          id="email"
-          name="email"
-          placeholder="Email address"
-          type="email"
-          fullWidth
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          sx={{ mb: 2 }}
-        />
-        {error && (
-          <Typography
-            variant="body2"
-            sx={{
-              color: 'error',
-              mb: 2
-            }}
-          >
-            {error}
-          </Typography>
-        )}
-        <SubmitButton />
-        <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-          <Button onClick={handleClose}>Cancel</Button>
-        </Box>
-      </Box>
+    <Dialog
+      open={open}
+      onOpenChange={(isOpen) => {
+        if (!isOpen) handleClose();
+      }}
+    >
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Reset Password</DialogTitle>
+        </DialogHeader>
+
+        <form action={handleSubmit} noValidate className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Enter your account&apos;s email address, and we&apos;ll send you a
+            link to reset your password.
+          </p>
+
+          <Input
+            required
+            id="email"
+            name="email"
+            placeholder="Email address"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+
+          {error && <p className="text-sm text-destructive">{error}</p>}
+
+          <SubmitButton />
+
+          <div className="flex justify-end mt-2">
+            <Button type="button" variant="ghost" onClick={handleClose}>
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
     </Dialog>
   );
 }
@@ -90,8 +83,8 @@ function SubmitButton() {
   const { pending } = useFormStatus();
 
   return (
-    <Button type="submit" fullWidth variant="contained" disabled={pending}>
-      {pending ? <CircularProgress size={24} color="inherit" /> : 'Continue'}
+    <Button type="submit" disabled={pending} className="w-full">
+      {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Continue'}
     </Button>
   );
 }

@@ -5,16 +5,7 @@ import {
   createStreamableValue
 } from 'ai/rsc';
 import { streamText, generateId, embed, generateObject } from 'ai';
-import {
-  Box,
-  Typography,
-  CircularProgress,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText
-} from '@mui/material';
-import { Search as SearchIcon } from '@mui/icons-material';
+import { Search, Loader2 } from 'lucide-react';
 import { BotMessage } from '../component/ChatWrapper';
 import { v4 as uuidv4 } from 'uuid';
 import { openai } from '@ai-sdk/openai';
@@ -183,34 +174,12 @@ export async function uploadFilesAndQuery(
   ]);
 
   const uiStream = createStreamableUI(
-    <Box
-      sx={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        mb: 2,
-        p: 2,
-        borderRadius: 4,
-        bgcolor: 'grey.100',
-        backgroundImage: 'linear-gradient(45deg, #e0eaFC #cfdef3)',
-        boxShadow: '0 3px 5px 2px rgba(0, 0, 0, .1)',
-        transition: 'background-color 0.3s ease',
-
-        ':hover': {
-          bgcolor: 'grey.200'
-        }
-      }}
-    >
-      <Typography
-        variant="body1"
-        sx={{
-          color: 'textSecondary',
-          fontStyle: 'italic'
-        }}
-      >
-        Searching...
-      </Typography>
-    </Box>
+    <div className="flex justify-center items-center mb-2 p-2 rounded-xl bg-gray-100 bg-gradient-to-r from-[#e0eaFC] to-[#cfdef3] shadow-md transition-colors hover:bg-gray-200">
+      <p className="text-gray-600 italic">
+        Searching for relevant information...
+      </p>
+      <Loader2 className="animate-spin" />
+    </div>
   );
 
   const sanitizedFilenames = selectedFiles.map((filename) => {
@@ -290,48 +259,28 @@ Keep the variations focused on the content available in the provided documents.`
   const dataStream = createStreamableValue();
   (async () => {
     uiStream.update(
-      <Box
-        display="flex"
-        flexDirection="column"
-        justifyContent="center"
-        alignItems="center"
-        mb={2}
-        mt={2}
-        p={2}
-        borderRadius={4}
-        bgcolor="grey.100"
-        sx={{
-          backgroundImage: 'linear-gradient(45deg, #e0eaFC, #cfdef3)',
-          boxShadow: '0 3px 5px 2px rgba(0, 0, 0, .1)',
-          transition: 'background-color 0.3s ease',
-          ':hover': {
-            bgcolor: 'grey.200'
-          }
-        }}
-      >
-        <Typography variant="h6" color="primary" gutterBottom>
+      <div className="flex flex-col justify-center items-center mb-8 mt-8 p-8 rounded-xl bg-gradient-to-br from-[#e0eaFC] to-[#cfdef3] shadow-md transition-colors hover:bg-gray-200">
+        <h3 className="text-xl font-semibold text-primary mb-4">
           I&apos;ve identified these optimized search variations to better
           understand your query:
-        </Typography>
+        </h3>
 
-        <List sx={{ width: '100%' }}>
+        <ul className="w-full space-y-3">
           {queries.map((query, index) => (
-            <ListItem key={index}>
-              <ListItemIcon>
-                <SearchIcon color="primary" />
-              </ListItemIcon>
-              <ListItemText primary={query} sx={{ fontStyle: 'italic' }} />
-            </ListItem>
+            <li key={index} className="flex items-center">
+              <Search className="h-5 w-5 text-primary mr-3 shrink-0" />
+              <span className="italic">{query}</span>
+            </li>
           ))}
-        </List>
+        </ul>
 
-        <Box display="flex" alignItems="center" mt={2}>
-          <Typography variant="body1" color="textSecondary" fontStyle="italic">
+        <div className="flex items-center mt-8">
+          <p className="text-muted-foreground italic">
             Analyzing results to provide a comprehensive response...
-          </Typography>
-          <CircularProgress size={20} sx={{ marginLeft: 2 }} />
-        </Box>
-      </Box>
+          </p>
+          <Loader2 className="h-5 w-5 ml-2 animate-spin" />
+        </div>
+      </div>
     );
     const embeddings = await Promise.all(
       queries.map((query) => embedQuery(query))
@@ -536,29 +485,12 @@ ${formattedSearchResults}
   })().catch((e: unknown) => {
     console.error('Error in chat handler:', e);
     uiStream.error(
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          mb: 2,
-          p: 2,
-          borderRadius: 4,
-          bgcolor: 'error.light',
-          color: 'error.contrastText',
-          backgroundImage: 'linear-gradient(45deg, #FFCCCB, #FFB6C1)',
-          boxShadow: '0 3px 5px 2px rgba(255, 0, 0, .1)',
-          transition: 'background-color 0.3s ease',
-          ':hover': {
-            bgcolor: 'error.main'
-          }
-        }}
-      >
-        <Typography variant="body1">
+      <div className="flex justify-center items-center mb-2 p-2 rounded-xl bg-red-100 text-red-800 bg-gradient-to-r from-[#FFCCCB] to-[#FFB6C1] shadow-md transition-colors hover:bg-red-200">
+        <p>
           An error occurred while processing your request. Please try again
           later.
-        </Typography>
-      </Box>
+        </p>
+      </div>
     );
     status.done('done');
   });

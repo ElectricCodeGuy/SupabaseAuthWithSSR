@@ -10,14 +10,13 @@ import React, {
 import { createClient } from '@/lib/client/client';
 import { encodeBase64 } from '../lib/base64';
 import useSWR, { useSWRConfig } from 'swr';
-import type { AlertColor } from '@mui/material';
 
 interface UploadContextType {
   isUploading: boolean;
   uploadFile: (file: File) => Promise<void>;
   uploadProgress: number;
   uploadStatus: string;
-  statusSeverity: AlertColor;
+  statusSeverity: string;
   selectedFile: File | null;
   setSelectedFile: React.Dispatch<React.SetStateAction<File | null>>;
   selectedMode: string;
@@ -46,7 +45,7 @@ export const UploadProvider: React.FC<{
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState('');
-  const [statusSeverity, setStatusSeverity] = useState<AlertColor>('info');
+  const [statusSeverity, setStatusSeverity] = useState<string>('info');
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
   const [currentFileName, setCurrentFileName] = useState<string | null>(null);
   const [shouldProcessDoc, setShouldProcessDoc] = useState(false);

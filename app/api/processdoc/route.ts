@@ -12,7 +12,6 @@ import { openai } from '@ai-sdk/openai';
 import { recursiveTextSplitter } from './textspliter';
 import { encodingForModel } from 'js-tiktoken';
 import { backOff, type IBackOffOptions } from 'exponential-backoff';
-import { type LanguageModelUsage } from 'ai';
 
 export const dynamic = 'force-dynamic';
 
@@ -229,18 +228,6 @@ async function processFile(pages: string[], fileName: string, userId: string) {
   console.log('Token Usage:', totalPromptTokens, totalCompletionTokens);
   return filterTags;
 }
-interface ContentAnalysisType {
-  preliminary_answer_1: string;
-  preliminary_answer_2: string;
-  hypothetical_question_1: string;
-  hypothetical_question_2: string;
-  tags: string[];
-}
-
-interface AgentChainResult {
-  object: ContentAnalysisType;
-  usage: LanguageModelUsage;
-}
 
 async function processDocumentWithAgentChains(
   doc: string,
@@ -259,18 +246,8 @@ async function processDocumentWithAgentChains(
   Document: ${doc}
   `;
 
-  // Create a promise that rejects after 15 seconds
-  const timeout = new Promise<never>((_, reject) => {
-    setTimeout(() => {
-      reject(new Error('Processing timeout after 15 seconds'));
-    }, 15000);
-  });
-
   try {
-    const result = await Promise.race<AgentChainResult>([
-      preliminaryAnswerChainAgent(prompt, userId),
-      timeout
-    ]);
+    const result = await preliminaryAnswerChainAgent(prompt, userId);
 
     const { object, usage } = result;
 

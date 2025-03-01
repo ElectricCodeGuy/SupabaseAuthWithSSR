@@ -1,158 +1,93 @@
 import React from 'react';
 import Image from 'next/image';
-import { Box, Typography, Grid2, IconButton, Chip } from '@mui/material';
-import {
-  LinkedIn as LinkedInIcon,
-  GitHub as GitHubIcon
-} from '@mui/icons-material';
 import Link from 'next/link';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Linkedin, Github } from 'lucide-react';
 import ChikenImage from '@/public/images/chiken image.jpg';
 
 const UserProfileComponent = () => {
   return (
-    <Grid2
-      container
-      spacing={2}
-      sx={{
-        bgcolor: 'background.paper',
-        p: 2,
-        boxShadow: 4,
-        borderRadius: '8px',
-        maxWidth: '1800px',
-        mx: 'auto',
-        my: 4
-      }}
-    >
-      <Grid2
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center'
-        }}
-        size={{
-          xs: 12,
-          md: 4
-        }}
-      >
-        <Image src={ChikenImage} alt="Support" height={140} width={140} />
-
-        <Typography
-          variant="h4"
-          align="center"
-          sx={{
-            color: 'primary.main',
-            mb: 2,
-            fontWeight: 'bold'
-          }}
-        >
-          DevOps
-        </Typography>
-
-        <Box
-          sx={{
-            display: 'flex',
-            gap: 2,
-            mb: 3,
-            justifyContent: 'center'
-          }}
-        >
-          <IconButton
-            color="primary"
-            component={Link}
-            href="#"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ textDecoration: 'none' }}
-          >
-            <LinkedInIcon fontSize="large" />
-          </IconButton>
-          <IconButton
-            color="primary"
-            component={Link}
-            href="#"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ textDecoration: 'none' }}
-          >
-            <GitHubIcon fontSize="large" />
-          </IconButton>
-        </Box>
-      </Grid2>
-
-      <Grid2
-        size={{
-          xs: 12,
-          md: 8
-        }}
-      >
-        <Typography
-          variant="h5"
-          sx={{
-            color: 'primary.main',
-            mb: 1,
-            fontWeight: 'bold'
-          }}
-        >
-          About Me
-        </Typography>
-        <Typography
-          sx={{
-            color: 'text.secondary',
-            mb: 3
-          }}
-        >
-          Based in a vibrant tech hub, we are a team of developers passionate
-          about integrating AI into data management solutions. Our ongoing
-          project is an innovative chatbot designed to streamline the flow of
-          information for users across various platforms. Additionally, we are
-          in the process of developing a knowledge-based vector database. This
-          database integrates cutting-edge technologies from leading AI and
-          database providers. With this tool, we aim to revolutionize the way
-          data is accessed, making searches faster and more relevant.
-        </Typography>
-
-        <Typography
-          variant="h6"
-          sx={{
-            color: 'primary.main',
-            mb: 1,
-            fontWeight: 'bold'
-          }}
-        >
-          Skills
-        </Typography>
-        <Box
-          sx={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: 1
-          }}
-        >
-          {[
-            'Data Management with AI',
-            'ChatBot Development',
-            'Database Development',
-            'JavaScript/TypeScript',
-            'PostgreSQL and SQL',
-            'PineCone Vector Database',
-            'Supabase Development',
-            'Embeddings',
-            'OpenAI',
-            'Python',
-            'React',
-            'Next.js',
-            'HuggingFace'
-          ].map((skill, index) => (
-            <Chip
-              key={index}
-              label={skill}
-              variant="outlined"
-              color="primary"
+    <Card className="max-w-[1800px] mx-auto my-4 shadow-md">
+      <CardContent className="p-6">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+          <div className="flex flex-col items-center md:col-span-4">
+            <Image
+              src={ChikenImage}
+              alt="Support"
+              height={140}
+              width={140}
+              className="rounded-full"
             />
-          ))}
-        </Box>
-      </Grid2>
-    </Grid2>
+
+            <h4 className="text-primary mt-4 mb-2 font-bold text-2xl">
+              DevOps
+            </h4>
+
+            <div className="flex gap-4 mb-3 justify-center">
+              <Link
+                href="#"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:text-primary/80 transition-colors"
+              >
+                <Linkedin className="h-8 w-8" />
+              </Link>
+              <Link
+                href="#"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:text-primary/80 transition-colors"
+              >
+                <Github className="h-8 w-8" />
+              </Link>
+            </div>
+          </div>
+
+          <div className="md:col-span-8">
+            <h5 className="text-primary mb-2 font-bold text-xl">About Me</h5>
+            <p className="text-muted-foreground mb-6">
+              Based in a vibrant tech hub, we are a team of developers
+              passionate about integrating AI into data management solutions.
+              Our ongoing project is an innovative chatbot designed to
+              streamline the flow of information for users across various
+              platforms. Additionally, we are in the process of developing a
+              knowledge-based vector database. This database integrates
+              cutting-edge technologies from leading AI and database providers.
+              With this tool, we aim to revolutionize the way data is accessed,
+              making searches faster and more relevant.
+            </p>
+
+            <h6 className="text-primary mb-2 font-bold text-lg">Skills</h6>
+            <div className="flex flex-wrap gap-2">
+              {[
+                'Data Management with AI',
+                'ChatBot Development',
+                'Database Development',
+                'JavaScript/TypeScript',
+                'PostgreSQL and SQL',
+                'PineCone Vector Database',
+                'Supabase Development',
+                'Embeddings',
+                'OpenAI',
+                'Python',
+                'React',
+                'Next.js',
+                'HuggingFace'
+              ].map((skill, index) => (
+                <Badge
+                  key={index}
+                  variant="outline"
+                  className="text-primary border-primary"
+                >
+                  {skill}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

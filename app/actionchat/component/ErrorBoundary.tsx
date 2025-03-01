@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import React, { Component } from 'react';
-import { Box, Typography, Button } from '@mui/material';
+import { Button } from '@/components/ui/button';
 
 interface Props {
   children?: ReactNode;
@@ -10,52 +10,40 @@ interface Props {
 
 interface State {
   hasError: boolean;
+  isReloading: boolean;
 }
 
 class ErrorBoundary extends Component<Props, State> {
   public state: State = {
-    hasError: false
+    hasError: false,
+    isReloading: false
   };
 
   public static getDerivedStateFromError(_: Error): State {
-    return { hasError: true };
+    return { hasError: true, isReloading: false };
   }
+
+  handleReload = () => {
+    this.setState({ isReloading: true });
+    window.location.reload();
+  };
 
   public render() {
     if (this.state.hasError) {
       return (
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '90vh',
-            p: {
-              xs: 0.2,
-              sm: 0.5,
-              md: 1,
-              lg: 2
-            },
-            textAlign: 'center'
-          }}
-        >
-          <Typography variant="h3" component="h1" sx={{ mb: 2 }}>
+        <div className="flex flex-col justify-center items-center h-[90vh] p-2 sm:p-4 md:p-6 lg:p-8 text-center">
+          <h1 className="text-3xl font-bold mb-4">
             Sorry - something went wrong
-          </Typography>
-          <Typography variant="body1" sx={{ mb: 2 }}>
+          </h1>
+          <p className="mb-4 text-gray-700">
             If you are using Google Translate, it may crash the page. Please
             disable it.
-          </Typography>
+          </p>
 
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={() => window.location.reload()}
-          >
+          <Button onClick={this.handleReload} disabled={this.state.isReloading}>
             Reload the page
           </Button>
-        </Box>
+        </div>
       );
     }
 

@@ -1,6 +1,5 @@
 // page.tsx
 import 'server-only';
-import { Box } from '@mui/material';
 import ChatComponent from '../components/Chat';
 import { createServerSupabaseClient } from '@/lib/server/server';
 import { format } from 'date-fns';
@@ -143,24 +142,24 @@ export default async function ChatPage(props: {
   };
 
   return (
-    <Box
-      sx={{
+    <div
+      style={{
         display: 'flex',
         width: '100%',
         overflow: 'hidden'
       }}
     >
-      <Box sx={{ flex: 1 }}>
+      <div style={{ flex: 1 }}>
         <ChatComponent
           currentChat={formattedChatData}
           chatId={id}
           initialModelType={modelType}
           initialSelectedOption={selectedOption}
         />
-      </Box>
+      </div>
       {searchParams.url ? (
         <WebsiteWiever url={decodeURIComponent(searchParams.url)} />
       ) : null}
-    </Box>
+    </div>
   );
 }

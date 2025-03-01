@@ -1,50 +1,22 @@
 'use client';
 
 import React, { useState, useCallback, use } from 'react';
-import {
-  AppBar,
-  IconButton,
-  Box,
-  Button,
-  Drawer,
-  Divider,
-  Link as MuiLink,
-  List,
-  ListItemButton,
-  ListItemText,
-  type SxProps,
-  type Theme,
-  MenuItem,
-  Popover
-} from '@mui/material';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu as MenuIcon } from '@mui/icons-material';
-import CloseIcon from '@mui/icons-material/Close';
 import Link from 'next/link';
-import Sitemark from './SitemarkIcon';
-import PopupState, { bindTrigger, bindPopover } from 'material-ui-popup-state';
+import { Menu, X, ChevronDown } from 'lucide-react';
 import { type User } from '@supabase/supabase-js';
-import SignOut from './SignOut';
 
-const linkStyleDesktop: SxProps<Theme> = {
-  fontWeight: 600,
-  fontSize: '1.05rem',
-  margin: '0 0.5rem',
-  color: 'text.primary',
-  whiteSpace: 'nowrap',
-  overflow: 'hidden',
-  borderRadius: '6px',
-  '&:hover': {
-    backgroundColor: 'rgba(0, 0, 0, 0.04)',
-    textDecoration: 'none'
-  },
-  '&.active': {
-    fontWeight: 700,
-    color: 'primary.main',
-    backgroundColor: 'rgba(25, 118, 210, 0.08)'
-  }
-};
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Separator } from '@/components/ui/separator';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
+import Sitemark from './SitemarkIcon';
+import SignOut from './SignOut';
 
 interface HeaderProps {
   session: Promise<User | null>;
@@ -52,13 +24,12 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ session }) => {
   const userData = use(session);
-
   const isLoggedIn = !!userData;
-
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const pathname = usePathname();
   const router = useRouter();
+
   const isActive = useCallback(
     (href: string) => {
       return pathname.startsWith(href);
@@ -66,316 +37,154 @@ const Header: React.FC<HeaderProps> = ({ session }) => {
     [pathname]
   );
 
-  const handleDrawerToggle = () => {
-    setDrawerOpen(!drawerOpen);
-  };
-
-  const mobileMenuItems = [
+  const navigationItems = [
     { href: '/protected', text: 'Protected' },
     { href: '/aichat', text: 'AI Chat' },
     { href: '/actionchat', text: 'Action Chat' }
   ];
 
-  const drawer = (
-    <Box
-      sx={{
-        width: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        overflowX: 'hidden'
-      }}
-      role="presentation"
-      onClick={handleDrawerToggle}
-    >
-      <Button
-        onClick={() => setDrawerOpen(false)}
-        size="large"
-        sx={{
-          position: 'absolute',
-          top: 2,
-          right: 2,
-          minWidth: 'unset'
-        }}
-      >
-        <CloseIcon />
-      </Button>
-      <Box
-        sx={{
-          p: 0.2,
-          display: 'flex',
-          alignItems: 'center',
-          width: 'fit-content',
-          mx: 'auto'
-        }}
-      >
-        <MuiLink
-          href="/"
-          sx={{
-            cursor: 'pointer',
-            display: 'inline-block',
-            textDecoration: 'none'
-          }}
-        >
-          <Sitemark />
-        </MuiLink>
-      </Box>
-      <Divider />
-      <List sx={{ flexGrow: 1, overflowY: 'auto', py: 0, width: '100%' }}>
-        {mobileMenuItems.map((item, index) => (
-          <React.Fragment key={index}>
-            <ListItemButton
-              component={Link}
-              href={item.href}
-              sx={{
-                py: 1.5,
-                bgcolor: isActive(item.href) ? 'action.selected' : 'inherit',
-                '&:hover': {
-                  bgcolor: isActive(item.href)
-                    ? 'action.selected'
-                    : 'action.hover'
-                }
-              }}
-            >
-              <ListItemText
-                primary={item.text}
-                slotProps={{
-                  primary: {
-                    fontWeight: 600,
-                    variant: 'h3'
-                  }
-                }}
-              />
-            </ListItemButton>
-            {index < mobileMenuItems.length - 1 && <Divider component="li" />}
-          </React.Fragment>
-        ))}
-        {isLoggedIn && (
-          <>
-            <Divider component="li" />
-            <ListItemButton>
-              <ListItemText
-                primary={<SignOut />}
-                slotProps={{
-                  primary: {
-                    fontWeight: 600,
-                    variant: 'h3'
-                  }
-                }}
-              />
-            </ListItemButton>
-          </>
-        )}
-      </List>
-    </Box>
-  );
+  return (
+    <>
+      {/* Desktop navigation */}
+      <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-xl border-b border-slate-200 h-12 hidden md:flex shadow-[0_0_1px_rgba(85,166,246,0.1),1px_1.5px_2px_-1px_rgba(85,166,246,0.15),4px_4px_12px_-2.5px_rgba(85,166,246,0.15)]">
+        <div className="flex items-center w-full h-full px-8 mx-auto">
+          <div className="flex items-center mr-8">
+            <Link href="/" passHref>
+              <Sitemark />
+            </Link>
+          </div>
 
-  const mobileAppBarContent = (
-    <IconButton
-      edge="end"
-      aria-label="menu"
-      onClick={handleDrawerToggle}
-      sx={{
-        position: 'fixed',
-        top: 0,
-        right: 16,
-        bgcolor: 'rgba(0, 0, 0, 0.04)',
-        borderRadius: '50%'
-      }}
-    >
-      <MenuIcon sx={{ fontSize: '1.75rem' }} />
-    </IconButton>
-  );
-  const appBarContent = (
-    <Box
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        width: '100%',
-        height: '100%',
-        pl: { md: 4, lg: 8 },
-        margin: '0 auto'
-      }}
-    >
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          flex: { md: 0, lg: 0, xl: 1 },
-          mr: -2
-        }}
-      >
-        <MuiLink
-          href="/"
-          sx={{
-            padding: '8px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            textDecoration: 'none',
-            zIndex: 1,
-            position: 'relative',
-            '&:hover': { textDecoration: 'none' }
-          }}
-        >
-          <Sitemark />
-        </MuiLink>
-      </Box>
+          <div className="flex items-center justify-end flex-1">
+            {navigationItems.map((item) => (
+              <Button
+                key={item.href}
+                variant={isActive(item.href) ? 'secondary' : 'ghost'}
+                className={`font-semibold text-base mx-1 rounded-md ${
+                  isActive(item.href)
+                    ? 'text-primary font-bold bg-primary/10'
+                    : 'text-foreground hover:bg-muted'
+                }`}
+                asChild
+                onMouseEnter={() => router.prefetch(item.href)}
+              >
+                <Link href={item.href} prefetch={false}>
+                  {item.text}
+                </Link>
+              </Button>
+            ))}
 
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          flex: 1,
-          justifyContent: {
-            xs: 'none',
-            sm: 'none',
-            md: 'flex-end',
-            lg: 'flex-end',
-            xl: 'flex-end'
-          }
-        }}
-      >
-        <Button
-          component={Link}
-          href="/protected"
-          prefetch={false}
-          onMouseEnter={() => router.prefetch('/protected')}
-          sx={linkStyleDesktop}
-          className={isActive('/protected') ? 'active' : ''}
-        >
-          Protected
-        </Button>
-
-        <Button
-          component={Link}
-          href="/aichat"
-          prefetch={false}
-          onMouseEnter={() => router.prefetch('/aichat')}
-          sx={linkStyleDesktop}
-          className={isActive('/aichat') ? 'active' : ''}
-        >
-          AI Chat
-        </Button>
-
-        <Button
-          component={Link}
-          href="/actionchat"
-          prefetch={false}
-          onMouseEnter={() => router.prefetch('/actionchat')}
-          sx={linkStyleDesktop}
-          className={isActive('/actionchat') ? 'active' : ''}
-        >
-          Action Chat
-        </Button>
-
-        {isLoggedIn ? (
-          <PopupState variant="popover" popupId="profile-menu">
-            {(popupState) => (
-              <>
-                <Button
-                  {...bindTrigger(popupState)}
-                  endIcon={<KeyboardArrowDownIcon />}
-                  sx={linkStyleDesktop}
-                >
-                  Profile
-                </Button>
-                <Popover
-                  {...bindPopover(popupState)}
-                  anchorOrigin={{
-                    vertical: 'bottom',
-                    horizontal: 'left'
-                  }}
-                  transformOrigin={{
-                    vertical: 'top',
-                    horizontal: 'left'
-                  }}
-                  disableScrollLock
-                >
-                  <Box sx={{ py: 1 }}>
-                    <MenuItem
-                      component={Link}
+            {isLoggedIn ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="font-semibold text-base mx-1 rounded-md"
+                  >
+                    Profile <ChevronDown className="ml-1 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem asChild>
+                    <Link
                       href="/protected"
+                      className="w-full cursor-pointer"
                       prefetch={false}
                       onMouseEnter={() => router.prefetch('/protected')}
                     >
                       Profile
-                    </MenuItem>
-                    <MenuItem>
-                      <SignOut />
-                    </MenuItem>
-                  </Box>
-                </Popover>
-              </>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <SignOut />
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button
+                variant={isActive('/signin') ? 'secondary' : 'ghost'}
+                className={`font-semibold text-base mx-1 rounded-md ${
+                  isActive('/signin')
+                    ? 'text-primary font-bold bg-primary/10'
+                    : 'text-foreground'
+                }`}
+                asChild
+              >
+                <Link href="/signin" prefetch={false}>
+                  Sign in
+                </Link>
+              </Button>
             )}
-          </PopupState>
-        ) : (
+          </div>
+        </div>
+      </header>
+
+      {/* Mobile navigation */}
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        <SheetTrigger asChild>
           <Button
-            component={Link}
-            href="/signin"
-            prefetch={false}
-            sx={linkStyleDesktop}
-            className={isActive('/signin') ? 'active' : ''}
+            variant="ghost"
+            size="icon"
+            className="fixed top-4 right-4 z-50 md:hidden bg-background/90 rounded-full"
+            aria-label="Menu"
           >
-            Sign in
+            <Menu className="h-6 w-6" />
           </Button>
-        )}
-      </Box>
-    </Box>
-  );
+        </SheetTrigger>
+        <SheetContent side="left" className="w-[300px] sm:w-[400px] p-0">
+          <div className="flex flex-col h-full">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-4 right-4"
+              onClick={() => setSheetOpen(false)}
+              aria-label="Close menu"
+            >
+              <X className="h-6 w-6" />
+            </Button>
 
-  return (
-    <>
-      {/* AppBar for md and larger screens */}
-      <AppBar
-        position="sticky"
-        sx={{
-          bgcolor: 'rgba(255, 255, 255, 0.8)',
-          backdropFilter: 'blur(24px)',
-          boxShadow:
-            '0 0 1px rgba(85, 166, 246, 0.1), 1px 1.5px 2px -1px rgba(85, 166, 246, 0.15), 4px 4px 12px -2.5px rgba(85, 166, 246, 0.15)',
-          display: { xs: 'none', sm: 'none', md: 'block' },
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-          width: '100%',
-          height: '44px',
-          p: '4px'
-        }}
-      >
-        {appBarContent}
-      </AppBar>
-      <AppBar
-        position="fixed"
-        sx={{
-          bgcolor: 'transparent',
-          boxShadow: 'none',
-          left: 0,
-          right: 0,
-          display: { xs: 'flex', sm: 'flex', md: 'none' },
-          justifyContent: 'center',
-          alignItems: 'center'
-        }}
-      >
-        {mobileAppBarContent}
-      </AppBar>
+            <div className="flex justify-center items-center p-6">
+              <Link href="/" className="cursor-pointer">
+                <Sitemark />
+              </Link>
+            </div>
 
-      <Drawer
-        anchor="left"
-        open={drawerOpen}
-        onClose={handleDrawerToggle}
-        ModalProps={{
-          keepMounted: true
-        }}
-        sx={{
-          display: { xs: 'block', sm: 'block', md: 'none' },
-          '& .MuiDrawer-paper': {
-            boxSizing: 'border-box',
-            width: 'fit-content'
-          }
-        }}
-      >
-        {drawer}
-      </Drawer>
+            <Separator />
+
+            <nav className="flex-1 overflow-auto">
+              <ul className="py-0 w-full">
+                {navigationItems.map((item, index) => (
+                  <React.Fragment key={item.href}>
+                    <li>
+                      <Link
+                        href={item.href}
+                        className={`flex py-4 px-6 font-semibold text-lg ${
+                          isActive(item.href)
+                            ? 'bg-muted text-primary'
+                            : 'hover:bg-muted/50'
+                        }`}
+                        onClick={() => setSheetOpen(false)}
+                        prefetch={false}
+                      >
+                        {item.text}
+                      </Link>
+                    </li>
+                    {index < navigationItems.length - 1 && <Separator />}
+                  </React.Fragment>
+                ))}
+
+                {isLoggedIn && (
+                  <>
+                    <Separator />
+                    <li className="py-4 px-6">
+                      <SignOut />
+                    </li>
+                  </>
+                )}
+              </ul>
+            </nav>
+          </div>
+        </SheetContent>
+      </Sheet>
     </>
   );
 };

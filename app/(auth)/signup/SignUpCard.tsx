@@ -1,17 +1,12 @@
 'use client';
 import React, { useState, useCallback } from 'react';
-import {
-  Box,
-  Button,
-  Card,
-  Divider,
-  FormLabel,
-  FormControl,
-  TextField,
-  Typography,
-  CircularProgress,
-  Alert
-} from '@mui/material';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Loader2 } from 'lucide-react';
 import ForgotPassword from '../ForgotPassword';
 import { GoogleIcon } from '../CustomIcons';
 import { signup } from '../action';
@@ -21,7 +16,6 @@ import Link from 'next/link';
 
 export default function SignInCard() {
   const [email, setEmail] = useState('');
-
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -125,175 +119,143 @@ export default function SignInCard() {
   };
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center'
-      }}
-    >
-      <Card
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignSelf: 'center',
-          width: { xs: '100%', sm: '350px', md: '400px' }, // Reduced width
-          p: { xs: 1, sm: 1.5, md: 2 }, // Reduced padding
-          gap: { xs: 1, sm: 1, md: 1 },
-          boxShadow:
-            'rgba(0, 0, 0, 0.05) 0px 5px 15px 0px, rgba(25, 28, 33, 0.05) 0px 15px 35px -5px, rgba(0, 0, 0, 0.05) 0px 0px 0px 1px'
-        }}
-      >
-        <Typography variant="h4" sx={{ width: '100%' }}>
-          Sign Up
-        </Typography>
-        <Box
-          component="form"
-          action={handleSubmit}
-          noValidate
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            width: '100%',
-            '& .MuiFormControl-root': {
-              gap: { xs: 0.25, sm: 0.5, md: 0.75 } // Reduced gap for FormControls
-            }
-          }}
-        >
-          <FormControl>
-            <FormLabel htmlFor="email">Email</FormLabel>
-            <TextField
-              error={emailError}
-              helperText={emailErrorMessage}
-              id="email"
-              type="email"
-              name="email"
-              placeholder="your@email.com"
-              autoComplete="email"
-              required
-              fullWidth
-              variant="outlined"
-              color={emailError ? 'error' : 'primary'}
-              sx={{ ariaLabel: 'email' }}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </FormControl>
-          <FormControl>
-            <FormLabel htmlFor="fullName">Full Name</FormLabel>
-            <TextField
-              id="fullName"
-              name="fullName"
-              placeholder="John Doe"
-              autoComplete="name"
-              fullWidth
-              variant="outlined"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-            />
-          </FormControl>
-          <FormControl>
-            <FormLabel htmlFor="password">Password</FormLabel>
-            <TextField
-              error={passwordError}
-              helperText={passwordErrorMessage}
-              name="password"
-              placeholder="••••••"
-              type="password"
-              id="password"
-              autoComplete="new-password"
-              required
-              fullWidth
-              variant="outlined"
-              color={passwordError ? 'error' : 'primary'}
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                validatePassword(e.target.value);
-              }}
-            />
-          </FormControl>
-          <FormControl>
-            <FormLabel htmlFor="confirmPassword">Confirm Password</FormLabel>
-            <TextField
-              error={confirmPasswordError}
-              helperText={confirmPasswordErrorMessage}
-              name="confirmPassword"
-              placeholder="••••••"
-              type="password"
-              id="confirmPassword"
-              autoComplete="new-password"
-              required
-              fullWidth
-              variant="outlined"
-              color={confirmPasswordError ? 'error' : 'primary'}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-            />
-          </FormControl>
-          <SubmitButton />
-          {alertMessage.type && (
-            <Box sx={{ width: '100%', mt: 2, mb: 2 }}>
-              <Alert severity={alertMessage.type}>{alertMessage.message}</Alert>
-            </Box>
-          )}
-          <Button
-            component={Link}
-            href="/signin"
-            replace
-            variant="outlined"
-            sx={{ alignSelf: 'center' }}
-          >
-            Already have an account?
-          </Button>
-        </Box>
-        <Divider>or</Divider>
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: { xs: 1, sm: 1.5, md: 2 }
-          }}
-        >
-          <Button
-            type="submit"
-            fullWidth
-            variant="outlined"
-            color="secondary"
-            onClick={() => signInWithGoogle()}
-            startIcon={<GoogleIcon />}
-          >
-            Sign up with Google
-          </Button>
-        </Box>
-        <ForgotPassword open={open} handleClose={handleClose} />
-      </Card>
-      <Box
-        sx={{
-          display: { xs: 'none', md: 'flex' },
-          justifyContent: 'center',
-          alignItems: 'center',
-          ml: 2
-        }}
-      >
+    <div className="flex justify-center items-center">
+      <div className="w-full sm:w-[350px] md:w-[400px]">
+        <Card className="shadow-md">
+          <CardContent className="p-4 pt-6 space-y-4">
+            <h1 className="text-2xl font-semibold">Sign Up</h1>
+
+            <form action={handleSubmit} noValidate className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  name="email"
+                  placeholder="your@email.com"
+                  autoComplete="email"
+                  required
+                  className={emailError ? 'border-red-500' : ''}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+                {emailError && (
+                  <p className="text-sm text-red-500">{emailErrorMessage}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input
+                  id="fullName"
+                  name="fullName"
+                  placeholder="John Doe"
+                  autoComplete="name"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  name="password"
+                  placeholder="••••••"
+                  type="password"
+                  id="password"
+                  autoComplete="new-password"
+                  required
+                  className={passwordError ? 'border-red-500' : ''}
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    validatePassword(e.target.value);
+                  }}
+                />
+                {passwordError && (
+                  <p className="text-sm text-red-500">{passwordErrorMessage}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Input
+                  name="confirmPassword"
+                  placeholder="••••••"
+                  type="password"
+                  id="confirmPassword"
+                  autoComplete="new-password"
+                  required
+                  className={confirmPasswordError ? 'border-red-500' : ''}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+                {confirmPasswordError && (
+                  <p className="text-sm text-red-500">
+                    {confirmPasswordErrorMessage}
+                  </p>
+                )}
+              </div>
+
+              <SubmitButton />
+
+              {alertMessage.type && (
+                <Alert
+                  className={
+                    alertMessage.type === 'error'
+                      ? 'border-red-600 bg-red-50 text-red-800'
+                      : 'border-green-600 bg-green-50 text-green-800'
+                  }
+                >
+                  <AlertDescription>{alertMessage.message}</AlertDescription>
+                </Alert>
+              )}
+
+              <div className="flex justify-center">
+                <Button asChild variant="outline" className="w-auto">
+                  <Link href="/signin" replace>
+                    Already have an account?
+                  </Link>
+                </Button>
+              </div>
+            </form>
+
+            <div className="relative py-2">
+              <Separator />
+              <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white px-2 text-gray-500 text-sm">
+                or
+              </span>
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() => signInWithGoogle()}
+            >
+              <GoogleIcon />
+              Sign up with Google
+            </Button>
+
+            <ForgotPassword open={open} handleClose={handleClose} />
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="hidden md:flex justify-center items-center ml-2">
         <PasswordRequirements requirements={passwordRequirements} />
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 }
+
 function SubmitButton() {
   const { pending } = useFormStatus();
 
   return (
-    <Button
-      type="submit"
-      fullWidth
-      variant="contained"
-      disabled={pending}
-      sx={{ my: 2 }}
-    >
+    <Button type="submit" className="w-full" disabled={pending}>
       {pending ? (
-        <CircularProgress size={24} color="inherit" />
+        <Loader2 className="h-4 w-4 animate-spin" />
       ) : (
         'Create Account'
       )}
@@ -312,24 +274,16 @@ interface PasswordRequirementsProps {
 
 function PasswordRequirements({ requirements }: PasswordRequirementsProps) {
   return (
-    <Box
-      sx={{
-        width: '240px',
-        backgroundColor: 'white',
-        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
-        borderRadius: '16px',
-        padding: '8px'
-      }}
-    >
-      <Typography variant="subtitle2" gutterBottom>
-        Password Requirements:
-      </Typography>
-      <ul style={{ paddingLeft: '20px', margin: 0 }}>
-        <li style={{ color: requirements.length ? 'green' : 'red' }}>
+    <div className="w-[240px] bg-white shadow-md rounded-2xl p-2">
+      <p className="text-sm font-medium mb-1">Password Requirements:</p>
+      <ul className="pl-5 m-0">
+        <li className={requirements.length ? 'text-green-600' : 'text-red-600'}>
           Length (at least 6 characters)
         </li>
-        <li style={{ color: requirements.number ? 'green' : 'red' }}>Number</li>
+        <li className={requirements.number ? 'text-green-600' : 'text-red-600'}>
+          Number
+        </li>
       </ul>
-    </Box>
+    </div>
   );
 }

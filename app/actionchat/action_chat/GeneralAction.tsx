@@ -5,7 +5,8 @@ import {
   createStreamableValue
 } from 'ai/rsc';
 import { streamText, generateId } from 'ai';
-import { Box, Typography, CircularProgress } from '@mui/material';
+import { Loader2 } from 'lucide-react';
+
 import { BotMessage } from '../component/ChatWrapper';
 import { v4 as uuidv4 } from 'uuid';
 import { getUserInfo } from '@/lib/server/supabase';
@@ -18,6 +19,9 @@ import {
   getModel,
   saveChatToSupbabase
 } from './shared';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Card, CardContent } from '@/components/ui/card';
+
 const SYSTEM_TEMPLATE = `You are a helpful assistant. Answer all questions to the best of your ability. Provide helpful answers in markdown.`;
 
 export async function submitMessage(
@@ -83,34 +87,13 @@ export async function submitMessage(
     );
     if (cachedResult) {
       const uiStream = createStreamableUI(
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            mb: 2,
-            p: 2,
-            borderRadius: 4,
-            bgcolor: 'grey.100',
-            backgroundImage: 'linear-gradient(45deg, #e0eaFC #cfdef3)',
-            boxShadow: '0 3px 5px 2px rgba(0, 0, 0, .1)',
-            transition: 'background-color 0.3s ease',
-
-            ':hover': {
-              bgcolor: 'grey.200'
-            }
-          }}
-        >
-          <Typography
-            variant="body1"
-            sx={{
-              color: 'textSecondary',
-              fontStyle: 'italic'
-            }}
-          >
-            Found relevant website. Scraping data...
-          </Typography>
-        </Box>
+        <Card className="mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 hover:bg-blue-100 transition-colors duration-300 shadow-md">
+          <CardContent className="p-4 flex justify-center items-center">
+            <p className="text-gray-600 italic">
+              Found relevant website. Scraping data...
+            </p>
+          </CardContent>
+        </Card>
       );
 
       aiState.done([
@@ -156,28 +139,14 @@ export async function submitMessage(
       })().catch((e) => {
         console.error('Error in chat handler:', e);
         uiStream.error(
-          <Box
-            sx={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              mb: 2,
-              p: 2,
-              borderRadius: 4,
-              bgcolor: 'error.light',
-              color: 'error.contrastText',
-              backgroundImage: 'linear-gradient(45deg, #FFCCCB, #FFB6C1)',
-              boxShadow: '0 3px 5px 2px rgba(255, 0, 0, .1)',
-              transition: 'background-color 0.3s ease',
-              ':hover': {
-                bgcolor: 'error.main'
-              }
-            }}
+          <Alert
+            variant="destructive"
+            className="mb-4 bg-gradient-to-r from-red-50 to-red-100 shadow-md"
           >
-            <Typography variant="body1">
+            <AlertDescription>
               An error occurred while processing your request. Please try again
-            </Typography>
-          </Box>
+            </AlertDescription>
+          </Alert>
         );
         status.done('done');
       });
@@ -191,137 +160,47 @@ export async function submitMessage(
     }
   }
   const uiStream = createStreamableUI(
-    <Box
-      sx={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        mb: 2,
-        p: 2,
-        borderRadius: 4,
-        bgcolor: 'grey.100',
-        backgroundImage: 'linear-gradient(45deg, #e0eaFC #cfdef3)',
-        boxShadow: '0 3px 5px 2px rgba(0, 0, 0, .1)',
-        transition: 'background-color 0.3s ease',
-
-        ':hover': {
-          bgcolor: 'grey.200'
-        }
-      }}
-    >
-      <Typography
-        variant="body1"
-        sx={{
-          color: 'textSecondary',
-          fontStyle: 'italic'
-        }}
-      >
-        Searching...
-      </Typography>
-    </Box>
+    <Card className="mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 hover:bg-blue-100 transition-colors duration-300 shadow-md">
+      <CardContent className="p-4 flex justify-center items-center">
+        <p className="text-gray-600 italic">Searching...</p>
+      </CardContent>
+    </Card>
   );
   const dataStream = createStreamableValue();
   (async () => {
     await new Promise((resolve) => setTimeout(resolve, 2000)); // Simulate a delay
 
     uiStream.update(
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          mb: 2,
-          p: 2,
-          borderRadius: 4,
-          bgcolor: 'grey.100',
-          backgroundImage: 'linear-gradient(45deg, #e0eaFC #cfdef3)',
-          boxShadow: '0 3px 5px 2px rgba(0, 0, 0, .1)',
-          transition: 'background-color 0.3s ease',
-
-          ':hover': {
-            bgcolor: 'grey.200'
-          }
-        }}
-      >
-        <Typography
-          variant="body1"
-          sx={{
-            color: 'textSecondary',
-            fontStyle: 'italic'
-          }}
-        >
-          Found relevant website. Scraping data...
-        </Typography>
-        <CircularProgress size={20} sx={{ marginLeft: 2 }} />
-      </Box>
+      <Card className="mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 hover:bg-blue-100 transition-colors duration-300 shadow-md">
+        <CardContent className="p-4 flex justify-center items-center">
+          <p className="text-gray-600 italic">
+            Found relevant website. Scraping data...
+          </p>
+          <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+        </CardContent>
+      </Card>
     );
 
     await new Promise((resolve) => setTimeout(resolve, 2000)); // Simulate a delay
 
     uiStream.update(
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          mb: 2,
-          p: 2,
-          borderRadius: 4,
-          bgcolor: 'grey.100',
-          backgroundImage: 'linear-gradient(45deg, #e0eaFC #cfdef3)',
-          boxShadow: '0 3px 5px 2px rgba(0, 0, 0, .1)',
-          transition: 'background-color 0.3s ease',
-
-          ':hover': {
-            bgcolor: 'grey.200'
-          }
-        }}
-      >
-        <Typography
-          variant="body1"
-          sx={{
-            color: 'textSecondary',
-            fontStyle: 'italic'
-          }}
-        >
-          Analyzing scraped data...
-        </Typography>
-        <CircularProgress size={20} sx={{ marginLeft: 2 }} />
-      </Box>
+      <Card className="mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 hover:bg-blue-100 transition-colors duration-300 shadow-md">
+        <CardContent className="p-4 flex justify-center items-center">
+          <p className="text-gray-600 italic">Analyzing scraped data...</p>
+          <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+        </CardContent>
+      </Card>
     );
 
     await new Promise((resolve) => setTimeout(resolve, 2000)); // Simulate a delay
 
     uiStream.update(
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          mb: 2,
-          p: 2,
-          borderRadius: 4,
-          bgcolor: 'grey.100',
-          backgroundImage: 'linear-gradient(45deg, #e0eaFC #cfdef3)',
-          boxShadow: '0 3px 5px 2px rgba(0, 0, 0, .1)',
-          transition: 'background-color 0.3s ease',
-
-          ':hover': {
-            bgcolor: 'grey.200'
-          }
-        }}
-      >
-        <Typography
-          variant="body1"
-          sx={{
-            color: 'textSecondary',
-            fontStyle: 'italic'
-          }}
-        >
-          Generating response...
-        </Typography>
-        <CircularProgress size={20} sx={{ marginLeft: 2 }} />
-      </Box>
+      <Card className="mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 hover:bg-blue-100 transition-colors duration-300 shadow-md">
+        <CardContent className="p-4 flex justify-center items-center">
+          <p className="text-gray-600 italic">Generating response...</p>
+          <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+        </CardContent>
+      </Card>
     );
 
     const { textStream } = streamText({
@@ -394,29 +273,15 @@ export async function submitMessage(
   })().catch((e) => {
     console.error('Error in chat handler:', e);
     uiStream.error(
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          mb: 2,
-          p: 2,
-          borderRadius: 4,
-          bgcolor: 'error.light',
-          color: 'error.contrastText',
-          backgroundImage: 'linear-gradient(45deg, #FFCCCB, #FFB6C1)',
-          boxShadow: '0 3px 5px 2px rgba(255, 0, 0, .1)',
-          transition: 'background-color 0.3s ease',
-          ':hover': {
-            bgcolor: 'error.main'
-          }
-        }}
+      <Alert
+        variant="destructive"
+        className="mb-4 bg-gradient-to-r from-red-50 to-red-100 shadow-md"
       >
-        <Typography variant="body1">
+        <AlertDescription>
           An error occurred while processing your request. Please try again
           later.
-        </Typography>
-      </Box>
+        </AlertDescription>
+      </Alert>
     );
     status.done('done');
   });

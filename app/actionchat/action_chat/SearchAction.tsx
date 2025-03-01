@@ -5,19 +5,8 @@ import {
   createStreamableValue
 } from 'ai/rsc';
 import { streamText, generateId, generateObject } from 'ai';
-import {
-  Box,
-  Typography,
-  CircularProgress,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText
-} from '@mui/material';
-import {
-  Search as SearchIcon,
-  Autorenew as AutorenewIcon
-} from '@mui/icons-material';
+import { Card, CardContent } from '@/components/ui/card';
+import { Search, RefreshCw, Loader2 } from 'lucide-react';
 import {
   BotMessage,
   InternetSearchToolResults
@@ -140,28 +129,12 @@ export async function SearchTool(
 
   // Create initial UI for search process
   const stream = createStreamableUI(
-    <Box
-      display="flex"
-      justifyContent="center"
-      alignItems="center"
-      mb={2}
-      p={2}
-      borderRadius={4}
-      bgcolor="grey.100"
-      sx={{
-        backgroundImage: 'linear-gradient(45deg, #e0eaFC #cfdef3)',
-        boxShadow: '0 3px 5px 2px rgba(0, 0, 0, .1)',
-        transition: 'background-color 0.3s ease',
-        ':hover': {
-          bgcolor: 'grey.200'
-        }
-      }}
-    >
-      <Typography variant="body1" color="textSecondary" fontStyle="italic">
+    <div className="flex justify-center items-center mb-2 p-2 rounded-xl bg-gray-100 bg-gradient-to-r from-[#e0eaFC] to-[#cfdef3] shadow-md transition-colors hover:bg-gray-200">
+      <p className="text-gray-600 italic">
         Searching for relevant information...
-      </Typography>
-      <CircularProgress size={20} sx={{ marginLeft: 2 }} />
-    </Box>
+      </p>
+      <Loader2 className="animate-spin" />
+    </div>
   );
   let searchResults: ProcessedSearchResult[] = [];
 
@@ -220,126 +193,42 @@ export async function SearchTool(
       object.variation3
     ].filter((query) => query !== undefined && query.trim() !== '');
     stream.update(
-      <Box
-        display="flex"
-        flexDirection="column"
-        sx={{
-          p: 2,
-          borderRadius: 2,
-          background: 'linear-gradient(145deg, #f5f7fa 0%, #e8edf5 100%)',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08)',
-          border: '1px solid rgba(255, 255, 255, 0.4)',
-          backdropFilter: 'blur(4px)',
-          transition: 'all 0.3s ease',
-          ':hover': {
-            transform: 'translateY(-2px)',
-            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.12)'
-          }
-        }}
-      >
-        <Typography
-          variant="h6"
-          color="primary.dark"
-          sx={{
-            fontWeight: 600,
-            fontSize: '1.1rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            '&::before': {
-              content: '""',
-              width: 4,
-              height: 24,
-              backgroundColor: 'primary.main',
-              borderRadius: 1,
-              display: 'block'
-            }
-          }}
-        >
-          Optimized Search Variations
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-          I&apos;ve refined your query into these specific search patterns:
-        </Typography>
-
-        <List
-          sx={{
-            width: '100%',
-            bgcolor: 'background.paper',
-            borderRadius: 1,
-            p: 0,
-            overflow: 'hidden'
-          }}
-        >
-          {searchQueries.map((query, index) => (
-            <ListItem
-              key={index}
-              sx={{
-                borderBottom:
+      <Card className="flex flex-col p-4 rounded-lg bg-gradient-to-br from-[#f5f7fa] to-[#e8edf5] shadow-lg border border-white/40 backdrop-blur-sm transition-all duration-300 hover:translate-y-[-2px] hover:shadow-xl">
+        <CardContent className="p-0">
+          <div className="flex items-center gap-2 mb-3">
+            <h6 className="text-primary-dark font-semibold text-lg">
+              Optimized Search Variations
+            </h6>
+          </div>
+          <div className="w-full bg-white rounded mt-2 overflow-hidden">
+            {searchQueries.map((query, index) => (
+              <div
+                key={index}
+                className={`flex items-center py-1.5 px-2 transition-colors hover:bg-gray-50 ${
                   index !== searchQueries.length - 1
-                    ? '1px solid rgba(0,0,0,0.08)'
-                    : 'none',
-                py: 1.5,
-                px: 2,
-                transition: 'background-color 0.2s ease',
-                ':hover': {
-                  bgcolor: 'rgba(0,0,0,0.02)'
-                }
-              }}
-            >
-              <ListItemIcon sx={{ minWidth: 40 }}>
-                <SearchIcon color="primary" sx={{ fontSize: 20 }} />
-              </ListItemIcon>
-              <ListItemText
-                primary={query}
-                slotProps={{
-                  primary: {
-                    sx: {
-                      fontWeight: 500,
-                      color: 'text.primary',
-                      fontSize: '0.95rem'
-                    }
-                  }
-                }}
-              />
-            </ListItem>
-          ))}
-        </List>
+                    ? 'border-b border-gray-100'
+                    : ''
+                }`}
+              >
+                <div className="min-w-[40px]">
+                  <Search className="h-5 w-5 text-primary" />
+                </div>
+                <div className="font-medium text-gray-800 text-[0.95rem]">
+                  {query}
+                </div>
+              </div>
+            ))}
+          </div>
 
-        <Box
-          display="flex"
-          alignItems="center"
-          mt={2}
-          p={2}
-          borderRadius={1}
-          sx={{
-            bgcolor: 'rgba(25, 118, 210, 0.08)',
-            border: '1px solid rgba(25, 118, 210, 0.2)'
-          }}
-        >
-          <Typography
-            variant="body2"
-            color="primary.dark"
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 1,
-              fontWeight: 500
-            }}
-          >
-            <AutorenewIcon sx={{ fontSize: 20 }} />
-            Processing results for comprehensive analysis
-          </Typography>
-          <CircularProgress
-            size={16}
-            thickness={4}
-            sx={{
-              ml: 2,
-              color: 'primary.main'
-            }}
-          />
-        </Box>
-      </Box>
+          <div className="flex items-center justify-between mt-3 p-2 rounded bg-primary/5 border border-primary/20">
+            <div className="flex items-center gap-1 text-sm text-primary-dark font-medium">
+              <RefreshCw className="h-4 w-4" />
+              Processing results for comprehensive analysis
+            </div>
+            <Loader2 className="h-4 w-4 animate-spin" />
+          </div>
+        </CardContent>
+      </Card>
     );
     // Perform Tavily search for each query variation
     // Note: This approach uses multiple queries, which can provide better results but is more expensive.
@@ -465,29 +354,10 @@ export async function SearchTool(
     // Update UI with search results and preparation message
     stream.update(
       <>
-        <Box
-          display="flex"
-          justifyContent="center"
-          alignItems="center"
-          mb={2}
-          mt={2}
-          p={2}
-          borderRadius={4}
-          bgcolor="grey.100"
-          sx={{
-            backgroundImage: 'linear-gradient(45deg, #e0eaFC, #cfdef3)',
-            boxShadow: '0 3px 5px 2px rgba(0, 0, 0, .1)',
-            transition: 'background-color 0.3s ease',
-            ':hover': {
-              bgcolor: 'grey.200'
-            }
-          }}
-        >
-          <Typography variant="body1" color="textSecondary" fontStyle="italic">
-            Preparing response...
-          </Typography>
-          <CircularProgress size={20} sx={{ marginLeft: 2 }} />
-        </Box>
+        <div className="flex justify-center items-center my-2 p-2 rounded-xl bg-gray-100 bg-gradient-to-r from-[#e0eaFC] to-[#cfdef3] shadow-md transition-colors hover:bg-gray-200">
+          <p className="text-gray-600 italic">Preparing response...</p>
+          <Loader2 className="animate-spin" />
+        </div>
         <InternetSearchToolResults
           searchResults={searchResults.map((result) => ({
             title: result.title,
@@ -624,29 +494,12 @@ Remember to maintain a professional yet conversational tone throughout the respo
   })().catch((e) => {
     console.error('Error in chat handler:', e);
     stream.error(
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          mb: 2,
-          p: 2,
-          borderRadius: 4,
-          bgcolor: 'error.light',
-          color: 'error.contrastText',
-          backgroundImage: 'linear-gradient(45deg, #FFCCCB, #FFB6C1)',
-          boxShadow: '0 3px 5px 2px rgba(255, 0, 0, .1)',
-          transition: 'background-color 0.3s ease',
-          ':hover': {
-            bgcolor: 'error.main'
-          }
-        }}
-      >
-        <Typography variant="body1">
+      <div className="flex justify-center items-center mb-2 p-2 rounded-xl bg-red-100 text-red-800 bg-gradient-to-r from-[#FFCCCB] to-[#FFB6C1] shadow-md transition-colors hover:bg-red-200">
+        <p>
           An error occurred while processing your request. Please try again
           later.
-        </Typography>
-      </Box>
+        </p>
+      </div>
     );
     status.done('done');
   });
