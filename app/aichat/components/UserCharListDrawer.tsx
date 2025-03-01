@@ -365,7 +365,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
       </div>
 
       {/* Desktop persistent drawer */}
-      <div className="hidden md:block fixed inset-y-0 left-0 z-20 w-[200px] lg:w-[250px] xl:w-[300px] 2xl:w-[350px] bg-[rgba(240,247,255,0.9)] border-r border-[rgba(0,0,0,0.1)]">
+      <div className="hidden md:block fixed inset-y-0 pt-10 left-0 z-20 w-[200px] lg:w-[250px] xl:w-[300px] 2xl:w-[350px] bg-[rgba(240,247,255,0.9)] border-r border-[rgba(0,0,0,0.1)]">
         <ChatListComponent
           userInfo={userInfo}
           chatPreviews={chatPreviews}

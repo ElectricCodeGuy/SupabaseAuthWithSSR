@@ -124,7 +124,7 @@ export default function DocumentViewer({
   const iframeId = `document-viewer-${fileName.replace(/[^a-zA-Z0-9]/g, '-')}`;
 
   return (
-    <div className="w-[55%] border-l border-slate-200 hidden sm:flex flex-row justify-center items-start overflow-hidden relative h-[97vh]">
+    <div className="w-[55%] border-l border-slate-200 hidden sm:flex flex-row justify-center items-start overflow-hidden relative h-[96vh]">
       <Button
         variant="ghost"
         size="icon"

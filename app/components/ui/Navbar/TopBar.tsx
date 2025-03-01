@@ -3,7 +3,7 @@
 import React, { useState, useCallback, use } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Menu, X, ChevronDown } from 'lucide-react';
+import { Menu, ChevronDown } from 'lucide-react';
 import { type User } from '@supabase/supabase-js';
 
 import { Button } from '@/components/ui/button';
@@ -132,16 +132,6 @@ const Header: React.FC<HeaderProps> = ({ session }) => {
         </SheetTrigger>
         <SheetContent side="left" className="w-[300px] sm:w-[400px] p-0">
           <div className="flex flex-col h-full">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-4 right-4"
-              onClick={() => setSheetOpen(false)}
-              aria-label="Close menu"
-            >
-              <X className="h-6 w-6" />
-            </Button>
-
             <div className="flex justify-center items-center p-6">
               <Link href="/" className="cursor-pointer">
                 <Sitemark />
