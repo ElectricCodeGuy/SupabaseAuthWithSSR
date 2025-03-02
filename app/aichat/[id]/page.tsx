@@ -3,8 +3,6 @@ import 'server-only';
 import ChatComponent from '../components/Chat';
 import { createServerSupabaseClient } from '@/lib/server/server';
 import { format } from 'date-fns';
-import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@/types/database';
 import { redirect } from 'next/navigation';
 import { unstable_noStore as noStore } from 'next/cache';
 import { cookies } from 'next/headers';
@@ -70,8 +68,9 @@ function formatMessages(messages: SupabaseChatMessage[]): Message[] {
           ]
   }));
 }
-async function fetchChat(supabase: SupabaseClient<Database>, chatId: string) {
+async function fetchChat(chatId: string) {
   noStore();
+  const supabase = await createServerSupabaseClient();
   try {
     const { data, error } = await supabase
       .from('chat_sessions')
@@ -113,8 +112,7 @@ export default async function ChatPage(props: {
   const searchParams = await props.searchParams;
   const { id } = params;
 
-  const supabase = await createServerSupabaseClient();
-  const chatData = await fetchChat(supabase, id);
+  const chatData = await fetchChat(id);
 
   if (!chatData) {
     redirect('/aichat');

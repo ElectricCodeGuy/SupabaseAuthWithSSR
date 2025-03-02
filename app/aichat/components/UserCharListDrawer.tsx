@@ -4,7 +4,6 @@ import React, {
   useState,
   memo,
   useCallback,
-  useMemo,
   useOptimistic,
   startTransition
 } from 'react';
@@ -13,10 +12,8 @@ import {
   fetchMoreChatPreviews,
   updateChatTitle
 } from '../actions';
-import { isToday, isYesterday, subDays } from 'date-fns';
 import type { Tables } from '@/types/database';
 import useSWRInfinite from 'swr/infinite';
-import { TZDate } from '@date-fns/tz';
 import Link from 'next/link';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
@@ -67,62 +64,27 @@ interface ChatPreview {
   created_at: string;
 }
 
+interface CategorizedChats {
+  today: ChatPreview[];
+  yesterday: ChatPreview[];
+  last7Days: ChatPreview[];
+  last30Days: ChatPreview[];
+  last2Months: ChatPreview[];
+  older: ChatPreview[];
+}
+
 interface CombinedDrawerProps {
   userInfo: UserInfo;
   initialChatPreviews: ChatPreview[];
+  categorizedChats: CategorizedChats;
 }
-
-const useCategorizedChats = (chatPreviews: ChatPreview[][] | undefined) => {
-  return useMemo(() => {
-    const chatPreviewsFlat = chatPreviews ? chatPreviews.flat() : [];
-    const getZonedDate = (date: string) =>
-      new TZDate(new Date(date), 'Europe/Copenhagen');
-
-    const today = chatPreviewsFlat.filter((chat) =>
-      isToday(getZonedDate(chat.created_at))
-    );
-
-    const yesterday = chatPreviewsFlat.filter((chat) =>
-      isYesterday(getZonedDate(chat.created_at))
-    );
-
-    const last7Days = chatPreviewsFlat.filter((chat) => {
-      const chatDate = getZonedDate(chat.created_at);
-      const sevenDaysAgo = subDays(new Date(), 7);
-      return (
-        chatDate > sevenDaysAgo && !isToday(chatDate) && !isYesterday(chatDate)
-      );
-    });
-
-    const last30Days = chatPreviewsFlat.filter((chat) => {
-      const chatDate = getZonedDate(chat.created_at);
-      const thirtyDaysAgo = subDays(new Date(), 30);
-      const sevenDaysAgo = subDays(new Date(), 7);
-      return chatDate > thirtyDaysAgo && chatDate <= sevenDaysAgo;
-    });
-
-    const last2Months = chatPreviewsFlat.filter((chat) => {
-      const chatDate = getZonedDate(chat.created_at);
-      const sixtyDaysAgo = subDays(new Date(), 60);
-      const thirtyDaysAgo = subDays(new Date(), 30);
-      return chatDate > sixtyDaysAgo && chatDate <= thirtyDaysAgo;
-    });
-
-    const older = chatPreviewsFlat.filter((chat) => {
-      const sixtyDaysAgo = subDays(new Date(), 60);
-      return getZonedDate(chat.created_at) <= sixtyDaysAgo;
-    });
-
-    return { today, yesterday, last7Days, last30Days, last2Months, older };
-  }, [chatPreviews]);
-};
 
 // Content component to avoid duplication between mobile and desktop
 interface DrawerContentProps {
   userInfo: UserInfo;
   chatPreviews: ChatPreview[][] | undefined;
   currentChatId: string | undefined;
-  categorizedChats: ReturnType<typeof useCategorizedChats>;
+  categorizedChats: CategorizedChats;
   handleDeleteClick: (id: string) => void;
   handleChatSelect: (id: string) => void;
   loadMoreChats: () => Promise<void>;
@@ -257,7 +219,8 @@ const ChatListComponent: FC<DrawerContentProps> = ({
 
 const CombinedDrawer: FC<CombinedDrawerProps> = ({
   userInfo,
-  initialChatPreviews
+  initialChatPreviews,
+  categorizedChats: initialCategorizedChats
 }) => {
   const params = useParams();
   const router = useRouter();
@@ -292,7 +255,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
   );
 
   const hasMore =
-    chatPreviews && chatPreviews[chatPreviews.length - 1]?.length === 30;
+    chatPreviews && chatPreviews[chatPreviews.length - 1]?.length === 25;
 
   const loadMoreChats = useCallback(async () => {
     if (!isLoadingMore) {
@@ -323,8 +286,6 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
     setChatToDelete(null);
   };
 
-  const categorizedChats = useCategorizedChats(chatPreviews);
-
   const handleChatSelect = useCallback(() => {
     // Close drawer on mobile screens
     if (window.innerWidth < 800) {
@@ -352,7 +313,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
                 userInfo={userInfo}
                 chatPreviews={chatPreviews}
                 currentChatId={currentChatId}
-                categorizedChats={categorizedChats}
+                categorizedChats={initialCategorizedChats}
                 handleDeleteClick={handleDeleteClick}
                 handleChatSelect={handleChatSelect}
                 loadMoreChats={loadMoreChats}
@@ -370,7 +331,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
           userInfo={userInfo}
           chatPreviews={chatPreviews}
           currentChatId={currentChatId}
-          categorizedChats={categorizedChats}
+          categorizedChats={initialCategorizedChats}
           handleDeleteClick={handleDeleteClick}
           handleChatSelect={handleChatSelect}
           loadMoreChats={loadMoreChats}
