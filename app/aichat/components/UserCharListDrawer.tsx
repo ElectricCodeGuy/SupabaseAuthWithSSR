@@ -20,7 +20,6 @@ import { Loader2 } from 'lucide-react';
 // Shadcn UI components
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Separator } from '@/components/ui/separator';
 import {
   Tooltip,
   TooltipContent,
@@ -439,14 +438,10 @@ const RenderChatSection: FC<RenderChatSectionProps> = memo(
 
     return (
       <>
-        <div className="px-3 mb-2">
-          <div className="relative flex items-center py-2">
-            <Separator>
-              <span className="flex-shrink mx-2 text-xs text-gray-500">
-                {title}
-              </span>
-            </Separator>
-          </div>
+        <div className="px-3 mb-2 py-2 flex items-center">
+          <div className="flex-grow border-t border-gray-300" />
+          <span className="mx-2 text-xs text-gray-500">{title}</span>
+          <div className="flex-grow border-t border-gray-300" />
         </div>
 
         {optimisticChats.map(({ id, firstMessage }) => {
@@ -461,12 +456,11 @@ const RenderChatSection: FC<RenderChatSectionProps> = memo(
                 href={href}
                 prefetch={false}
                 scroll={false}
-                className={cn(
-                  'block px-3 py-2 text-sm relative pr-8',
-                  'hover:bg-gray-100/70 transition-colors',
-                  currentChatId === id ? 'bg-gray-200/70' : '',
-                  'group'
-                )}
+                className={`
+                block px-2 py-1.5 text-sm rounded relative
+                hover:bg-slate-100 active:bg-slate-200 transition-colors duration-150
+                ${currentChatId === id ? 'bg-slate-200/80' : ''}
+              `}
                 onMouseEnter={() => router.prefetch(href)}
                 onClick={() => onChatSelect(id)}
               >

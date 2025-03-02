@@ -84,6 +84,11 @@ const MessageComponent = ({ message }: { message: Message }) => {
     ?.filter((part) => part.type === 'source')
     .map((part) => part.source);
 
+  // Extract reasoning from message parts
+  const reasoningParts = message.parts?.filter(
+    (part) => part.type === 'reasoning'
+  );
+
   return (
     <li
       className={`relative flex flex-col items-start m-2 rounded-lg shadow-md ${
@@ -213,7 +218,147 @@ const MessageComponent = ({ message }: { message: Message }) => {
             >
               {message.content}
             </ReactMarkdown>
+            {reasoningParts && reasoningParts.length > 0 && (
+              <div className="mt-4 pt-2 border-t border-gray-300">
+                <details className="mb-2">
+                  <summary className="font-bold text-gray-600 cursor-pointer hover:text-gray-800">
+                    Reasoning
+                  </summary>
+                  <div className="mt-2 bg-gray-100 p-3 rounded-md text-sm text-gray-700 overflow-x-auto">
+                    {reasoningParts.map((part, index) => {
+                      // Extract text from details
+                      const reasoningText = part.details
+                        ?.map((detail) =>
+                          detail.type === 'text' ? detail.text : '<redacted>'
+                        )
+                        .join('');
 
+                      return (
+                        <div key={index}>
+                          <ReactMarkdown
+                            components={{
+                              // Reuse the same component configurations as the main content
+                              a: ({ href, children }) => (
+                                <Link
+                                  href={`?url=${encodeURIComponent(
+                                    href || ''
+                                  )}`}
+                                  scroll={false}
+                                  prefetch={false}
+                                  className="text-blue-600 hover:underline"
+                                >
+                                  {children}
+                                </Link>
+                              ),
+                              table: ({ children }) => (
+                                <div className="block py-2">
+                                  <table className="w-full border-collapse break-normal text-[0.85rem]">
+                                    {children}
+                                  </table>
+                                </div>
+                              ),
+                              thead: ({ children }) => (
+                                <thead>{children}</thead>
+                              ),
+                              tbody: ({ children }) => (
+                                <tbody>{children}</tbody>
+                              ),
+                              tr: ({ children }) => <tr>{children}</tr>,
+                              th: ({ children }) => (
+                                <th
+                                  scope="row"
+                                  className="border border-[#ddd] p-1 text-left text-[0.9em] break-normal font-normal hyphens-auto overflow-wrap-normal"
+                                >
+                                  {children}
+                                </th>
+                              ),
+                              td: ({ children }) => (
+                                <td
+                                  scope="row"
+                                  className="border border-[#ddd] p-1 text-left text-[0.9em] break-normal font-normal hyphens-auto overflow-wrap-normal"
+                                >
+                                  {children}
+                                </td>
+                              ),
+                              p: ({ children }) => (
+                                <p className="mb-4 last:mb-0">{children}</p>
+                              ),
+                              ul: ({ children }) => (
+                                <ul className="list-disc pl-6 mb-4">
+                                  {children}
+                                </ul>
+                              ),
+                              ol: ({ children }) => (
+                                <ol className="list-decimal pl-6 mb-4">
+                                  {children}
+                                </ol>
+                              ),
+                              li: ({ children }) => (
+                                <li className="mb-1">{children}</li>
+                              ),
+                              h1: ({ children }) => (
+                                <h1 className="text-xl font-bold mb-3 mt-4">
+                                  {children}
+                                </h1>
+                              ),
+                              h2: ({ children }) => (
+                                <h2 className="text-lg font-bold mb-2 mt-3">
+                                  {children}
+                                </h2>
+                              ),
+                              h3: ({ children }) => (
+                                <h3 className="text-base font-bold mb-1 mt-2">
+                                  {children}
+                                </h3>
+                              ),
+                              blockquote: ({ children }) => (
+                                <blockquote className="border-l-4 border-gray-300 pl-4 italic my-4">
+                                  {children}
+                                </blockquote>
+                              ),
+                              code({ className, children, ...props }) {
+                                const match = /language-(\w+)/.exec(
+                                  className ?? ''
+                                );
+                                const language = match?.[1] ? match[1] : '';
+                                const inline = !language;
+                                if (inline) {
+                                  return (
+                                    <code className={className} {...props}>
+                                      {children}
+                                    </code>
+                                  );
+                                }
+
+                                return (
+                                  <div className="relative rounded w-full pt-5 my-2">
+                                    <span className="absolute top-0 left-2 text-xs uppercase">
+                                      {language}
+                                    </span>
+
+                                    <pre className="m-0 overflow-x-auto">
+                                      <code className={className} {...props}>
+                                        {children}
+                                      </code>
+                                    </pre>
+                                  </div>
+                                );
+                              }
+                            }}
+                            remarkPlugins={[remarkGfm, remarkMath]}
+                            rehypePlugins={[
+                              [rehypeHighlight, highlightOptionsAI]
+                            ]}
+                          >
+                            {reasoningText}
+                          </ReactMarkdown>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </details>
+              </div>
+            )}
             {/* Display sources if available */}
             {sources && sources.length > 0 && (
               <div className="mt-4 pt-2 border-t border-gray-300">
@@ -466,7 +611,7 @@ const ChatComponent: React.FC<ChatProps> = ({
                         'gpt-4-0125-preview',
                         'gpt-4-1106-preview',
                         'gpt-4',
-                        'sonnet-3-5'
+                        'sonnet-3-7'
                       ].map((option) => (
                         <DropdownMenuItem
                           key={option}

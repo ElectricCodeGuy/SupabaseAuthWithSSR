@@ -15,8 +15,8 @@ export const maxDuration = 60;
 const SYSTEM_TEMPLATE = `You are a helpful assistant. Answer all questions to the best of your ability. Helpfull answers in markdown`;
 
 const getModel = (selectedModel: string) => {
-  if (selectedModel === 'sonnet-3-5') {
-    return anthropic('claude-3-5-sonnet-20241022');
+  if (selectedModel === 'sonnet-3-7') {
+    return anthropic('claude-3-7-sonnet-20250219');
   } else {
     return openai(selectedModel);
   }
@@ -77,6 +77,11 @@ export async function POST(req: NextRequest) {
       system: SYSTEM_TEMPLATE,
       messages: messages,
       abortSignal: signal,
+      providerOptions: {
+        anthropic: {
+          thinking: { type: 'enabled', budgetTokens: 12000 }
+        }
+      },
       experimental_telemetry: {
         isEnabled: true,
         functionId: 'api_chat',
@@ -96,7 +101,8 @@ export async function POST(req: NextRequest) {
             chatSessionId,
             session.id,
             lastMessageContent,
-            event.text
+            event.text,
+            event.reasoning
           );
           console.log('Chat saved to Supabase:', chatSessionId);
         } catch (error) {
@@ -105,7 +111,9 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    return result.toDataStreamResponse();
+    return result.toDataStreamResponse({
+      sendReasoning: true
+    });
   } catch (e) {
     if (e instanceof Error && e.message === 'InvalidToken') {
       return new NextResponse('Autentifikationstokenet fejlede.', {

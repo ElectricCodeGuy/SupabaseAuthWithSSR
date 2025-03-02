@@ -21,6 +21,7 @@ interface SupabaseChatMessage {
   content: string | null;
   created_at: string;
   sources: unknown;
+  reasoning: string | null;
 }
 
 function parseSources(sources: unknown): ChatSource[] {
@@ -40,34 +41,52 @@ function parseSources(sources: unknown): ChatSource[] {
 }
 
 function formatMessages(messages: SupabaseChatMessage[]): Message[] {
-  return messages.map((message) => ({
-    role: message.is_user_message ? 'user' : 'assistant',
-    id: message.id,
-    content: message.content ?? '',
-    parts:
-      parseSources(message.sources).length > 0
-        ? [
-            {
-              type: 'text',
-              text: message.content ?? ''
-            },
-            ...parseSources(message.sources).map((source) => ({
-              type: 'source' as const,
-              source: {
-                sourceType: 'url' as const, // Fixed: explicitly set to 'url'
-                id: source.id,
-                url: source.url
-              }
-            }))
-          ]
-        : [
-            {
-              type: 'text',
-              text: message.content ?? ''
-            }
-          ]
-  }));
+  return messages.map((message) => {
+    const messageParts = [];
+
+    // Add the text part
+    messageParts.push({
+      type: 'text' as const,
+      text: message.content ?? ''
+    });
+
+    // Add reasoning part if available (only for assistant messages)
+    if (!message.is_user_message && message.reasoning) {
+      messageParts.push({
+        type: 'reasoning' as const,
+        reasoning: message.reasoning,
+        details: [
+          {
+            type: 'text' as const,
+            text: message.reasoning
+          }
+        ]
+      });
+    }
+
+    // Add source parts if available
+    if (parseSources(message.sources).length > 0) {
+      messageParts.push(
+        ...parseSources(message.sources).map((source) => ({
+          type: 'source' as const,
+          source: {
+            sourceType: 'url' as const,
+            id: source.id,
+            url: source.url
+          }
+        }))
+      );
+    }
+
+    return {
+      role: message.is_user_message ? 'user' : 'assistant',
+      id: message.id,
+      content: message.content ?? '',
+      parts: messageParts
+    };
+  });
 }
+
 async function fetchChat(chatId: string) {
   noStore();
   const supabase = await createServerSupabaseClient();
@@ -85,7 +104,8 @@ async function fetchChat(chatId: string) {
           is_user_message,
           content,
           created_at,
-          sources
+          sources,
+          reasoning
         )
       `
       )

@@ -48,7 +48,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
@@ -368,7 +367,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
               </div>
             </div>
           ) : (
-            <ScrollArea className="h-[calc(100vh-64px)]">
+            <div className="overflow-auto flex-1">
               {!chatPreviews ? (
                 <div className="space-y-2 p-2">
                   {Array.from({ length: 5 }).map((_, index) => (
@@ -441,7 +440,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
                   )}
                 </>
               )}
-            </ScrollArea>
+            </div>
           )}
         </>
       )}
@@ -451,7 +450,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
   return (
     <>
       {/* Desktop sidebar */}
-      <div className="hidden md:flex fixed inset-yt left-0 z-20  w-[250px] lg:w-[280px] xl:w-[300px] 2xl:w-[350px] bg-slate-50 border-r border-slate-200 shadow-sm flex-col">
+      <div className="hidden md:flex fixed inset-yt left-0 z-20  w-[250px] lg:w-[280px] xl:w-[300px] 2xl:w-[350px] bg-slate-50 border-r border-slate-200 shadow-sm flex-col h-full">
         {SidebarContent}
       </div>
       <div className="md:pl-[200px] lg:pl-[250px] xl:pl-[300px] 2xl:pl-[350px]">
@@ -562,11 +561,10 @@ const RenderChatSection: FC<RenderChatSectionProps> = memo(
 
     return (
       <>
-        <div className="px-4 py-1 text-sm text-slate-500 font-medium">
-          <Separator className="my-1" />
-          <div className="text-center -mt-3">
-            <span className="bg-slate-50 px-2">{title}</span>
-          </div>
+        <div className="px-3 mb-2 py-2 flex items-center">
+          <div className="flex-grow border-t border-gray-300" />
+          <span className="mx-2 text-xs text-gray-500">{title}</span>
+          <div className="flex-grow border-t border-gray-300" />
         </div>
 
         <ul className="space-y-0.5 px-1">
@@ -583,10 +581,10 @@ const RenderChatSection: FC<RenderChatSectionProps> = memo(
                   prefetch={false}
                   scroll={false}
                   className={`
-                    block px-2 py-1.5 text-sm rounded relative
-                    hover:bg-slate-100 
-                    ${currentChatId === id ? 'bg-slate-200/80' : ''}
-                  `}
+                block px-2 py-1.5 text-sm rounded relative
+                hover:bg-slate-100 active:bg-slate-200 transition-colors duration-150
+                ${currentChatId === id ? 'bg-slate-200/80' : ''}
+              `}
                   onMouseEnter={() => router.prefetch(href)}
                   onClick={() => onChatSelect(id)}
                 >

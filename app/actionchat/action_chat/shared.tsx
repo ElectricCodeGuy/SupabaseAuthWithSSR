@@ -5,11 +5,11 @@ import { anthropic } from '@ai-sdk/anthropic';
 
 export const getModel = (selectedModel: 'claude3' | 'chatgpt4') => {
   if (selectedModel === 'claude3') {
-    return anthropic('claude-3-5-sonnet-20241022');
+    return anthropic('claude-3-7-sonnet-20250219');
   } else if (selectedModel === 'chatgpt4') {
     return openai('gpt-4o');
   }
-  return anthropic('claude-3-5-sonnet-20241022');
+  return anthropic('claude-3-7-sonnet-20250219');
 };
 
 export interface ServerMessage {

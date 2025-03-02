@@ -13,6 +13,7 @@ export const saveChatToSupbabase = async (
   userId: string,
   currentMessageContent: string,
   completion: string,
+  reasoning?: string,
   sources?: string[]
 ): Promise<void> => {
   if (!chatSessionId) {
@@ -49,6 +50,7 @@ export const saveChatToSupbabase = async (
         chat_session_id: chatSessionId,
         is_user_message: false,
         content: completion,
+        reasoning: reasoning || null,
         sources: sources && sources.length > 0 ? sources : null,
         created_at: aiMessageTime.toISOString() // AI message timestamp (1 second later)
       }
