@@ -20,7 +20,7 @@ const Feature: React.FC<FeatureProps> = ({ Icon, title, description }) => (
   <div className="flex items-center gap-3 mb-4">
     <Icon className="h-5 w-5 text-secondary" />
     <div>
-      <h6 className="font-bold">{title}</h6>
+      <h6 className="font-bold text-foreground">{title}</h6>
       <p className="text-sm text-muted-foreground">{description}</p>
     </div>
   </div>

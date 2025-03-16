@@ -44,7 +44,7 @@ const features = [
           href="#models"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-primary hover:underline"
+          className="text-primary hover:text-primary/80 underline decoration-primary/30 hover:decoration-primary transition-colors"
         >
           Financial Info
         </Link>
@@ -61,10 +61,10 @@ export default function Component() {
       id="models"
       className="pt-1 sm:pt-2 md:pt-3 lg:pt-4 pb-1 sm:pb-2 md:pb-3 lg:pb-6 max-w-[1800px] mx-auto px-4"
     >
-      <h2 className="text-center font-bold font-mono tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-500 text-3xl mb-2">
+      <h2 className="text-center font-bold font-mono tracking-widest text-primary text-3xl mb-2">
         Discover Our Features
       </h2>
-      <p className="font-bold text-center max-w-[800px] mx-auto font-mono tracking-wider mb-8">
+      <p className="font-bold text-center max-w-[800px] mx-auto font-mono tracking-wider mb-8 text-foreground/90">
         Harnessing Advanced AI for Better Insights and Efficient Operations
       </p>
 
@@ -72,7 +72,7 @@ export default function Component() {
         {features.map((feature, index) => (
           <Card
             key={index}
-            className="h-full min-h-[350px] flex flex-col shadow-md"
+            className="h-full min-h-[350px] flex flex-col shadow-md bg-card hover:shadow-lg transition-shadow duration-300"
           >
             <CardContent className="flex flex-col items-center justify-center text-center h-full p-6">
               <div className="text-5xl opacity-90 mb-4">{feature.Icon}</div>

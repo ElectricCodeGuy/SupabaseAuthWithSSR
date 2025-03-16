@@ -107,7 +107,7 @@ const ChatListComponent: FC<DrawerContentProps> = ({
       {!userInfo.email ? (
         // Show sign-in message when no user
         <div className="flex flex-col items-center justify-center h-[90vh] text-center p-4 space-y-4">
-          <h3 className="text-lg font-medium">
+          <h3 className="text-lg font-medium text-foreground">
             Sign in to save and view your chats
           </h3>
 
@@ -301,13 +301,13 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
             <Button
               variant="ghost"
               size="icon"
-              className="fixed left-1 bottom-10 z-50 bg-white/80 shadow-sm"
+              className="fixed left-1 bottom-10 z-50 bg-background/80 shadow-sm"
             >
-              <MenuIcon className="h-5 w-5 text-blue-600" />
+              <MenuIcon className="h-5 w-5 text-primary" />
             </Button>
           </DrawerTrigger>
           <DrawerContent className="h-[85vh]">
-            <div className="h-full p-0 bg-[rgba(240,247,255,0.9)]">
+            <div className="h-full p-0 bg-background/90">
               <ChatListComponent
                 userInfo={userInfo}
                 chatPreviews={chatPreviews}
@@ -325,7 +325,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
       </div>
 
       {/* Desktop persistent drawer */}
-      <div className="hidden md:block fixed inset-y-0 pt-10 left-0 z-20 w-[200px] lg:w-[250px] xl:w-[300px] 2xl:w-[350px] bg-[rgba(240,247,255,0.9)] border-r border-[rgba(0,0,0,0.1)]">
+      <div className="hidden md:block fixed inset-y-0 pt-10 left-0 z-20 w-[200px] lg:w-[250px] xl:w-[300px] 2xl:w-[350px] bg-background/90 border-r border-border">
         <ChatListComponent
           userInfo={userInfo}
           chatPreviews={chatPreviews}
@@ -353,7 +353,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
           <DialogHeader>
             <DialogTitle>Delete Confirmation</DialogTitle>
           </DialogHeader>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             Are you sure you want to delete this chat?
           </p>
           <DialogFooter>
@@ -439,9 +439,9 @@ const RenderChatSection: FC<RenderChatSectionProps> = memo(
     return (
       <>
         <div className="px-3 mb-2 py-2 flex items-center">
-          <div className="flex-grow border-t border-gray-300" />
-          <span className="mx-2 text-xs text-gray-500">{title}</span>
-          <div className="flex-grow border-t border-gray-300" />
+          <div className="flex-grow border-t border-border/40" />
+          <span className="mx-2 text-xs text-muted-foreground/70">{title}</span>
+          <div className="flex-grow border-t border-border/40" />
         </div>
 
         {optimisticChats.map(({ id, firstMessage }) => {
@@ -458,8 +458,8 @@ const RenderChatSection: FC<RenderChatSectionProps> = memo(
                 scroll={false}
                 className={`
                 block px-2 py-1.5 text-sm rounded relative
-                hover:bg-slate-100 active:bg-slate-200 transition-colors duration-150
-                ${currentChatId === id ? 'bg-slate-200/80' : ''}
+                hover:bg-muted/60 active:bg-muted transition-colors duration-150
+                ${currentChatId === id ? 'bg-muted/80' : ''}
               `}
                 onMouseEnter={() => router.prefetch(href)}
                 onClick={() => onChatSelect(id)}
@@ -514,7 +514,7 @@ const RenderChatSection: FC<RenderChatSectionProps> = memo(
                         handleDeleteClick(id);
                         handleMenuClose();
                       }}
-                      className="text-red-600 flex items-center gap-2"
+                      className="text-destructive flex items-center gap-2"
                     >
                       <DeleteIcon className="h-4 w-4" />
                       <span>Delete</span>

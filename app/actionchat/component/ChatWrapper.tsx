@@ -35,7 +35,7 @@ export function UserMessage({
   return (
     <div
       className={cn(
-        'relative bg-[#daf8cb] text-[#203728] pt-8 pb-4 rounded-lg',
+        'relative bg-primary/10 text-foreground dark:bg-primary/20 pt-8 pb-4 rounded-lg',
         'm-[2px_0] ml-1 flex-grow overflow-hidden px-4',
         'self-end break-words flex flex-col items-start shadow-md'
       )}
@@ -104,16 +104,16 @@ export function BotMessage({
   return (
     <div
       className={cn(
-        'relative bg-[#f0f0f0] text-[#2c3e50] rounded-lg my-2',
+        'relative bg-card text-card-foreground rounded-lg my-2',
         'self-start break-words flex flex-col items-start shadow-md p-6',
         className
       )}
     >
       <div className="absolute top-[10px] left-[10px]">
-        <Bot className="text-[#607d8b]" size={20} />
+        <Bot className="text-muted-foreground" size={20} />
       </div>
       <div
-        className="absolute top-[5px] right-[5px] cursor-pointer flex items-center justify-center w-6 h-6"
+        className="absolute top-[5px] right-[5px] cursor-pointer flex items-center justify-center w-6 h-6 text-muted-foreground hover:text-foreground transition-colors"
         onClick={() => handleCopy(content || '')}
       >
         {isCopied ? <CheckCircle size={16} /> : <Copy size={16} />}
@@ -134,7 +134,7 @@ export function BotMessage({
           th: ({ children }) => (
             <th
               scope="row"
-              className="border border-[#ddd] p-1 text-left text-[0.9em] break-normal font-normal hyphens-auto overflow-wrap-normal"
+              className="border border-border p-1 text-left text-[0.9em] break-normal font-normal hyphens-auto overflow-wrap-normal"
             >
               {children}
             </th>
@@ -142,7 +142,7 @@ export function BotMessage({
           td: ({ children }) => (
             <td
               scope="row"
-              className="border border-[#ddd] p-1 text-left text-[0.9em] break-normal font-normal hyphens-auto overflow-wrap-normal"
+              className="border border-border p-1 text-left text-[0.9em] break-normal font-normal hyphens-auto overflow-wrap-normal"
             >
               {children}
             </td>
@@ -165,7 +165,7 @@ export function BotMessage({
             <h3 className="text-lg font-bold mb-2 mt-4">{children}</h3>
           ),
           blockquote: ({ children }) => (
-            <blockquote className="border-l-4 border-gray-300 pl-4 italic my-4">
+            <blockquote className="border-l-4 border-border/60 pl-4 italic my-4">
               {children}
             </blockquote>
           ),
@@ -175,39 +175,21 @@ export function BotMessage({
             const inline = !language;
             if (inline) {
               return (
-                <code className={className} {...props}>
+                <code
+                  className={`bg-muted px-1 py-0.5 rounded ${className}`}
+                  {...props}
+                >
                   {children}
                 </code>
               );
             }
             return (
-              <div
-                style={{
-                  position: 'relative',
-                  borderRadius: '5px',
-                  padding: '20px',
-                  marginTop: '20px',
-                  maxWidth: '100%' // Ensure the container fits its parent
-                }}
-              >
-                <span
-                  style={{
-                    position: 'absolute',
-                    top: '0',
-                    left: '5px',
-                    fontSize: '0.8em',
-                    textTransform: 'uppercase'
-                  }}
-                >
+              <div className="relative rounded-md mt-5 mb-2 w-full">
+                <span className="absolute top-0 left-2 text-xs uppercase text-muted-foreground">
                   {language}
                 </span>
-                <div
-                  style={{
-                    overflowX: 'auto', // Enable horizontal scrolling
-                    maxWidth: '650px' // Set a fixed maximum width
-                  }}
-                >
-                  <pre style={{ margin: '0' }}>
+                <div className="overflow-x-auto max-w-full">
+                  <pre className="m-0 bg-muted p-4 pt-6 rounded-md">
                     <code className={className} {...props}>
                       {children}
                     </code>
@@ -226,7 +208,7 @@ export function BotMessage({
                     href={`?url=${encodeURIComponent(href)}`}
                     scroll={false}
                     prefetch={false}
-                    className="text-blue-600 hover:underline"
+                    className="text-primary hover:underline"
                   >
                     {children}
                   </Link>
@@ -239,14 +221,14 @@ export function BotMessage({
                     href={fullHref}
                     passHref
                     prefetch={false}
-                    className="text-blue-600 hover:underline"
+                    className="text-primary hover:underline"
                   >
                     {children}
                   </Link>
                 );
               }
             }
-            return <a className="text-blue-600 hover:underline">{children}</a>;
+            return <a className="text-primary hover:underline">{children}</a>;
           }
         }}
         remarkPlugins={[remarkGfm, remarkMath]}
@@ -270,7 +252,7 @@ export const InternetSearchToolResults = ({
 }) => {
   return (
     <>
-      <h6 className="mb-2 text-primary font-semibold text-center border-b-2 border-primary-light pb-1">
+      <h6 className="mb-2 text-primary font-semibold text-center border-b-2 border-primary/30 pb-1">
         📚 Reference Sources ({searchResults.length})
       </h6>
 
@@ -282,7 +264,7 @@ export const InternetSearchToolResults = ({
             <div
               key={index}
               className="p-2 h-full flex flex-col gap-2 rounded-lg transition-all duration-300 
-                       bg-background shadow-md hover:-translate-y-0.5 hover:shadow-lg group"
+                       bg-card shadow-md hover:-translate-y-0.5 hover:shadow-lg group"
             >
               <div className="flex-1">
                 <Link
@@ -303,7 +285,7 @@ export const InternetSearchToolResults = ({
 
               <div
                 className="flex flex-row justify-between items-center pt-1 
-                         border-t border-gray-200 mt-auto"
+                         border-t border-border/30 mt-auto"
               >
                 <span className="flex items-center gap-0.5 text-muted-foreground text-xs">
                   <Globe size={16} />

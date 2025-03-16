@@ -78,7 +78,7 @@ const UserProfileComponent = () => {
                 <Badge
                   key={index}
                   variant="outline"
-                  className="text-primary border-primary"
+                  className="text-primary border-primary hover:bg-primary/10 transition-colors"
                 >
                   {skill}
                 </Badge>

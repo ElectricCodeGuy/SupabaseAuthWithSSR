@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { type Message } from '@ai-sdk/react';
 import type { Options as HighlightOptions } from 'rehype-highlight';
 import 'highlight.js/styles/github-dark.css';
-import { User, Bot, Copy, CheckCircle } from 'lucide-react';
+import { User, Bot, Copy, CheckCircle, ExternalLink } from 'lucide-react';
 import { marked } from 'marked';
 import { memo, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
@@ -41,13 +41,14 @@ const MemoizedMarkdownBlock = memo(
               href={`?url=${encodeURIComponent(href || '')}`}
               scroll={false}
               prefetch={false}
-              className="text-blue-600 hover:underline"
+              className="text-primary hover:text-primary/80 underline decoration-primary/30 hover:decoration-primary/100 transition-colors inline-flex items-center gap-0.5"
             >
               {children}
+              <ExternalLink size={12} className="inline-block ml-0.5" />
             </Link>
           ),
           table: ({ children }) => (
-            <div className="block py-2">
+            <div className="block py-2 overflow-x-auto">
               <table className="w-full border-collapse break-normal text-[0.85rem]">
                 {children}
               </table>
@@ -59,7 +60,7 @@ const MemoizedMarkdownBlock = memo(
           th: ({ children }) => (
             <th
               scope="row"
-              className="border border-[#ddd] p-1 text-left text-[0.9em] break-normal font-normal hyphens-auto overflow-wrap-normal"
+              className="border border-border p-1 text-left text-[0.9em] break-normal font-normal hyphens-auto overflow-wrap-normal"
             >
               {children}
             </th>
@@ -67,7 +68,7 @@ const MemoizedMarkdownBlock = memo(
           td: ({ children }) => (
             <td
               scope="row"
-              className="border border-[#ddd] p-1 text-left text-[0.9em] break-normal font-normal hyphens-auto overflow-wrap-normal"
+              className="border border-border p-1 text-left text-[0.9em] break-normal font-normal hyphens-auto overflow-wrap-normal"
             >
               {children}
             </td>
@@ -90,7 +91,7 @@ const MemoizedMarkdownBlock = memo(
             <h3 className="text-lg font-bold mb-2 mt-4">{children}</h3>
           ),
           blockquote: ({ children }) => (
-            <blockquote className="border-l-4 border-gray-300 pl-4 italic my-4">
+            <blockquote className="border-l-4 border-border/60 pl-4 italic my-4">
               {children}
             </blockquote>
           ),
@@ -100,7 +101,10 @@ const MemoizedMarkdownBlock = memo(
             const inline = !language;
             if (inline) {
               return (
-                <code className={className} {...props}>
+                <code
+                  className={`bg-muted px-1 py-0.5 rounded ${className}`}
+                  {...props}
+                >
                   {children}
                 </code>
               );
@@ -108,10 +112,10 @@ const MemoizedMarkdownBlock = memo(
 
             return (
               <div className="relative rounded w-full pt-5 my-2">
-                <span className="absolute top-0 left-2 text-xs uppercase">
+                <span className="absolute top-0 left-2 text-xs uppercase text-muted-foreground">
                   {language}
                 </span>
-                <pre className="m-0 overflow-x-auto">
+                <pre className="m-0 overflow-x-auto bg-muted p-4 rounded-md">
                   <code className={className} {...props}>
                     {children}
                   </code>
@@ -177,23 +181,23 @@ const MessageComponent = ({ message }: { message: Message }) => {
 
   return (
     <li
-      className={`relative flex flex-col items-start m-2 rounded-lg shadow-md ${
+      className={`relative flex flex-col items-start m-2 rounded-lg shadow-md p-4 break-words ${
         message.role === 'user'
-          ? 'bg-[#daf8cb] text-[#203728]'
-          : 'bg-[#f0f0f0] text-[#2c3e50]'
-      } p-4 break-words`}
+          ? 'bg-primary/10 text-foreground dark:bg-primary/20'
+          : 'bg-card text-card-foreground'
+      }`}
     >
       <div className="absolute top-2 left-2">
         {message.role === 'user' ? (
-          <User className="text-[#4caf50]" size={20} />
+          <User className="text-primary" size={20} />
         ) : (
-          <Bot className="text-[#607d8b]" size={20} />
+          <Bot className="text-muted-foreground" size={20} />
         )}
       </div>
 
       {message.role === 'assistant' && (
         <button
-          className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center"
+          className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
           onClick={() => handleCopy(message.content)}
         >
           {isCopied ? <CheckCircle size={18} /> : <Copy size={18} />}
@@ -215,7 +219,7 @@ const MessageComponent = ({ message }: { message: Message }) => {
 
             {/* Reasoning section with Shadcn UI accordion - default open */}
             {reasoningParts && reasoningParts.length > 0 && (
-              <div className="mt-4 pt-2 border-t border-gray-300">
+              <div className="mt-4 pt-2 border-t border-border/40">
                 <Accordion
                   type="single"
                   defaultValue="reasoning"
@@ -224,12 +228,12 @@ const MessageComponent = ({ message }: { message: Message }) => {
                 >
                   <AccordionItem
                     value="reasoning"
-                    className="bg-white rounded-lg overflow-hidden border border-gray-200 shadow-sm"
+                    className="bg-background/40 rounded-lg overflow-hidden border border-border shadow-sm"
                   >
-                    <AccordionTrigger className="font-bold text-gray-600 hover:text-gray-800 py-2 px-3 bg-white cursor-pointer">
+                    <AccordionTrigger className="font-bold text-foreground/80 hover:text-foreground py-2 px-3 cursor-pointer">
                       Reasoning
                     </AccordionTrigger>
-                    <AccordionContent className="bg-gray-50 p-3 text-sm text-gray-700 overflow-x-auto max-h-[300px] overflow-y-auto border-t border-gray-200">
+                    <AccordionContent className="bg-muted/50 p-3 text-sm text-foreground/90 overflow-x-auto max-h-[300px] overflow-y-auto border-t border-border/40">
                       {reasoningParts.map((part, index) => {
                         // Extract text from details
                         const reasoningText = part.details
@@ -255,9 +259,9 @@ const MessageComponent = ({ message }: { message: Message }) => {
 
             {/* Sources section */}
             {sources && sources.length > 0 && (
-              <div className="mt-4 pt-2 border-t border-gray-300">
-                <h6 className="font-bold text-gray-600">Sources:</h6>
-                <ul className="space-y-1">
+              <div className="mt-4 pt-2 border-t border-border/40">
+                <h6 className="font-bold text-foreground/80">Sources:</h6>
+                <ul className="space-y-1 mt-2">
                   {sources.map((source, index) => (
                     <li key={index} className="py-0.5">
                       {source.url && (
@@ -265,9 +269,13 @@ const MessageComponent = ({ message }: { message: Message }) => {
                           href={`?url=${encodeURIComponent(source.url)}`}
                           scroll={false}
                           prefetch={false}
-                          className="text-sm text-blue-600 hover:underline"
+                          className="text-sm text-primary hover:text-primary/80 underline decoration-primary/30 hover:decoration-primary/100 transition-colors inline-flex items-center gap-0.5 px-2 py-1 rounded-md hover:bg-primary/5"
                         >
-                          {source.url}
+                          <ExternalLink
+                            size={14}
+                            className="mr-1 flex-shrink-0"
+                          />
+                          <span className="break-all">{source.url}</span>
                         </Link>
                       )}
                     </li>

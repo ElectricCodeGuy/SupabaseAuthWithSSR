@@ -7,8 +7,7 @@ import { redirect } from 'next/navigation';
 import { unstable_noStore as noStore } from 'next/cache';
 import { cookies } from 'next/headers';
 import { type Message } from '@ai-sdk/react';
-import WebsiteWiever from '../components/WebsiteWiever';
-
+import WebsiteWiever from '../../components/ui/shared/WebsiteWiever';
 interface ChatSource {
   sourceType: string;
   id: string;

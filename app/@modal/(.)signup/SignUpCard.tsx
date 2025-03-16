@@ -1,18 +1,23 @@
 'use client';
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Check, X } from 'lucide-react';
 import ForgotPassword from '../ForgotPassword';
 import { GoogleIcon } from '../CustomIcons';
 import { signup } from '../action';
 import { useFormStatus } from 'react-dom';
 import { signInWithGoogle } from '../OAuth';
 import Link from 'next/link';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger
+} from '@/components/ui/popover';
 
 export default function SignInCard() {
   const [email, setEmail] = useState('');
@@ -27,12 +32,16 @@ export default function SignInCard() {
   const [confirmPasswordErrorMessage, setConfirmPasswordErrorMessage] =
     useState('');
   const [open, setOpen] = useState(false);
+  const [showPasswordRequirements, setShowPasswordRequirements] =
+    useState(false);
   const [passwordRequirements, setPasswordRequirements] = useState({
     length: false,
     uppercase: false,
     lowercase: false,
     number: false
   });
+  const passwordRef = useRef<HTMLInputElement>(null);
+
   const handleClose = () => {
     setOpen(false);
   };
@@ -118,12 +127,43 @@ export default function SignInCard() {
     setPasswordRequirements(requirements);
   };
 
+  // Show password requirements when password field is focused
+  useEffect(() => {
+    const handleFocus = () => setShowPasswordRequirements(true);
+    const handleBlur = () => {
+      // Only hide if password is empty
+      if (!password) {
+        setShowPasswordRequirements(false);
+      }
+    };
+
+    const passwordInput = passwordRef.current;
+    if (passwordInput) {
+      passwordInput.addEventListener('focus', handleFocus);
+      passwordInput.addEventListener('blur', handleBlur);
+    }
+
+    return () => {
+      if (passwordInput) {
+        passwordInput.removeEventListener('focus', handleFocus);
+        passwordInput.removeEventListener('blur', handleBlur);
+      }
+    };
+  }, [password]);
+
+  // Show password requirements when typing in password field
+  useEffect(() => {
+    if (password && !showPasswordRequirements) {
+      setShowPasswordRequirements(true);
+    }
+  }, [password, showPasswordRequirements]);
+
   return (
     <div className="flex justify-center items-center">
       <div className="w-full sm:w-[350px] md:w-[400px]">
         <Card className="shadow-md">
           <CardContent className="p-4 pt-6 space-y-4">
-            <h1 className="text-2xl font-semibold">Sign Up</h1>
+            <h1 className="text-2xl font-semibold text-foreground">Sign Up</h1>
 
             <form action={handleSubmit} noValidate className="space-y-4">
               <div className="space-y-2">
@@ -135,12 +175,14 @@ export default function SignInCard() {
                   placeholder="your@email.com"
                   autoComplete="email"
                   required
-                  className={emailError ? 'border-red-500' : ''}
+                  className={emailError ? 'border-destructive' : ''}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
                 {emailError && (
-                  <p className="text-sm text-red-500">{emailErrorMessage}</p>
+                  <p className="text-sm text-destructive">
+                    {emailErrorMessage}
+                  </p>
                 )}
               </div>
 
@@ -156,24 +198,42 @@ export default function SignInCard() {
                 />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 relative">
                 <Label htmlFor="password">Password</Label>
-                <Input
-                  name="password"
-                  placeholder="••••••"
-                  type="password"
-                  id="password"
-                  autoComplete="new-password"
-                  required
-                  className={passwordError ? 'border-red-500' : ''}
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    validatePassword(e.target.value);
-                  }}
-                />
+                <Popover
+                  open={showPasswordRequirements}
+                  onOpenChange={setShowPasswordRequirements}
+                >
+                  <PopoverTrigger asChild>
+                    <Input
+                      name="password"
+                      placeholder="••••••"
+                      type="password"
+                      id="password"
+                      autoComplete="new-password"
+                      required
+                      ref={passwordRef}
+                      className={passwordError ? 'border-destructive' : ''}
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        validatePassword(e.target.value);
+                      }}
+                    />
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="w-[240px] p-2"
+                    side="right"
+                    align="start"
+                    sideOffset={5}
+                  >
+                    <PasswordRequirements requirements={passwordRequirements} />
+                  </PopoverContent>
+                </Popover>
                 {passwordError && (
-                  <p className="text-sm text-red-500">{passwordErrorMessage}</p>
+                  <p className="text-sm text-destructive">
+                    {passwordErrorMessage}
+                  </p>
                 )}
               </div>
 
@@ -186,12 +246,12 @@ export default function SignInCard() {
                   id="confirmPassword"
                   autoComplete="new-password"
                   required
-                  className={confirmPasswordError ? 'border-red-500' : ''}
+                  className={confirmPasswordError ? 'border-destructive' : ''}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                 />
                 {confirmPasswordError && (
-                  <p className="text-sm text-red-500">
+                  <p className="text-sm text-destructive">
                     {confirmPasswordErrorMessage}
                   </p>
                 )}
@@ -201,10 +261,13 @@ export default function SignInCard() {
 
               {alertMessage.type && (
                 <Alert
+                  variant={
+                    alertMessage.type === 'error' ? 'destructive' : 'default'
+                  }
                   className={
-                    alertMessage.type === 'error'
-                      ? 'border-red-600 bg-red-50 text-red-800'
-                      : 'border-green-600 bg-green-50 text-green-800'
+                    alertMessage.type === 'success'
+                      ? 'border-green-600 bg-green-50 text-green-800 dark:bg-green-950 dark:text-green-200 dark:border-green-800'
+                      : ''
                   }
                 >
                   <AlertDescription>{alertMessage.message}</AlertDescription>
@@ -222,7 +285,7 @@ export default function SignInCard() {
 
             <div className="relative py-2">
               <Separator />
-              <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white px-2 text-gray-500 text-sm">
+              <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-background px-2 text-muted-foreground text-sm">
                 or
               </span>
             </div>
@@ -240,10 +303,6 @@ export default function SignInCard() {
             <ForgotPassword open={open} handleClose={handleClose} />
           </CardContent>
         </Card>
-      </div>
-
-      <div className="hidden md:flex justify-center items-center ml-2">
-        <PasswordRequirements requirements={passwordRequirements} />
       </div>
     </div>
   );
@@ -274,14 +333,38 @@ interface PasswordRequirementsProps {
 
 function PasswordRequirements({ requirements }: PasswordRequirementsProps) {
   return (
-    <div className="w-[240px] bg-white shadow-md rounded-2xl p-2">
-      <p className="text-sm font-medium mb-1">Password Requirements:</p>
-      <ul className="pl-5 m-0">
-        <li className={requirements.length ? 'text-green-600' : 'text-red-600'}>
-          Length (at least 6 characters)
+    <div>
+      <p className="text-sm font-medium mb-1 text-foreground">
+        Password Requirements:
+      </p>
+      <ul className="space-y-1 m-0">
+        <li className="flex items-center gap-2 text-sm">
+          {requirements.length ? (
+            <Check className="h-4 w-4 text-green-500" />
+          ) : (
+            <X className="h-4 w-4 text-destructive" />
+          )}
+          <span
+            className={
+              requirements.length ? 'text-foreground' : 'text-muted-foreground'
+            }
+          >
+            At least 6 characters
+          </span>
         </li>
-        <li className={requirements.number ? 'text-green-600' : 'text-red-600'}>
-          Number
+        <li className="flex items-center gap-2 text-sm">
+          {requirements.number ? (
+            <Check className="h-4 w-4 text-green-500" />
+          ) : (
+            <X className="h-4 w-4 text-destructive" />
+          )}
+          <span
+            className={
+              requirements.number ? 'text-foreground' : 'text-muted-foreground'
+            }
+          >
+            At least one number
+          </span>
         </li>
       </ul>
     </div>

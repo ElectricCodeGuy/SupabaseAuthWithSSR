@@ -200,7 +200,7 @@ export default function ChatComponentPage({
       <div className="flex flex-col h-[100vh] md:h-[calc(100vh-48px)] overflow-hidden mx-auto relative">
         {/* Model selector */}
         {userInfo && (
-          <div className="max-w-[120px] bg-white rounded m-1 absolute self-end md:self-start">
+          <div className="max-w-[120px] bg-card rounded m-1 absolute self-end md:self-start">
             <Select
               value={selectedModel}
               onValueChange={(value) =>
@@ -225,23 +225,23 @@ export default function ChatComponentPage({
         {/* Empty state */}
         {messages.length === 0 ? (
           <div className="flex flex-col justify-center items-center h-full text-center p-1">
-            <h2 className="text-2xl mb-2 text-gray-500">
+            <h2 className="text-2xl mb-2 text-foreground/80">
               Chat with our AI Assistant
             </h2>
-            <p className="text-gray-500 mb-2">
+            <p className="text-muted-foreground mb-2">
               Experience the power of AI-driven conversations with our chat
               template. Ask questions on any topic and get informative responses
               instantly.
             </p>
 
             {/* Tavily info */}
-            <div className="text-gray-500 mb-2 max-w-[600px] border border-gray-200 rounded-lg p-4 bg-blue-50/30">
+            <div className="text-muted-foreground mb-2 max-w-[600px] border border-border rounded-lg p-4 bg-primary/5">
               <strong>🔍 Web Search Mode:</strong> Powered by{' '}
               <a
                 href="https://tavily.com/"
                 target="_blank"
                 rel="noopener"
-                className="text-blue-600"
+                className="text-primary hover:text-primary/80 underline"
               >
                 Tavily AI
               </a>
@@ -251,14 +251,14 @@ export default function ChatComponentPage({
               queries.
             </div>
 
-            <p className="text-gray-500 mb-2">
+            <p className="text-muted-foreground mb-2">
               <strong>
                 Check out{' '}
                 <a
                   href="https://www.lovguiden.dk/"
                   target="_blank"
                   rel="noopener"
-                  className="text-lg text-blue-600"
+                  className="text-lg text-primary hover:text-primary/80 underline"
                 >
                   Lovguiden
                 </a>
@@ -276,16 +276,16 @@ export default function ChatComponentPage({
                       variant="outline"
                       className={`w-20 h-20 rounded-xl ${
                         selectedMode === 'default'
-                          ? 'border-2 border-blue-600'
-                          : 'border border-gray-300'
-                      } hover:bg-blue-50/50`}
+                          ? 'border-2 border-primary'
+                          : 'border border-border'
+                      } hover:bg-muted/50`}
                       onClick={() => setSelectedMode('default')}
                     >
                       <MessageSquare
                         className={`w-10 h-10 ${
                           selectedMode === 'default'
-                            ? 'text-blue-600'
-                            : 'text-gray-600'
+                            ? 'text-primary'
+                            : 'text-muted-foreground'
                         }`}
                       />
                     </Button>
@@ -301,16 +301,16 @@ export default function ChatComponentPage({
                       variant="outline"
                       className={`w-20 h-20 rounded-xl ${
                         selectedMode === 'pdf'
-                          ? 'border-2 border-blue-600'
-                          : 'border border-gray-300'
-                      } hover:bg-blue-50/50`}
+                          ? 'border-2 border-primary'
+                          : 'border border-border'
+                      } hover:bg-muted/50`}
                       onClick={() => setSelectedMode('pdf')}
                     >
                       <FileText
                         className={`w-10 h-10 ${
                           selectedMode === 'pdf'
-                            ? 'text-blue-600'
-                            : 'text-gray-600'
+                            ? 'text-primary'
+                            : 'text-muted-foreground'
                         }`}
                       />
                     </Button>
@@ -326,16 +326,16 @@ export default function ChatComponentPage({
                       variant="outline"
                       className={`w-20 h-20 rounded-xl ${
                         selectedMode === 'search'
-                          ? 'border-2 border-blue-600'
-                          : 'border border-gray-300'
-                      } hover:bg-blue-50/50`}
+                          ? 'border-2 border-primary'
+                          : 'border border-border'
+                      } hover:bg-muted/50`}
                       onClick={() => setSelectedMode('search')}
                     >
                       <Search
                         className={`w-10 h-10 ${
                           selectedMode === 'search'
-                            ? 'text-blue-600'
-                            : 'text-gray-600'
+                            ? 'text-primary'
+                            : 'text-muted-foreground'
                         }`}
                       />
                     </Button>
@@ -347,7 +347,7 @@ export default function ChatComponentPage({
               </TooltipProvider>
             </div>
 
-            <p className="text-sm text-gray-500 mt-2">
+            <p className="text-sm text-muted-foreground mt-2">
               Select your preferred chat mode
             </p>
           </div>
@@ -371,9 +371,9 @@ export default function ChatComponentPage({
           !rateLimitInfo.success &&
           rateLimitInfo.reset &&
           userInfo && (
-            <div className="bg-black/10 rounded-lg max-w-[800px] p-1 md:p-2 lg:p-4 xl:p-4 my-1 text-center mx-auto">
-              <p className="mb-1">{rateLimitInfo.message}</p>
-              <p className="text-sm mb-1">
+            <div className="bg-muted/80 rounded-lg max-w-[800px] p-1 md:p-2 lg:p-4 xl:p-4 my-1 text-center mx-auto">
+              <p className="mb-1 text-foreground">{rateLimitInfo.message}</p>
+              <p className="text-sm mb-1 text-muted-foreground">
                 Please wait until{' '}
                 {new Date(rateLimitInfo.reset * 1000).toLocaleTimeString()} to
                 send more messages.
@@ -399,7 +399,7 @@ export default function ChatComponentPage({
               onKeyDown={handleKeyDown}
               disabled={loadingState === 'searching'}
               placeholder="Type a message..."
-              className="w-full rounded-2xl bg-white resize-none py-2 pr-10 pl-2 min-h-[40px]"
+              className="w-full rounded-2xl bg-background resize-none py-2 pr-10 pl-2 min-h-[40px]"
             />
 
             <div className="absolute right-2 bottom-1.5">
@@ -440,7 +440,7 @@ export default function ChatComponentPage({
                       <Button
                         variant="outline"
                         size="sm"
-                        className="p-1 h-fit border border-gray-200 rounded-lg hover:bg-gray-100"
+                        className="p-1 h-fit border border-border rounded-lg hover:bg-muted"
                       >
                         {selectedMode === 'default' ? (
                           <MessageSquare className="w-6 h-6" />
@@ -475,9 +475,9 @@ export default function ChatComponentPage({
                             variant="ghost"
                             className={`
                               flex-1 flex-col items-center gap-1 py-6 px-4 rounded-none h-auto
-                              ${selectedMode === item.mode ? 'bg-gray-100' : ''}
-                              ${index === 0 ? 'border-r border-gray-200' : ''}
-                              ${index === 1 ? 'border-r border-gray-200' : ''}
+                              ${selectedMode === item.mode ? 'bg-muted' : ''}
+                              ${index === 0 ? 'border-r border-border' : ''}
+                              ${index === 1 ? 'border-r border-border' : ''}
                             `}
                             onClick={() => {
                               setSelectedMode(
@@ -489,8 +489,8 @@ export default function ChatComponentPage({
                             <div
                               className={
                                 selectedMode === item.mode
-                                  ? 'text-blue-600'
-                                  : 'text-gray-500'
+                                  ? 'text-primary'
+                                  : 'text-muted-foreground'
                               }
                             >
                               {item.icon}
@@ -498,8 +498,8 @@ export default function ChatComponentPage({
                             <p
                               className={`text-sm text-center mt-1 ${
                                 selectedMode === item.mode
-                                  ? 'font-semibold'
-                                  : ''
+                                  ? 'font-semibold text-foreground'
+                                  : 'text-muted-foreground'
                               }`}
                             >
                               {item.title}

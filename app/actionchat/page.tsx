@@ -3,7 +3,7 @@ import { getUserInfo } from '@/lib/server/supabase';
 import ChatComponentPage from './component/ChatComponent';
 import { AI as AiProvider } from './action_chat/AIProvider';
 import DocumentViewer from './component/PDFViewer';
-import WebsiteWiever from './component/WebsiteWiever';
+import WebsiteWiever from '../components/ui/shared/WebsiteWiever';
 
 export const maxDuration = 60;
 

@@ -9,7 +9,7 @@ import { AI as AiProvider } from '../action_chat/AIProvider';
 import type { ServerMessage } from '../action_chat/shared';
 import DocumentViewer from '../component/PDFViewer';
 import { unstable_noStore as noStore } from 'next/cache';
-import WebsiteWiever from '../component/WebsiteWiever';
+import WebsiteWiever from '../../components/ui/shared/WebsiteWiever';
 export const maxDuration = 60;
 
 export const metadata: Metadata = {

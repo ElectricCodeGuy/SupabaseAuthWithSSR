@@ -2,13 +2,13 @@
 import React from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Loader2, Home } from 'lucide-react';
+import { FileX, Home } from 'lucide-react';
 
 const Custom404: React.FC = () => {
   return (
     <div className="container max-w-sm mx-auto text-center py-20 md:py-40">
       <div className="mb-8">
-        <Loader2 className="h-20 w-20 md:h-36 md:w-36 text-primary mx-auto animate-spin" />
+        <FileX className="h-20 w-20 md:h-36 md:w-36 text-primary mx-auto" />
       </div>
 
       <h2 className="text-2xl md:text-3xl font-bold mb-3">

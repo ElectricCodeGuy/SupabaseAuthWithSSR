@@ -233,7 +233,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
       {!userInfo.email ? (
         // Sign-in prompt when no user
         <div className="flex flex-col items-center justify-center h-[90vh] text-center p-4 space-y-4">
-          <h3 className="text-lg font-semibold">
+          <h3 className="text-lg font-semibold text-foreground">
             Sign in to save and view your chats
           </h3>
           <Button asChild className="rounded-md px-6 py-2 font-normal">
@@ -251,7 +251,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
                     variant="ghost"
                     size="icon"
                     onClick={handleClearMessages}
-                    className="h-8 w-8"
+                    className="h-8 w-8 text-primary"
                   >
                     <FilePlus className="h-4 w-4" />
                   </Button>
@@ -266,10 +266,10 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
               <ScrollArea className="flex-1">
                 {isLoadingFiles ? (
                   <div className="flex justify-center p-4">
-                    <Loader2 className="h-6 w-6 animate-spin" />
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
                   </div>
                 ) : (
-                  <ul className="space-y-0 border-t border-slate-200 mt-2">
+                  <ul className="space-y-0 border-t border-border mt-2">
                     {sortedUserFiles.map((file, index) => {
                       const formattedDate = format(
                         new Date(file.created_at),
@@ -296,12 +296,12 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
                       const href = `${pathname}?${currentParams.toString()}`;
 
                       return (
-                        <li key={index} className="border-b border-slate-200">
+                        <li key={index} className="border-b border-border/30">
                           <div className="flex items-center">
                             <Link
                               href={href}
-                              className={`flex-1 p-2 hover:bg-slate-100 ${
-                                isCurrentFile ? 'bg-slate-100' : ''
+                              className={`flex-1 p-2 hover:bg-muted/60 ${
+                                isCurrentFile ? 'bg-muted/80' : ''
                               }`}
                               onClick={() => {
                                 if (window.innerWidth < 600) {
@@ -310,10 +310,10 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
                               }}
                             >
                               <div>
-                                <p className="text-sm font-medium truncate">
+                                <p className="text-sm font-medium truncate text-foreground">
                                   {file.name.replace(/_/g, ' ')}
                                 </p>
-                                <p className="text-xs text-slate-500">
+                                <p className="text-xs text-muted-foreground">
                                   {format(new Date(file.created_at), 'PPP')}
                                 </p>
                               </div>
@@ -362,7 +362,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
                   </ul>
                 )}
               </ScrollArea>
-              <div className="border-t border-slate-200 p-2 mt-auto bg-white">
+              <div className="border-t border-border p-2 mt-auto bg-card">
                 <ServerUploadPage />
               </div>
             </div>
@@ -450,7 +450,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
   return (
     <>
       {/* Desktop sidebar */}
-      <div className="hidden md:flex fixed inset-yt left-0 z-20  w-[250px] lg:w-[280px] xl:w-[300px] 2xl:w-[350px] bg-slate-50 border-r border-slate-200 shadow-sm flex-col h-full">
+      <div className="hidden md:flex fixed inset-yt left-0 z-20 w-[250px] lg:w-[280px] xl:w-[300px] 2xl:w-[350px] bg-background/90 border-r border-border shadow-sm flex-col h-full">
         {SidebarContent}
       </div>
       <div className="md:pl-[200px] lg:pl-[250px] xl:pl-[300px] 2xl:pl-[350px]">
@@ -462,17 +462,17 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
           <Button
             variant="outline"
             size="icon"
-            className="fixed left-4 bottom-20 z-50 md:hidden rounded-full shadow-md bg-white"
+            className="fixed left-4 bottom-20 z-50 md:hidden rounded-full shadow-md bg-background"
           >
             <Menu className="h-5 w-5" />
             <span className="sr-only">Open menu</span>
           </Button>
         </DrawerTrigger>
-        <DrawerContent className="h-[85vh] max-h-[90vh] bg-white z-50">
+        <DrawerContent className="h-[85vh] max-h-[90vh] bg-background z-50">
           <DialogTitle>Chats</DialogTitle>
-          <div className="bg-white w-full h-full overflow-hidden">
+          <div className="bg-background w-full h-full overflow-hidden">
             {SidebarContent}
-            <div className="p-4 border-t">
+            <div className="p-4 border-t border-border">
               <Button
                 variant="outline"
                 className="w-full"
@@ -562,9 +562,9 @@ const RenderChatSection: FC<RenderChatSectionProps> = memo(
     return (
       <>
         <div className="px-3 mb-2 py-2 flex items-center">
-          <div className="flex-grow border-t border-gray-300" />
-          <span className="mx-2 text-xs text-gray-500">{title}</span>
-          <div className="flex-grow border-t border-gray-300" />
+          <div className="flex-grow border-t border-border/40" />
+          <span className="mx-2 text-xs text-muted-foreground">{title}</span>
+          <div className="flex-grow border-t border-border/40" />
         </div>
 
         <ul className="space-y-0.5 px-1">
@@ -582,8 +582,8 @@ const RenderChatSection: FC<RenderChatSectionProps> = memo(
                   scroll={false}
                   className={`
                 block px-2 py-1.5 text-sm rounded relative
-                hover:bg-slate-100 active:bg-slate-200 transition-colors duration-150
-                ${currentChatId === id ? 'bg-slate-200/80' : ''}
+                hover:bg-muted/60 active:bg-muted transition-colors duration-150
+                ${currentChatId === id ? 'bg-muted/80' : ''}
               `}
                   onMouseEnter={() => router.prefetch(href)}
                   onClick={() => onChatSelect(id)}
@@ -628,7 +628,7 @@ const RenderChatSection: FC<RenderChatSectionProps> = memo(
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => handleDeleteClick(id)}
-                          className="text-red-600 text-sm"
+                          className="text-destructive text-sm"
                         >
                           <Trash className="mr-2 h-4 w-4" />
                           <span>Delete</span>
@@ -707,7 +707,7 @@ function SubmitButton() {
       variant="ghost"
       size="icon"
       disabled={pending}
-      className="h-8 w-8 text-red-600"
+      className="h-8 w-8 text-destructive"
     >
       {pending ? (
         <Loader2 className="h-4 w-4 animate-spin" />

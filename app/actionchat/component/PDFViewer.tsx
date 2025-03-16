@@ -82,7 +82,7 @@ export default function DocumentViewer({
   if (!userId || !hasActiveSubscription) {
     return (
       <div className="flex flex-col justify-center items-center h-[97vh] text-center">
-        <p className="text-base">
+        <p className="text-foreground text-base">
           You need to be logged in with an active subscription to view this
         </p>
         <Button asChild className="mt-2">
@@ -96,7 +96,7 @@ export default function DocumentViewer({
     console.error('Error loading document:', error);
     return (
       <div className="flex flex-col justify-center items-center h-[97vh] text-center">
-        <p className="text-base">
+        <p className="text-foreground text-base">
           There was an error loading the document. Please try again later.
         </p>
       </div>
@@ -105,8 +105,8 @@ export default function DocumentViewer({
 
   if (isLoading) {
     return (
-      <div className="w-[55%] border-l border-slate-200 hidden sm:flex flex-col justify-center items-center h-[97vh] text-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="w-[55%] border-l border-border hidden sm:flex flex-col justify-center items-center h-[97vh] text-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -114,7 +114,7 @@ export default function DocumentViewer({
   if (!fileUrl) {
     return (
       <div className="flex flex-col justify-center items-center h-[97vh] text-center">
-        <p className="text-base">No file available.</p>
+        <p className="text-foreground text-base">No file available.</p>
       </div>
     );
   }
@@ -124,40 +124,49 @@ export default function DocumentViewer({
   const iframeId = `document-viewer-${fileName.replace(/[^a-zA-Z0-9]/g, '-')}`;
 
   return (
-    <div className="w-[55%] border-l border-slate-200 hidden sm:flex flex-row justify-center items-start overflow-hidden relative h-[96vh]">
+    <div className="w-[55%] border-l border-border hidden sm:flex flex-row justify-center items-start overflow-hidden relative h-[96vh]">
       <Button
         variant="ghost"
         size="icon"
         onClick={handleClose}
-        className="absolute right-1 top-1 z-50 bg-white/70 hover:bg-white/90"
+        className="absolute right-1 top-1 z-50 bg-background/70 hover:bg-background/90"
       >
         <X className="h-4 w-4" />
       </Button>
 
-      {isPdf ? (
-        <iframe
-          key={`pdf-viewer-${page}`}
-          id={iframeId}
-          src={`${fileUrl}#page=${page}`}
-          className="w-full h-full border-none"
-          title="PDF Viewer"
-          referrerPolicy="no-referrer"
-          aria-label={`PDF document: ${decodedFileName}`}
-        />
-      ) : isOfficeDocument ? (
-        <iframe
-          id={iframeId}
-          src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(
-            fileUrl
-          )}`}
-          className="w-full h-full border-none"
-          title="Office Document Viewer"
-          referrerPolicy="no-referrer"
-          aria-label={`Office document: ${decodedFileName}`}
-        />
-      ) : (
-        <p className="text-base">This file is not supported.</p>
-      )}
+      {/* Add a theme-aware overlay for PDF frames in dark mode */}
+      <div className="relative w-full h-full">
+        {isPdf && (
+          <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-background/40 to-transparent h-10 z-10 dark:from-background/60" />
+        )}
+
+        {isPdf ? (
+          <iframe
+            key={`pdf-viewer-${page}`}
+            id={iframeId}
+            src={`${fileUrl}#page=${page}`}
+            className="w-full h-full border-none"
+            title="PDF Viewer"
+            referrerPolicy="no-referrer"
+            aria-label={`PDF document: ${decodedFileName}`}
+          />
+        ) : isOfficeDocument ? (
+          <iframe
+            id={iframeId}
+            src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(
+              fileUrl
+            )}`}
+            className="w-full h-full border-none"
+            title="Office Document Viewer"
+            referrerPolicy="no-referrer"
+            aria-label={`Office document: ${decodedFileName}`}
+          />
+        ) : (
+          <p className="text-foreground text-base">
+            This file is not supported.
+          </p>
+        )}
+      </div>
     </div>
   );
 }

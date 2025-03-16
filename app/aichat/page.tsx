@@ -1,7 +1,7 @@
 import 'server-only';
 import ChatComponent from './components/Chat';
 import { cookies } from 'next/headers';
-import WebsiteWiever from './components/WebsiteWiever';
+import WebsiteWiever from '../components/ui/shared/WebsiteWiever';
 
 export default async function ChatPage(props: {
   searchParams: Promise<{ url?: string }>;

@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import Sitemark from './SitemarkIcon';
 import SignOut from './SignOut';
+import { ModeToggle } from '@/components/ui/toggleButton';
 
 interface HeaderProps {
   session: Promise<User | null>;
@@ -46,7 +47,7 @@ const Header: React.FC<HeaderProps> = ({ session }) => {
   return (
     <>
       {/* Desktop navigation */}
-      <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-xl border-b border-slate-200 h-12 hidden md:flex shadow-[0_0_1px_rgba(85,166,246,0.1),1px_1.5px_2px_-1px_rgba(85,166,246,0.15),4px_4px_12px_-2.5px_rgba(85,166,246,0.15)]">
+      <header className="sticky top-0 z-50 w-full bg-background/80 backdrop-blur-xl border-b border-border h-12 hidden md:flex shadow-sm">
         <div className="flex items-center w-full h-full px-8 mx-auto">
           <div className="flex items-center mr-8">
             <Link href="/" passHref>
@@ -114,6 +115,11 @@ const Header: React.FC<HeaderProps> = ({ session }) => {
                 </Link>
               </Button>
             )}
+
+            {/* Theme Toggle Button - Desktop */}
+            <div className="ml-2">
+              <ModeToggle />
+            </div>
           </div>
         </div>
       </header>
@@ -132,10 +138,12 @@ const Header: React.FC<HeaderProps> = ({ session }) => {
         </SheetTrigger>
         <SheetContent side="left" className="w-[300px] sm:w-[400px] p-0">
           <div className="flex flex-col h-full">
-            <div className="flex justify-center items-center p-6">
+            <div className="flex justify-between items-center p-6">
               <Link href="/" className="cursor-pointer">
                 <Sitemark />
               </Link>
+              {/* Theme Toggle Button - Mobile */}
+              <ModeToggle />
             </div>
 
             <Separator />
@@ -167,6 +175,22 @@ const Header: React.FC<HeaderProps> = ({ session }) => {
                     <Separator />
                     <li className="py-4 px-6">
                       <SignOut />
+                    </li>
+                  </>
+                )}
+
+                {!isLoggedIn && (
+                  <>
+                    <Separator />
+                    <li>
+                      <Link
+                        href="/signin"
+                        className="flex py-4 px-6 font-semibold text-lg hover:bg-muted/50"
+                        onClick={() => setSheetOpen(false)}
+                        prefetch={false}
+                      >
+                        Sign in
+                      </Link>
                     </li>
                   </>
                 )}
