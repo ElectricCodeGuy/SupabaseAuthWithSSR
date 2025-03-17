@@ -3,8 +3,8 @@ import { cache } from 'react';
 import { createServerSupabaseClient } from '@/lib/server/server';
 
 // React Cache: https://react.dev/reference/react/cache
-// Caches the session retrieval operation. This memoizes/dedupes the request
-// if it is called multiple times in the same render.
+//This memoizes/dedupes the request
+// if it is called multiple times in the same request.
 export const getSession = cache(async () => {
   const supabase = await createServerSupabaseClient();
   try {
@@ -18,8 +18,8 @@ export const getSession = cache(async () => {
   }
 });
 
-// Caches the user information retrieval operation. Similar to getSession,
-// this minimizes redundant data fetching across components for the same user data.
+//This memoizes/dedupes the request
+// if it is called multiple times in the same request.
 export const getUserInfo = cache(async () => {
   const supabase = await createServerSupabaseClient();
   try {
