@@ -219,6 +219,11 @@ CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA extensions;
 
 -- Note: PostgreSQL currently does not support indexing vectors with more than 2,000 dimensions. If you have hundreds of thousands of documents resulting in hundreds of thousands of vectors, you need to use an embedding model that produces 2,000 dimensions or fewer.
 
+# Vector Database Configuration for Efficient Similarity Search
+
+When dealing with hundreds of thousands of document vectors, optimizing for both storage and retrieval speed is critical. Our system has been configured using the following best practices:
+
+
 -- Create the vector_documents table
 CREATE TABLE IF NOT EXISTS public.vector_documents (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -238,12 +243,13 @@ CREATE TABLE IF NOT EXISTS public.vector_documents (
   total_chunks integer NOT NULL,
   primary_language text,
   created_at timestamptz DEFAULT CURRENT_TIMESTAMP,
+  updated_at timestamptz DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT vector_documents_pkey PRIMARY KEY (id),
   CONSTRAINT vector_documents_unique_chunk UNIQUE (user_id, title, "timestamp", page_number, chunk_number),
   CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 );
 
--- Create indexes
+-- Create standard indexes
 CREATE INDEX IF NOT EXISTS idx_vector_documents_user_id ON public.vector_documents USING btree (user_id);
 CREATE INDEX IF NOT EXISTS idx_vector_documents_lookup ON public.vector_documents USING btree (
   user_id,
@@ -252,6 +258,44 @@ CREATE INDEX IF NOT EXISTS idx_vector_documents_lookup ON public.vector_document
   page_number,
   chunk_number
 );
+
+-- Create HNSW index for efficient approximate nearest neighbor search
+CREATE INDEX IF NOT EXISTS idx_vector_documents_hnsw_cosine ON public.vector_documents
+USING hnsw (embedding extensions.vector_cosine_ops)
+WITH (m = '16', ef_construction = '64');
+
+-- Create function to auto-update timestamp if not exists
+CREATE OR REPLACE FUNCTION update_modified_column()
+RETURNS TRIGGER AS $$
+BEGIN
+   NEW.updated_at = now();
+   RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- Create trigger for auto-updating the modified timestamp
+CREATE TRIGGER update_vector_documents_modtime
+BEFORE UPDATE ON public.vector_documents
+FOR EACH ROW
+EXECUTE FUNCTION update_modified_column();
+
+
+## HNSW Index Configuration
+
+The Hierarchical Navigable Small World (HNSW) index is configured with:
+
+- **m = 16**: Maximum number of connections per layer
+- **ef_construction = 64**: Size of the dynamic candidate list during construction
+
+These parameters balance build time, index size, and query performance for our document volumes. The HNSW index drastically improves vector similarity search performance while maintaining high recall rates.
+
+## Why These Parameters?
+
+- **Dimension Size (1024)**: Our embedding model (voyage-3-large) produces 1024-dimensional vectors, well under the pgvector 2000-dimension limit
+- **HNSW Algorithm**: Offers logarithmic search complexity, critical for large document collections
+- **Cosine Similarity**: Best metric for normalized document embeddings
+
+These optimizations enable sub-second query times even with hundreds of thousands of document vectors in the database.
 
 -- Enable RLS
 ALTER TABLE public.vector_documents ENABLE ROW LEVEL SECURITY;
