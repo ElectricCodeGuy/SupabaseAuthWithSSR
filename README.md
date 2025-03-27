@@ -223,7 +223,7 @@ CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA extensions;
 CREATE TABLE IF NOT EXISTS public.vector_documents (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL,
-  embedding extensions.vector(3072),
+  embedding extensions.vector(1024),
   text_content text NOT NULL,
   title text NOT NULL,
   timestamp date NOT NULL,
@@ -307,7 +307,7 @@ USING (
 
 -- Create the similarity search function
 CREATE OR REPLACE FUNCTION match_documents(
-  query_embedding vector(3072),
+  query_embedding vector(1024),
   match_count int,
   filter_user_id uuid,
   filter_files text[],

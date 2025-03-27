@@ -8,14 +8,19 @@ import {
   preliminaryAnswerChainAgent,
   generateDocumentMetadata
 } from './agentchains';
-import { openai } from '@ai-sdk/openai';
-import { recursiveTextSplitter } from './textspliter';
-import { encodingForModel } from 'js-tiktoken';
 import { backOff, type IBackOffOptions } from 'exponential-backoff';
+import { voyage } from 'voyage-ai-provider';
 
 export const dynamic = 'force-dynamic';
 
 export const maxDuration = 60;
+
+const embeddingModel = voyage.textEmbeddingModel('voyage-3-large', {
+  inputType: 'document',
+  truncation: false,
+  outputDimension: 1024,
+  outputDtype: 'int8'
+});
 
 const embeddingBackOffOptions: IBackOffOptions = {
   numOfAttempts: 3,
@@ -36,7 +41,7 @@ async function getEmbeddingWithRetry(text: string) {
   try {
     return await backOff(async () => {
       const { embedding } = await embed({
-        model: openai.embedding('text-embedding-3-large'),
+        model: embeddingModel,
         value: text
       });
       return embedding;
@@ -98,8 +103,6 @@ async function processFile(pages: string[], fileName: string, userId: string) {
 
   let totalPromptTokens = 0;
   let totalCompletionTokens = 0;
-
-  const tokenizer = encodingForModel('text-embedding-3-large');
 
   const chunks = <T>(array: T[], size: number): T[][] => {
     const chunks: T[][] = [];
@@ -163,16 +166,8 @@ async function processFile(pages: string[], fileName: string, userId: string) {
       ${doc}
       `;
 
-          let contentChunks: string[];
-          // Some pages might contain more than 8000 tokens, so we need to split them into smaller chunks to avoid the embeddings models token limit of 8132 tokens. This is very rare thoguh.
-          if (tokenizer.encode(combinedContent).length > 8000) {
-            contentChunks = recursiveTextSplitter(combinedContent, 7500, 200);
-          } else {
-            contentChunks = [combinedContent];
-          }
-
-          for (let i = 0; i < contentChunks.length; i++) {
-            const chunk = contentChunks[i];
+          for (let i = 0; i < combinedContent.length; i++) {
+            const chunk = combinedContent[i];
             const embedding = await getEmbeddingWithRetry(chunk);
 
             if (!embedding) {
@@ -194,7 +189,7 @@ async function processFile(pages: string[], fileName: string, userId: string) {
               page_number: pageNumber,
               total_pages: totalPages,
               chunk_number: i + 1,
-              total_chunks: contentChunks.length
+              total_chunks: combinedContent.length
             });
           }
         } catch (error) {

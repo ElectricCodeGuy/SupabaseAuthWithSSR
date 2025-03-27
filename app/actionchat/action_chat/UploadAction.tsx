@@ -18,6 +18,7 @@ import {
   type AI
 } from './shared';
 import { z } from 'zod';
+import { voyage } from 'voyage-ai-provider';
 
 function sanitizeFilename(filename: string): string {
   return filename
@@ -110,10 +111,16 @@ async function querySupabaseVectors(
     }
   }));
 }
+const embeddingModel = voyage.textEmbeddingModel('voyage-3-large', {
+  inputType: 'query',
+  truncation: false,
+  outputDimension: 1024,
+  outputDtype: 'int8'
+});
 
 async function embedQuery(text: string): Promise<number[]> {
   const { embedding } = await embed({
-    model: openai.embedding('text-embedding-3-large'),
+    model: embeddingModel,
     value: text
   });
   return embedding;

@@ -1,5 +1,58 @@
 ## CHANGELOG
 
+## [v1.9.0] - 2025-01-15
+
+### Added
+
+- **UI Framework Upgrade**:
+
+  - Replaced Material-UI (MUI) with ShadCN UI
+  - Improved component consistency and design system
+  - Better developer experience with more customizable components
+
+- **Embedding Model Improvement**:
+  - Migrated from OpenAI embeddings to Voyage's voyage-3-large model
+  - Enhanced semantic search capabilities with state-of-the-art embeddings
+
+### Why Switch to ShadCN?
+
+The transition from MUI to ShadCN provides:
+
+- **Better Developer Experience**:
+
+  - More consistent styling API
+  - Headless components with full styling control
+  - Simpler theming and customization
+
+- **Performance Improvements**:
+  - Reduced bundle size
+  - Faster component rendering
+  - Better code splitting options
+
+### Voyage AI Integration Benefits
+
+Replacing OpenAI's embedding model with voyage-3-large offers:
+
+- **Technical Advantages**:
+
+  - Support for 1024 dimensions with int8 quantization
+  - Perfect compatibility with pgvector in Supabase (under 2000 dimension limit)
+  - Optimized storage efficiency without compromising accuracy
+
+- **Superior Embeddings**:
+
+  - Better semantic understanding of legal documents
+  - Improved multilingual support for Nordic languages
+  - More accurate similarity matching for case law comparisons
+
+- **Cost Efficiency**:
+  - More predictable pricing structure
+  - Lower per-token costs
+  - Reduced API latency
+
+Learn more about the new embedding model at:
+https://blog.voyageai.com/2025/01/07/voyage-3-large/
+
 ## [v1.8.1] - 2024-12-30
 
 ### Added
@@ -63,7 +116,7 @@ CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA extensions;
 CREATE TABLE IF NOT EXISTS public.vector_documents (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL,
-  embedding extensions.vector(3072),
+  embedding extensions.vector(1024),
   text_content text NOT NULL,
   title text NOT NULL,
   timestamp date NOT NULL,
@@ -111,7 +164,7 @@ Implemented an efficient similarity search stored procedure:
 
 ```sql
 CREATE OR REPLACE FUNCTION match_documents(
-  query_embedding vector(3072),
+  query_embedding vector(1024),
   match_count int,
   filter_user_id uuid,
   filter_files text[],
