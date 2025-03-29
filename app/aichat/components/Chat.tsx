@@ -3,8 +3,12 @@
 import type { KeyboardEvent } from 'react';
 import React, { useState, useOptimistic, startTransition } from 'react';
 import { useChat, type Message } from '@ai-sdk/react';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { v4 as uuidv4 } from 'uuid';
+import {
+  useRouter,
+  usePathname,
+  useSearchParams,
+  useParams
+} from 'next/navigation';
 import { useSWRConfig } from 'swr';
 import { ChatScrollAnchor } from '../hooks/chat-scroll-anchor';
 import { setModelSettings } from '../actions';
@@ -43,7 +47,7 @@ type ChatSessionWithMessages = Pick<
 
 interface ChatProps {
   currentChat?: ChatSessionWithMessages | null;
-  chatId?: string;
+  chatId: string;
   initialModelType: string;
   initialSelectedOption: string;
 }
@@ -57,7 +61,9 @@ const ChatComponent: React.FC<ChatProps> = ({
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+  const param = useParams();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const currentChatId = param.id as string;
 
   const [optimisticModelType, setOptimisticModelType] = useOptimistic<
     string,
@@ -84,8 +90,6 @@ const ChatComponent: React.FC<ChatProps> = ({
   };
 
   // Generate chat ID and determine API endpoint
-  const createChatId = uuidv4();
-  const effectiveChatId = chatId ?? createChatId;
 
   // Determine API endpoint based on model type
   const getApiEndpoint = () => {
@@ -106,21 +110,21 @@ const ChatComponent: React.FC<ChatProps> = ({
     id: 'chat',
     api: apiEndpoint,
     body: {
-      chatId: effectiveChatId,
+      chatId: chatId,
       option: optimisticOption
     },
-    experimental_throttle: 100,
+    experimental_throttle: 50,
     initialMessages: currentChat?.chat_messages,
     onFinish: async () => {
-      if (!chatId) {
-        const existingParams = searchParams.toString();
-        const newUrl = `${pathname}/${createChatId}${
-          existingParams ? `?${existingParams}` : ''
-        }`;
-        router.replace(newUrl, { scroll: false });
-        await mutate((key) => Array.isArray(key) && key[0] === 'chatPreviews');
-      }
+      if (chatId === currentChatId) return;
+      const existingParams = searchParams.toString();
+      const newUrl = `${pathname}/${chatId}${
+        existingParams ? `?${existingParams}` : ''
+      }`;
+      router.replace(newUrl, { scroll: false });
+      await mutate((key) => Array.isArray(key) && key[0] === 'chatPreviews');
     },
+
     onError: (error) => {
       if (error.message.includes('timeout')) {
         console.error('Timeout error, please try again');
@@ -178,7 +182,7 @@ const ChatComponent: React.FC<ChatProps> = ({
         <Card className="bg-gradient-to-r from-background/50 to-muted rounded-2xl w-full border-border shadow-md py-1">
           <CardContent className="px-1">
             <MessageInput
-              chatId={effectiveChatId}
+              chatId={chatId}
               apiEndpoint={apiEndpoint}
               option={optimisticOption}
               messagesLength={messages.length}

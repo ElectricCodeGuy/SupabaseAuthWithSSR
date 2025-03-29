@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import type { CoreMessage } from 'ai';
-import { streamText } from 'ai';
+import type { Message } from 'ai';
+import { streamText, convertToCoreMessages } from 'ai';
 import { saveChatToSupbabase } from './SaveToDb';
 import { Ratelimit } from '@upstash/ratelimit';
 import { openai } from '@ai-sdk/openai';
@@ -54,8 +54,9 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const messages: CoreMessage[] = body.messages ?? [];
+  const messages: Message[] = body.messages ?? [];
   const chatSessionId = body.chatId;
+  const signal = body.signal;
   if (!chatSessionId) {
     return new NextResponse('Chat session ID is empty.', {
       status: 400,
@@ -66,16 +67,13 @@ export async function POST(req: NextRequest) {
   }
   const selectedModel = body.option ?? 'gpt-3.5-turbo-1106';
 
-  const abortController = new AbortController();
-  const signal = abortController.signal;
-
   try {
     const model = getModel(selectedModel);
 
     const result = streamText({
       model,
       system: SYSTEM_TEMPLATE,
-      messages: messages,
+      messages: convertToCoreMessages(messages),
       abortSignal: signal,
       providerOptions: {
         anthropic: {

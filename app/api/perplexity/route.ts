@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import type { CoreMessage, Message } from 'ai';
-import { streamText } from 'ai';
+import type { Message } from 'ai';
+import { streamText, convertToCoreMessages } from 'ai';
 import { saveChatToSupbabase } from './SaveToDb';
 import { Redis } from '@upstash/redis';
 import { Ratelimit } from '@upstash/ratelimit';
@@ -49,6 +49,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const messages: Message[] = body.messages ?? [];
   const chatSessionId = body.chatId;
+  const signal = body.signal;
   if (!chatSessionId) {
     return new NextResponse('Chat session ID is empty.', {
       status: 400,
@@ -57,23 +58,15 @@ export async function POST(req: NextRequest) {
       }
     });
   }
-  const fullMessages: CoreMessage[] = [
-    {
-      role: 'system',
-      content: `
-    - You are a helpful assistant that always provides clear and accurate answers! For helpful information use Markdown. Use remark-math formatting for Math Equations
-    `
-    },
-    ...messages.map((message) => ({
-      role: message.role as 'user' | 'assistant' | 'system',
-      content: message.content
-    }))
-  ];
+  const systemPromptTemplate = `
+    - You are a helpful assistant that always provides clear and accurate answers! For helpful information use Markdown. Use remark-math formatting for Math Equations`;
 
   try {
     const result = streamText({
       model: perplexity('sonar-pro'),
-      messages: fullMessages,
+      system: systemPromptTemplate,
+      messages: convertToCoreMessages(messages),
+      abortSignal: signal,
       experimental_telemetry: {
         isEnabled: true,
         functionId: 'perplexity',

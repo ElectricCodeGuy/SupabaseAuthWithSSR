@@ -1,8 +1,8 @@
 // app/api/url-chat/route.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { streamText } from 'ai';
-import type { CoreMessage } from 'ai';
+import { streamText, convertToCoreMessages } from 'ai';
+import type { Message } from 'ai';
 import { saveChatToSupbabase } from './SaveToDb';
 import { Ratelimit } from '@upstash/ratelimit';
 import { getSession } from '@/lib/server/supabase';
@@ -44,8 +44,9 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const messages: CoreMessage[] = body.messages ?? [];
+  const messages: Message[] = body.messages ?? [];
   const chatSessionId = body.chatId;
+  const signal = body.signal;
   if (!chatSessionId) {
     return new NextResponse('Chat session ID is empty.', {
       status: 400,
@@ -54,9 +55,6 @@ export async function POST(req: NextRequest) {
       }
     });
   }
-  // Initial status update
-  const abortController = new AbortController();
-  const signal = abortController.signal;
 
   // Create system prompt for AI response (Now in English)
   const systemPromptTemplate = `
@@ -94,7 +92,7 @@ export async function POST(req: NextRequest) {
   const result = streamText({
     model: openai.responses('gpt-4o'),
     system: systemPromptTemplate,
-    messages,
+    messages: convertToCoreMessages(messages),
     abortSignal: signal,
     tools: {
       web_search_preview: openai.tools.webSearchPreview({
