@@ -5,7 +5,8 @@ import React, {
   memo,
   useCallback,
   useOptimistic,
-  startTransition
+  startTransition,
+  use
 } from 'react';
 import {
   deleteChatData,
@@ -41,10 +42,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-
+import { isToday, isYesterday, subDays } from 'date-fns';
+import { TZDate } from '@date-fns/tz';
 // Import Drawer components from shadcn
 import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer';
-
+import type { FetchedUserDataAndSessions } from '../fetch';
 // Lucide icons (replacing MUI icons)
 import {
   Trash as DeleteIcon,
@@ -73,14 +75,12 @@ interface CategorizedChats {
 }
 
 interface CombinedDrawerProps {
-  userInfo: UserInfo;
-  initialChatPreviews: ChatPreview[];
-  categorizedChats: CategorizedChats;
+  userChatPromise: FetchedUserDataAndSessions;
 }
 
 // Content component to avoid duplication between mobile and desktop
 interface DrawerContentProps {
-  userInfo: UserInfo;
+  userInfo: UserInfo | null;
   chatPreviews: ChatPreview[][] | undefined;
   currentChatId: string | undefined;
   categorizedChats: CategorizedChats;
@@ -104,7 +104,7 @@ const ChatListComponent: FC<DrawerContentProps> = ({
 }) => {
   return (
     <div className="flex flex-col h-full">
-      {!userInfo.email ? (
+      {!userInfo ? (
         // Show sign-in message when no user
         <div className="flex flex-col items-center justify-center h-[90vh] text-center p-4 space-y-4">
           <h3 className="text-lg font-medium text-foreground">
@@ -216,11 +216,53 @@ const ChatListComponent: FC<DrawerContentProps> = ({
   );
 };
 
-const CombinedDrawer: FC<CombinedDrawerProps> = ({
-  userInfo,
-  initialChatPreviews,
-  categorizedChats: initialCategorizedChats
-}) => {
+function categorizeChats(chatPreviews: ChatPreview[]): CategorizedChats {
+  const getZonedDate = (date: string) =>
+    new TZDate(new Date(date), 'Europe/Copenhagen');
+
+  const today = chatPreviews.filter((chat) =>
+    isToday(getZonedDate(chat.created_at))
+  );
+
+  const yesterday = chatPreviews.filter((chat) =>
+    isYesterday(getZonedDate(chat.created_at))
+  );
+
+  const last7Days = chatPreviews.filter((chat) => {
+    const chatDate = getZonedDate(chat.created_at);
+    const sevenDaysAgo = subDays(new Date(), 7);
+    return (
+      chatDate > sevenDaysAgo && !isToday(chatDate) && !isYesterday(chatDate)
+    );
+  });
+
+  const last30Days = chatPreviews.filter((chat) => {
+    const chatDate = getZonedDate(chat.created_at);
+    const thirtyDaysAgo = subDays(new Date(), 30);
+    const sevenDaysAgo = subDays(new Date(), 7);
+    return chatDate > thirtyDaysAgo && chatDate <= sevenDaysAgo;
+  });
+
+  const last2Months = chatPreviews.filter((chat) => {
+    const chatDate = getZonedDate(chat.created_at);
+    const sixtyDaysAgo = subDays(new Date(), 60);
+    const thirtyDaysAgo = subDays(new Date(), 30);
+    return chatDate > sixtyDaysAgo && chatDate <= thirtyDaysAgo;
+  });
+
+  const older = chatPreviews.filter((chat) => {
+    const sixtyDaysAgo = subDays(new Date(), 60);
+    return getZonedDate(chat.created_at) <= sixtyDaysAgo;
+  });
+
+  return { today, yesterday, last7Days, last30Days, last2Months, older };
+}
+
+const CombinedDrawer: FC<CombinedDrawerProps> = ({ userChatPromise }) => {
+  const { userInfo, chatSessions } = use(userChatPromise);
+
+  const initialCategorizedChats = categorizeChats(chatSessions);
+
   const params = useParams();
   const router = useRouter();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -244,7 +286,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
       return newChatPreviews;
     },
     {
-      fallbackData: [initialChatPreviews],
+      fallbackData: [chatSessions],
       revalidateFirstPage: false,
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
