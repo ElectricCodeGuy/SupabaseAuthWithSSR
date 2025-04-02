@@ -2,7 +2,7 @@ import ChatComponent from '../components/Chat';
 import { format } from 'date-fns';
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
-import WebsiteWiever from '../../components/ui/shared/WebsiteWiever';
+import WebsiteWiever from '../components/WebsiteWiever';
 import DocumentViewer from '../components/PDFViewer';
 import { fetchChat, formatMessages } from './fetch';
 import { getUserInfo } from '@/lib/server/supabase';

@@ -2,7 +2,7 @@ import 'server-only';
 import ChatComponent from './components/Chat';
 import { cookies } from 'next/headers';
 import DocumentViewer from './components/PDFViewer';
-import WebsiteWiever from '../components/ui/shared/WebsiteWiever';
+import WebsiteWiever from './components/WebsiteWiever';
 import { v4 as uuidv4 } from 'uuid';
 import { getUserInfo } from '@/lib/server/supabase';
 
