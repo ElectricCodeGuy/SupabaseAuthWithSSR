@@ -3,11 +3,13 @@ import { format } from 'date-fns';
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import WebsiteWiever from '../../components/ui/shared/WebsiteWiever';
+import DocumentViewer from '../components/PDFViewer';
 import { fetchChat, formatMessages } from './fetch';
+import { getUserInfo } from '@/lib/server/supabase';
 
 export default async function ChatPage(props: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ url?: string }>;
+  searchParams: Promise<{ url?: string; pdf?: string }>;
 }) {
   const params = await props.params;
   const searchParams = await props.searchParams;
@@ -58,7 +60,24 @@ export default async function ChatPage(props: {
       </div>
       {searchParams.url ? (
         <WebsiteWiever url={decodeURIComponent(searchParams.url)} />
+      ) : searchParams.pdf ? (
+        <DocumentComponent fileName={decodeURIComponent(searchParams.pdf)} />
       ) : null}
     </div>
+  );
+}
+
+async function DocumentComponent({ fileName }: { fileName: string }) {
+  const session = await getUserInfo();
+  const userId = session?.id;
+
+  const hasActiveSubscription = Boolean(session);
+
+  return (
+    <DocumentViewer
+      fileName={fileName}
+      userId={userId}
+      hasActiveSubscription={hasActiveSubscription}
+    />
   );
 }

@@ -8,7 +8,6 @@ import {
   preliminaryAnswerChainAgent,
   generateDocumentMetadata
 } from './agentchains';
-import { backOff, type IBackOffOptions } from 'exponential-backoff';
 import { voyage } from 'voyage-ai-provider';
 
 export const dynamic = 'force-dynamic';
@@ -21,36 +20,6 @@ const embeddingModel = voyage.textEmbeddingModel('voyage-3-large', {
   outputDimension: 1024,
   outputDtype: 'int8'
 });
-
-const embeddingBackOffOptions: IBackOffOptions = {
-  numOfAttempts: 3,
-  startingDelay: 5000,
-  maxDelay: 10000,
-  timeMultiple: 2,
-  jitter: 'full',
-  delayFirstAttempt: false,
-  retry: (error, attemptNumber) => {
-    console.error(
-      `Embedding attempt ${attemptNumber} failed with error: ${error}`
-    );
-    return attemptNumber < 3;
-  }
-};
-
-async function getEmbeddingWithRetry(text: string) {
-  try {
-    return await backOff(async () => {
-      const { embedding } = await embed({
-        model: embeddingModel,
-        value: text
-      });
-      return embedding;
-    }, embeddingBackOffOptions);
-  } catch (error) {
-    console.error('Failed to get embedding after all retries:', error);
-    return null;
-  }
-}
 
 function sanitizeFilename(filename: string): string {
   const sanitized = filename
@@ -96,9 +65,7 @@ async function processFile(pages: string[], fileName: string, userId: string) {
   const filterTags = `${sanitizedFilename}[[${timestamp}]]`;
   const totalPages = pages.length;
 
-  const processingBatchSize = 200;
-  // Note that this is the number of AI requests made in parallel.
-  // You need a high enough account level to avoid hitting the OpenAI rate limit. Reduce this if you hit the ratelimit.
+  const processingBatchSize = 100;
   const upsertBatchSize = 100;
 
   let totalPromptTokens = 0;
@@ -113,8 +80,11 @@ async function processFile(pages: string[], fileName: string, userId: string) {
   };
 
   const pageChunks = chunks(pages, processingBatchSize);
+  console.log('Processing page chunks:', pageChunks.length);
   const supabase = createAdminClient();
+
   for (let chunkIndex = 0; chunkIndex < pageChunks.length; chunkIndex++) {
+    console.log(`Processing chunk ${chunkIndex + 1} of ${pageChunks.length}`);
     const batch = pageChunks[chunkIndex];
     let batchRecords: DocumentRecord[] = [];
 
@@ -126,6 +96,7 @@ async function processFile(pages: string[], fileName: string, userId: string) {
         }
 
         const pageNumber = chunkIndex * processingBatchSize + index + 1;
+        console.log(`Processing page ${pageNumber} of ${totalPages}`);
 
         try {
           const { combinedPreliminaryAnswers, usage } =
@@ -166,12 +137,17 @@ async function processFile(pages: string[], fileName: string, userId: string) {
       ${doc}
       `;
 
-          for (let i = 0; i < combinedContent.length; i++) {
-            const chunk = combinedContent[i];
-            const embedding = await getEmbeddingWithRetry(chunk);
+          // FIXED: Generate a single embedding for the entire content
+          // instead of iterating character by character
+          try {
+            const { embedding } = await embed({
+              model: embeddingModel,
+              value: combinedContent
+            });
 
             if (!embedding) {
-              continue;
+              console.log('No embedding generated, skipping document');
+              return;
             }
 
             batchRecords.push({
@@ -188,9 +164,14 @@ async function processFile(pages: string[], fileName: string, userId: string) {
               filter_tags: filterTags,
               page_number: pageNumber,
               total_pages: totalPages,
-              chunk_number: i + 1,
-              total_chunks: combinedContent.length
+              chunk_number: 1, // Since we're now treating each page as one document
+              total_chunks: 1 // Since we're now treating each page as one document
             });
+          } catch (embedError) {
+            console.error(
+              `Error generating embedding for page ${pageNumber}:`,
+              embedError
+            );
           }
         } catch (error) {
           console.error(`Error processing document page: ${pageNumber}`, error);
@@ -198,29 +179,43 @@ async function processFile(pages: string[], fileName: string, userId: string) {
       })
     );
 
-    // Upsert records in batches
-    const upsertBatches = chunks(batchRecords, upsertBatchSize);
-    for (const batch of upsertBatches) {
-      try {
-        const { error } = await supabase
-          .from('vector_documents')
-          .upsert(batch, {
-            onConflict: 'user_id, title, timestamp, page_number, chunk_number',
-            ignoreDuplicates: false
-          });
+    // Only attempt to upsert if we have records
+    if (batchRecords.length > 0) {
+      // Upsert records in batches
+      const upsertBatches = chunks(batchRecords, upsertBatchSize);
+      console.log(`Processing ${upsertBatches.length} upsert batches`);
 
-        if (error) {
+      for (const batch of upsertBatches) {
+        try {
+          console.log(`Upserting batch of ${batch.length} records`);
+          const { error } = await supabase
+            .from('vector_documents')
+            .upsert(batch, {
+              onConflict:
+                'user_id, title, timestamp, page_number, chunk_number',
+              ignoreDuplicates: false
+            });
+
+          if (error) {
+            console.error('Error upserting batch to Supabase:', error);
+          } else {
+            console.log(
+              `Successfully upserted batch of ${batch.length} records`
+            );
+          }
+        } catch (error) {
           console.error('Error upserting batch to Supabase:', error);
         }
-      } catch (error) {
-        console.error('Error upserting batch to Supabase:', error);
       }
+    } else {
+      console.warn('No records to upsert for this batch');
     }
 
+    // Clear batch records for next iteration
     batchRecords = [];
   }
 
-  console.log('Token Usage:', totalPromptTokens, totalCompletionTokens);
+  console.log('Final Token Usage:', totalPromptTokens, totalCompletionTokens);
   return filterTags;
 }
 
@@ -245,7 +240,7 @@ async function processDocumentWithAgentChains(
     const result = await preliminaryAnswerChainAgent(prompt, userId);
 
     const { object, usage } = result;
-
+    console.log('Result:', object);
     // If tags is potentially undefined, use nullish coalescing
     const tagTaxProvisions = object.tags.join(', ') || '';
 

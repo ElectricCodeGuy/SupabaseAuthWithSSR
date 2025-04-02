@@ -51,7 +51,7 @@ export async function middleware(request: NextRequest) {
 
   return response;
 }
-
+// Matcher to exclude certain paths from middleware
 export const config = {
   matcher: [
     {

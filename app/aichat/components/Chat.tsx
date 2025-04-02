@@ -13,7 +13,7 @@ import { useSWRConfig } from 'swr';
 import { ChatScrollAnchor } from '../hooks/chat-scroll-anchor';
 import { setModelSettings } from '../actions';
 import Link from 'next/link';
-
+import { useUpload } from '../context/uploadContext';
 // Shadcn UI components
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -31,10 +31,29 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger
+} from '@/components/ui/accordion';
 
-import ChatMessage from './MemoizedMarkdown';
+import MemoizedMarkdown from './tools/MemoizedMarkdown';
+import ReasoningContent from './tools/Reasoning';
+import SourceView from './tools/SourceView';
+import DocumentSearchTool from './tools/DocumentChatTool';
+
 // Icons from Lucide React
-import { Send, RotateCw, Loader2, ChevronDown } from 'lucide-react';
+import {
+  Send,
+  RotateCw,
+  Loader2,
+  ChevronDown,
+  User,
+  Bot,
+  Copy,
+  CheckCircle
+} from 'lucide-react';
 
 import type { Tables } from '@/types/database';
 
@@ -64,12 +83,13 @@ const ChatComponent: React.FC<ChatProps> = ({
   const param = useParams();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const currentChatId = param.id as string;
+  const { selectedBlobs } = useUpload();
 
   const [optimisticModelType, setOptimisticModelType] = useOptimistic<
     string,
     string
   >(initialModelType, (_, newValue) => newValue);
-
+  const [isCopied, setIsCopied] = useState(false);
   const [optimisticOption, setOptimisticOption] = useOptimistic<string, string>(
     initialSelectedOption,
     (_, newValue) => newValue
@@ -111,7 +131,8 @@ const ChatComponent: React.FC<ChatProps> = ({
     api: apiEndpoint,
     body: {
       chatId: chatId,
-      option: optimisticOption
+      option: optimisticOption,
+      selectedBlobs: selectedBlobs
     },
     experimental_throttle: 50,
     initialMessages: currentChat?.chat_messages,
@@ -172,7 +193,138 @@ const ChatComponent: React.FC<ChatProps> = ({
       ) : (
         <div className="flex-1 overflow-y-auto">
           <ul className="flex-1 overflow-y-auto w-full mx-auto max-w-[1000px] px-0 md:px-1 lg:px-4">
-            <ChatMessage messages={messages} />
+            {messages.map((message, index) => {
+              const isUserMessage = message.role === 'user';
+              const copyToClipboard = (str: string) => {
+                window.navigator.clipboard.writeText(str);
+              };
+              const handleCopy = (content: string) => {
+                copyToClipboard(content);
+                setIsCopied(true);
+                setTimeout(() => setIsCopied(false), 1000);
+              };
+
+              // First filter the tool invocation parts to check if we need the accordion
+              const toolInvocationParts = !isUserMessage
+                ? message.parts?.filter(
+                    (part) => part.type === 'tool-invocation'
+                  ) || []
+                : [];
+
+              const hasToolInvocations = toolInvocationParts.length > 0;
+
+              return (
+                <li
+                  key={`${message.id}-${index}`}
+                  className={`relative flex flex-col items-start m-2 rounded-lg shadow-md p-4 break-words ${
+                    isUserMessage
+                      ? 'bg-primary/10 text-foreground dark:bg-primary/20'
+                      : 'bg-card text-card-foreground'
+                  }`}
+                >
+                  <div className="absolute top-2 left-2">
+                    {isUserMessage ? (
+                      <User className="text-primary" size={20} />
+                    ) : (
+                      <Bot className="text-muted-foreground" size={20} />
+                    )}
+                  </div>
+
+                  {!isUserMessage && (
+                    <button
+                      className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                      onClick={() => handleCopy(message.content)}
+                    >
+                      {isCopied ? (
+                        <CheckCircle size={18} />
+                      ) : (
+                        <Copy size={18} />
+                      )}
+                    </button>
+                  )}
+
+                  <div className="w-full pt-6">
+                    {/* Use the switch statement pattern to render different part types */}
+                    {message.parts?.map((part, partIndex) => {
+                      switch (part.type) {
+                        case 'text':
+                          return (
+                            <MemoizedMarkdown
+                              key={`text-${partIndex}`}
+                              content={part.text}
+                              id={`${
+                                isUserMessage ? 'user' : 'assistant'
+                              }-text-${message.id}-${partIndex}`}
+                            />
+                          );
+
+                        case 'reasoning':
+                          return !isUserMessage ? (
+                            <ReasoningContent
+                              key={`reasoning-${partIndex}`}
+                              details={part.details}
+                              messageId={message.id}
+                            />
+                          ) : null;
+
+                        case 'source':
+                          return !isUserMessage ? (
+                            <SourceView
+                              key={`source-${partIndex}`}
+                              source={part.source}
+                            />
+                          ) : null;
+
+                        case 'tool-invocation':
+                          // Don't render individual tools here - they'll be rendered in the accordion
+                          return null;
+
+                        default:
+                          return null;
+                      }
+                    })}
+
+                    {/* Render all tool invocations in a single accordion, outside the switch */}
+                    {hasToolInvocations && (
+                      <div className="mt-4 pt-2 border-t border-border/40">
+                        <Accordion
+                          type="single"
+                          defaultValue="tool-invocation"
+                          collapsible
+                          className="w-full"
+                        >
+                          <AccordionItem
+                            value="tool-invocation"
+                            className="bg-background/40 rounded-lg overflow-hidden border border-border shadow-sm"
+                          >
+                            <AccordionTrigger className="font-bold text-foreground/80 hover:text-foreground py-2 px-3 cursor-pointer">
+                              Tools
+                            </AccordionTrigger>
+                            <AccordionContent className="bg-muted/50 p-3 text-sm text-foreground/90 overflow-x-auto max-h-[300px] overflow-y-auto border-t border-border/40">
+                              {toolInvocationParts.map((part) => {
+                                const toolName = part.toolInvocation.toolName;
+                                const toolId = part.toolInvocation.toolCallId;
+                                switch (toolName) {
+                                  case 'searchUserDocument':
+                                    return (
+                                      <DocumentSearchTool
+                                        key={toolId}
+                                        toolInvocation={part.toolInvocation}
+                                      />
+                                    );
+                                  default:
+                                    return null;
+                                }
+                              })}
+                            </AccordionContent>
+                          </AccordionItem>
+                        </Accordion>
+                      </div>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
             <ChatScrollAnchor trackVisibility />
           </ul>
         </div>
@@ -273,13 +425,15 @@ const MessageInput = ({
   option: string;
   messagesLength: number;
 }) => {
+  const { selectedBlobs } = useUpload();
   const { input, handleInputChange, handleSubmit, status, stop, reload } =
     useChat({
       id: 'chat', // Use the same ID to share state
       api: apiEndpoint,
       body: {
-        chatId,
-        option
+        chatId: chatId,
+        option: option,
+        selectedBlobs: selectedBlobs
       }
     });
 

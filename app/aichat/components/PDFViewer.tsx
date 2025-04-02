@@ -67,6 +67,7 @@ export default function DocumentViewer({
   };
 
   const decodedFileName = decodeURIComponent(decodeBase64(fileName));
+  console.log('Decoded file name:', decodedFileName);
   const fileExtension = decodedFileName.split('.').pop()?.toLowerCase() ?? '';
   const page = Number(searchParams.get('p')) || 1;
   const {

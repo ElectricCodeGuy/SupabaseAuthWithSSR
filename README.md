@@ -5,15 +5,15 @@
 ### Images
 
 <div style="display: flex; justify-content: center; align-items: center; flex-wrap: wrap;">
-  <img src="public/images/ai_chat.png" alt="Front Page 1" style="width: 45%; margin: 10px;">
-  <img src="public/images/ai_chat2.png" alt="Front Page 2" style="width: 45%; margin: 10px;">
-  <img src="public/images/ai_chat3.png" alt="Front Page 3" style="width: 45%; margin: 10px;">
-  <img src="public/images/profile.png" alt="Protected Page 1" style="width: 45%; margin: 10px;">
-  <img src="public/images/signin.png" alt="Sign In Page" style="width: 45%; margin: 10px;">
-  <img src="public/images/loginpagepassword.png" alt="Sign In Page Password" style="width: 45%; margin: 10px;">
-  <img src="public/images/aichatimage.png" alt="AI Chat Page" style="width: 45%; margin: 10px;">
-  <img src="public/images/rag_pic.png" alt="RAG Chat" style="width: 45%; margin: 10px;">
-  <img src="public/images/tavily.png" alt="RAG Chat" style="width: 45%; margin: 10px;">
+  <img src="public/images/image1.png" alt="Front Page 1" style="width: 45%; margin: 10px;">
+  <img src="public/images/image2.png" alt="Front Page 2" style="width: 45%; margin: 10px;">
+  <img src="public/images/image3.png" alt="Front Page 3" style="width: 45%; margin: 10px;">
+  <img src="public/images/image4.png" alt="Protected Page 1" style="width: 45%; margin: 10px;">
+  <img src="public/images/image5.png" alt="Sign In Page" style="width: 45%; margin: 10px;">
+  <img src="public/images/image6.png" alt="Sign In Page Password" style="width: 45%; margin: 10px;">
+  <img src="public/images/image7.png" alt="AI Chat Page" style="width: 45%; margin: 10px;">
+  <img src="public/images/image8.png" alt="RAG Chat" style="width: 45%; margin: 10px;">
+  <img src="public/images/image9.png" alt="RAG Chat" style="width: 45%; margin: 10px;">
 </div>
 
 ### Videos

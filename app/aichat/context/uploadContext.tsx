@@ -19,8 +19,6 @@ interface UploadContextType {
   statusSeverity: string;
   selectedFile: File | null;
   setSelectedFile: React.Dispatch<React.SetStateAction<File | null>>;
-  selectedMode: string;
-  setSelectedMode: (mode: string) => void;
   selectedBlobs: string[];
   setSelectedBlobs: (blobs: string[]) => void;
 }
@@ -51,7 +49,7 @@ export const UploadProvider: React.FC<{
   const [shouldProcessDoc, setShouldProcessDoc] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedBlobs, setSelectedBlobs] = useState<string[]>([]);
-  const [selectedMode, setSelectedMode] = useState('default');
+
   const { mutate } = useSWRConfig();
 
   const { data: processingStatus, error: processingError } = useSWR(
@@ -296,8 +294,6 @@ export const UploadProvider: React.FC<{
       statusSeverity,
       selectedFile,
       setSelectedFile,
-      selectedMode,
-      setSelectedMode,
       selectedBlobs,
       setSelectedBlobs
     }),
@@ -309,7 +305,6 @@ export const UploadProvider: React.FC<{
       statusSeverity,
       selectedFile,
       setSelectedFile,
-      selectedMode,
       selectedBlobs
     ]
   );

@@ -7,12 +7,33 @@ import { openai } from '@ai-sdk/openai';
 import { anthropic } from '@ai-sdk/anthropic';
 import { redis } from '@/lib/server/server';
 import { getSession } from '@/lib/server/supabase';
+import { searchUserDocument } from './tools/documentChat';
 
 export const dynamic = 'force-dynamic';
 
 export const maxDuration = 60;
 
-const SYSTEM_TEMPLATE = `You are a helpful assistant. Answer all questions to the best of your ability. Helpfull answers in markdown`;
+const getSystemPrompt = (selectedFiles: string[]) => {
+  const basePrompt = `You are a helpful assistant. Answer all questions to the best of your ability. Use markdown for formatting your responses to improve readability.`;
+
+  if (selectedFiles.length > 0) {
+    return `${basePrompt}
+
+IMPORTANT: The user has uploaded ${
+      selectedFiles.length
+    } document(s): ${selectedFiles.join(', ')}. 
+
+When answering questions that might be addressed in these documents:
+1. ALWAYS use the searchUserDocument tool to retrieve relevant information from the uploaded documents
+2. Reference the documents properly in your response with the exact format: [Document title, p.X](<?pdf=Document_title&p=X>)
+3. Include direct quotes from the documents when appropriate
+4. When information from the documents contradicts your general knowledge, prioritize the document content
+
+For questions not related to the uploaded documents, you can respond based on your general knowledge.`;
+  }
+
+  return basePrompt;
+};
 
 const getModel = (selectedModel: string) => {
   if (selectedModel === 'sonnet-3-7') {
@@ -57,6 +78,8 @@ export async function POST(req: NextRequest) {
   const messages: Message[] = body.messages ?? [];
   const chatSessionId = body.chatId;
   const signal = body.signal;
+  const selectedFiles: string[] = body.selectedBlobs ?? [];
+
   if (!chatSessionId) {
     return new NextResponse('Chat session ID is empty.', {
       status: 400,
@@ -66,13 +89,13 @@ export async function POST(req: NextRequest) {
     });
   }
   const selectedModel = body.option ?? 'gpt-3.5-turbo-1106';
-
+  const userId = session.id;
   try {
     const model = getModel(selectedModel);
-
+    const SYSTEM_PROMPT = getSystemPrompt(selectedFiles);
     const result = streamText({
       model,
-      system: SYSTEM_TEMPLATE,
+      system: SYSTEM_PROMPT,
       messages: convertToCoreMessages(messages),
       abortSignal: signal,
       providerOptions: {
@@ -80,6 +103,10 @@ export async function POST(req: NextRequest) {
           thinking: { type: 'enabled', budgetTokens: 12000 }
         }
       },
+      tools: {
+        searchUserDocument: searchUserDocument({ userId, selectedFiles })
+      },
+      maxSteps: 3,
       experimental_telemetry: {
         isEnabled: true,
         functionId: 'api_chat',
