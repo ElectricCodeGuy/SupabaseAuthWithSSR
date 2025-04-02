@@ -606,28 +606,14 @@ While design patterns like Factory Pattern and other "clean code" principles hav
 
 ### Intentional Code Duplication Examples
 
-1. **Chat User Lists**
-
-   - `actionchat/component/UserChatList.tsx`
-   - `aichat/components/UserCharListDrawer.tsx`
-
-   These components are maintained separately to keep each feature independent and self-contained. While they share similar functionality today, keeping them separate means we can modify either without affecting the other. This avoids premature abstraction and makes the codebase more maintainable.
-
-2. **Chat Components**
-
-   - `actionchat/component/ChatComponent.tsx`
-   - `aichat/components/chat.tsx`
-
-   Each chat implementation lives independently with its own state management, API calls, and types. This separation means each feature can evolve independently without creating complex dependencies or requiring changes across multiple features.
-
-3. **Shared Code (Minimal)**
+1. **Shared Code (Minimal)**
    Only truly universal utilities are shared:
 
    - `getSession()` for auth
    - Type definitions for database schema
    - Error boundary components
 
-4. **Locality of Behavior**
+2. **Locality of Behavior**
    Everything else stays with its feature:
    - Custom hooks live in feature directories
    - API route handlers stay with their features
