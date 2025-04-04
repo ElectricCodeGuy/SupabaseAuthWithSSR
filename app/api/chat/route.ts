@@ -4,6 +4,7 @@ import { streamText, convertToCoreMessages } from 'ai';
 import { saveChatToSupbabase } from './SaveToDb';
 import { Ratelimit } from '@upstash/ratelimit';
 import { openai } from '@ai-sdk/openai';
+import type { AnthropicProviderOptions } from '@ai-sdk/anthropic';
 import { anthropic } from '@ai-sdk/anthropic';
 import { redis } from '@/lib/server/server';
 import { getSession } from '@/lib/server/supabase';
@@ -101,7 +102,7 @@ export async function POST(req: NextRequest) {
       providerOptions: {
         anthropic: {
           thinking: { type: 'enabled', budgetTokens: 12000 }
-        }
+        } satisfies AnthropicProviderOptions
       },
       tools: {
         searchUserDocument: searchUserDocument({ userId, selectedFiles })
