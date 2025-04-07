@@ -1,22 +1,22 @@
 import React from 'react';
-import { FileText, CheckCircle } from 'lucide-react';
+import { Globe, CheckCircle } from 'lucide-react';
 import { type ToolInvocation } from 'ai';
-import type { SearchDocumentsArgs } from '@/app/aichat/types/tooltypes';
+import type { WebsiteSearchArgs } from '@/app/aichat/types/tooltypes';
 
-interface DocumentsToolProps {
+interface WebsiteSearchToolProps {
   toolInvocation: ToolInvocation;
 }
 
-const DocumentsTool: React.FC<DocumentsToolProps> = ({ toolInvocation }) => {
-  const args = (toolInvocation.args as SearchDocumentsArgs) || { query: '' };
+const WebsiteSearchTool: React.FC<WebsiteSearchToolProps> = ({
+  toolInvocation
+}) => {
+  const args = (toolInvocation.args as WebsiteSearchArgs) || { query: '' };
   const query = args.query || '';
 
   const toolHeader = (
     <div className="flex items-center gap-2">
-      <FileText className="text-primary" size={18} />
-      <span className="text-sm font-medium text-foreground">
-        Searching in documents
-      </span>
+      <Globe className="text-primary" size={18} />
+      <span className="text-sm font-medium text-foreground">Web Search</span>
     </div>
   );
 
@@ -37,7 +37,7 @@ const DocumentsTool: React.FC<DocumentsToolProps> = ({ toolInvocation }) => {
                   toolInvocation.state === 'call' ? 'font-bold' : 'font-normal'
                 } text-muted-foreground`}
               >
-                Search query:{query}
+                Search query: {query}
               </span>
             </div>
           )}
@@ -50,7 +50,7 @@ const DocumentsTool: React.FC<DocumentsToolProps> = ({ toolInvocation }) => {
           {toolHeader}
           <div className="flex items-center gap-2 mt-2">
             <CheckCircle size={16} className="text-green-500" />
-            <span className="text-xs text-green-600">Søgning fuldført</span>
+            <span className="text-xs text-green-600">Search completed</span>
           </div>
           {query && (
             <div className="mt-1">
@@ -67,4 +67,4 @@ const DocumentsTool: React.FC<DocumentsToolProps> = ({ toolInvocation }) => {
   }
 };
 
-export default DocumentsTool;
+export default WebsiteSearchTool;

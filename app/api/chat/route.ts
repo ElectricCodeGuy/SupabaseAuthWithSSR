@@ -9,6 +9,7 @@ import { anthropic } from '@ai-sdk/anthropic';
 import { redis } from '@/lib/server/server';
 import { getSession } from '@/lib/server/supabase';
 import { searchUserDocument } from './tools/documentChat';
+import { websiteSearchTool } from './tools/WebsiteSearchTool';
 
 export const dynamic = 'force-dynamic';
 
@@ -105,7 +106,8 @@ export async function POST(req: NextRequest) {
         } satisfies AnthropicProviderOptions
       },
       tools: {
-        searchUserDocument: searchUserDocument({ userId, selectedFiles })
+        searchUserDocument: searchUserDocument({ userId, selectedFiles }),
+        websiteSearchTool: websiteSearchTool
       },
       maxSteps: 3,
       experimental_telemetry: {

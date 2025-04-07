@@ -42,6 +42,7 @@ import MemoizedMarkdown from './tools/MemoizedMarkdown';
 import ReasoningContent from './tools/Reasoning';
 import SourceView from './tools/SourceView';
 import DocumentSearchTool from './tools/DocumentChatTool';
+import WebsiteSearchTool from './tools/WebsiteChatTool';
 
 // Icons from Lucide React
 import {
@@ -308,6 +309,13 @@ const ChatComponent: React.FC<ChatProps> = ({
                                   case 'searchUserDocument':
                                     return (
                                       <DocumentSearchTool
+                                        key={toolId}
+                                        toolInvocation={part.toolInvocation}
+                                      />
+                                    );
+                                  case 'websiteSearchTool':
+                                    return (
+                                      <WebsiteSearchTool
                                         key={toolId}
                                         toolInvocation={part.toolInvocation}
                                       />
