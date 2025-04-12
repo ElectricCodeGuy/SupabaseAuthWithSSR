@@ -24,7 +24,7 @@ const DocumentsTool: React.FC<DocumentsToolProps> = ({ toolInvocation }) => {
     case 'partial-call':
     case 'call':
       return (
-        <div className="my-1 p-2 bg-muted/30 rounded-md">
+        <div className="my-1 p-2 bg-muted/30 rounded-md border border-border/50">
           {toolHeader}
           <div className="flex items-center gap-2 mt-2">
             <div className="h-4 w-4 rounded-full border-2 border-primary border-t-transparent animate-spin" />
@@ -37,7 +37,7 @@ const DocumentsTool: React.FC<DocumentsToolProps> = ({ toolInvocation }) => {
                   toolInvocation.state === 'call' ? 'font-bold' : 'font-normal'
                 } text-muted-foreground`}
               >
-                Search query:{query}
+                Search query: {query}
               </span>
             </div>
           )}
@@ -46,15 +46,20 @@ const DocumentsTool: React.FC<DocumentsToolProps> = ({ toolInvocation }) => {
 
     case 'result':
       return (
-        <div className="my-1 p-2 bg-blue-50/70 rounded-md border border-blue-100">
+        <div className="my-1 p-2 bg-primary/5 dark:bg-primary/10 rounded-md border border-primary/20 dark:border-primary/30">
           {toolHeader}
           <div className="flex items-center gap-2 mt-2">
-            <CheckCircle size={16} className="text-green-500" />
-            <span className="text-xs text-green-600">Søgning fuldført</span>
+            <CheckCircle
+              size={16}
+              className="text-green-600 dark:text-green-400"
+            />
+            <span className="text-xs text-green-700 dark:text-green-400">
+              Søgning fuldført
+            </span>
           </div>
           {query && (
             <div className="mt-1">
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs text-foreground/70">
                 Search query: {query}
               </span>
             </div>

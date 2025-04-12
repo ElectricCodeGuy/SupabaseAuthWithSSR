@@ -125,12 +125,21 @@ export async function POST(req: NextRequest) {
           const lastMessage = messages[messages.length - 1];
           const lastMessageContent =
             typeof lastMessage.content === 'string' ? lastMessage.content : '';
+
+          // Fix: Extract the reasoning string from the step if found
+          const foundReasoningStep = event.steps.find((step) => step.reasoning);
+          const reasoningText =
+            event.reasoning ||
+            (foundReasoningStep?.reasoning
+              ? foundReasoningStep.reasoning
+              : undefined);
+
           await saveChatToSupbabase(
             chatSessionId,
             session.id,
             lastMessageContent,
             event.text,
-            event.reasoning
+            reasoningText // Now we're passing a string | undefined as required
           );
           console.log('Chat saved to Supabase:', chatSessionId);
         } catch (error) {

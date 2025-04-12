@@ -78,9 +78,6 @@ const ChatComponent: React.FC<ChatProps> = ({
   initialModelType,
   initialSelectedOption
 }) => {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const pathname = usePathname();
   const param = useParams();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const currentChatId = param.id as string;
@@ -110,8 +107,6 @@ const ChatComponent: React.FC<ChatProps> = ({
     });
   };
 
-  // Generate chat ID and determine API endpoint
-
   // Determine API endpoint based on model type
   const getApiEndpoint = () => {
     switch (optimisticModelType) {
@@ -139,11 +134,7 @@ const ChatComponent: React.FC<ChatProps> = ({
     initialMessages: currentChat?.chat_messages,
     onFinish: async () => {
       if (chatId === currentChatId) return;
-      const existingParams = searchParams.toString();
-      const newUrl = `${pathname}/${chatId}${
-        existingParams ? `?${existingParams}` : ''
-      }`;
-      router.replace(newUrl, { scroll: false });
+
       await mutate((key) => Array.isArray(key) && key[0] === 'chatPreviews');
     },
 
@@ -180,7 +171,7 @@ const ChatComponent: React.FC<ChatProps> = ({
               href="https://www.lovguiden.dk/"
               target="_blank"
               rel="noopener"
-              className="text-xl text-primary hover:underline"
+              className="text-xl text-blue-600 dark:text-blue-400 hover:underline"
             >
               Lovguiden
             </Link>
@@ -219,15 +210,18 @@ const ChatComponent: React.FC<ChatProps> = ({
                   key={`${message.id}-${index}`}
                   className={`relative flex flex-col items-start m-2 rounded-lg shadow-md p-4 break-words ${
                     isUserMessage
-                      ? 'bg-primary/10 text-foreground dark:bg-primary/20'
-                      : 'bg-card text-card-foreground'
+                      ? 'bg-primary/10 dark:bg-primary/20 text-foreground'
+                      : 'bg-card dark:bg-card/90 text-card-foreground border border-border/30 dark:border-border/20'
                   }`}
                 >
                   <div className="absolute top-2 left-2">
                     {isUserMessage ? (
                       <User className="text-primary" size={20} />
                     ) : (
-                      <Bot className="text-muted-foreground" size={20} />
+                      <Bot
+                        className="text-primary/70 dark:text-primary/80"
+                        size={20}
+                      />
                     )}
                   </div>
 
@@ -237,7 +231,10 @@ const ChatComponent: React.FC<ChatProps> = ({
                       onClick={() => handleCopy(message.content)}
                     >
                       {isCopied ? (
-                        <CheckCircle size={18} />
+                        <CheckCircle
+                          size={18}
+                          className="text-green-600 dark:text-green-400"
+                        />
                       ) : (
                         <Copy size={18} />
                       )}
@@ -287,7 +284,7 @@ const ChatComponent: React.FC<ChatProps> = ({
 
                     {/* Render all tool invocations in a single accordion, outside the switch */}
                     {hasToolInvocations && (
-                      <div className="mt-4 pt-2 border-t border-border/40">
+                      <div className="mt-4 pt-2 border-t border-border/40 dark:border-border/30">
                         <Accordion
                           type="single"
                           defaultValue="tool-invocation"
@@ -296,12 +293,12 @@ const ChatComponent: React.FC<ChatProps> = ({
                         >
                           <AccordionItem
                             value="tool-invocation"
-                            className="bg-background/40 rounded-lg overflow-hidden border border-border shadow-sm"
+                            className="bg-background/40 dark:bg-background/20 rounded-lg overflow-hidden border border-border/50 dark:border-border/30 shadow-sm"
                           >
                             <AccordionTrigger className="font-bold text-foreground/80 hover:text-foreground py-2 px-3 cursor-pointer">
                               Tools
                             </AccordionTrigger>
-                            <AccordionContent className="bg-muted/50 p-3 text-sm text-foreground/90 overflow-x-auto max-h-[300px] overflow-y-auto border-t border-border/40">
+                            <AccordionContent className="bg-muted/50 dark:bg-muted/30 p-3 text-sm text-foreground/90 overflow-x-auto max-h-[300px] overflow-y-auto border-t border-border/40 dark:border-border/30">
                               {toolInvocationParts.map((part) => {
                                 const toolName = part.toolInvocation.toolName;
                                 const toolId = part.toolInvocation.toolCallId;
@@ -339,13 +336,14 @@ const ChatComponent: React.FC<ChatProps> = ({
       )}
 
       <div className="sticky bottom-0 mt-auto pb-2 max-w-[800px] mx-auto w-full">
-        <Card className="bg-gradient-to-r from-background/50 to-muted rounded-2xl w-full border-border shadow-md py-1">
+        <Card className="bg-gradient-to-r from-background/70 to-muted/80 dark:from-background/50 dark:to-muted/30 rounded-2xl w-full border-border/50 dark:border-border/30 shadow-md py-1">
           <CardContent className="px-1">
             <MessageInput
               chatId={chatId}
               apiEndpoint={apiEndpoint}
               option={optimisticOption}
               messagesLength={messages.length}
+              currentChatId={currentChatId}
             />
 
             <div className="flex justify-between items-center mt-2 px-1 py-1 gap-2">
@@ -355,10 +353,10 @@ const ChatComponent: React.FC<ChatProps> = ({
                   value={optimisticModelType}
                   onValueChange={handleModelTypeChange}
                 >
-                  <SelectTrigger className="w-full h-9 text-sm bg-background/80 hover:bg-background border-border transition-all duration-200">
+                  <SelectTrigger className="w-full h-9 text-sm bg-background/80 dark:bg-background/60 hover:bg-background dark:hover:bg-background/80 border-border/50 dark:border-border/40 transition-all duration-200">
                     <SelectValue placeholder="Select model" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="border-border/50 dark:border-border/30 bg-background/95 dark:bg-background/90 backdrop-blur-sm">
                     {modelTypes.map((model) => (
                       <SelectItem
                         key={model.value}
@@ -382,13 +380,13 @@ const ChatComponent: React.FC<ChatProps> = ({
                     <DropdownMenuTrigger asChild>
                       <Button
                         variant="outline"
-                        className="w-full rounded-lg bg-background/80 hover:bg-background hover:shadow-sm justify-between px-4 py-2 text-sm border-border transition-all duration-200"
+                        className="w-full rounded-lg bg-background/80 dark:bg-background/60 hover:bg-background dark:hover:bg-background/80 hover:shadow-sm justify-between px-4 py-2 text-sm border-border/50 dark:border-border/40 transition-all duration-200"
                       >
                         <span className="truncate">{optimisticOption}</span>
                         <ChevronDown className="h-4 w-4 ml-2 flex-shrink-0 opacity-70" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56 rounded-lg shadow-lg border-border bg-popover/95 backdrop-blur-sm">
+                    <DropdownMenuContent className="w-56 rounded-lg shadow-lg border-border/50 dark:border-border/30 bg-popover/95 dark:bg-popover/90 backdrop-blur-sm">
                       {[
                         'gpt-3.5-turbo-1106',
                         'gpt-3.5-turbo-16k',
@@ -402,8 +400,8 @@ const ChatComponent: React.FC<ChatProps> = ({
                           onClick={() => handleOptionChange(option)}
                           className={`rounded-md my-0.5 transition-colors duration-200 ${
                             optimisticOption === option
-                              ? 'bg-primary/20 text-primary font-medium'
-                              : 'hover:bg-muted'
+                              ? 'bg-primary/20 dark:bg-primary/30 text-primary dark:text-primary-foreground font-medium'
+                              : 'hover:bg-muted dark:hover:bg-muted/70'
                           }`}
                         >
                           {option}
@@ -426,14 +424,20 @@ const MessageInput = ({
   chatId,
   apiEndpoint,
   option,
-  messagesLength
+  messagesLength,
+  currentChatId
 }: {
   chatId: string;
   apiEndpoint: string;
   option: string;
   messagesLength: number;
+  currentChatId: string;
 }) => {
   const { selectedBlobs } = useUpload();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const { mutate } = useSWRConfig();
   const { input, handleInputChange, handleSubmit, status, stop, reload } =
     useChat({
       id: 'chat', // Use the same ID to share state
@@ -442,6 +446,15 @@ const MessageInput = ({
         chatId: chatId,
         option: option,
         selectedBlobs: selectedBlobs
+      },
+      onFinish: async () => {
+        if (chatId === currentChatId) return;
+        const existingParams = searchParams.toString();
+        const newUrl = `${pathname}/${chatId}${
+          existingParams ? `?${existingParams}` : ''
+        }`;
+        router.replace(newUrl, { scroll: false });
+        await mutate((key) => Array.isArray(key) && key[0] === 'chatPreviews');
       }
     });
 
@@ -464,7 +477,7 @@ const MessageInput = ({
           onKeyDown={handleKeyDown}
           placeholder="Type your message..."
           disabled={status !== 'ready'}
-          className="min-h-12 resize-none rounded-xl pr-24 bg-background/90 backdrop-blur-sm border-input/30 focus:border-primary focus:ring-2 focus:ring-primary/30 p-4 text-base transition-all duration-200 shadow-inner"
+          className="min-h-12 resize-none rounded-xl pr-24 bg-background/90 dark:bg-background/80 backdrop-blur-sm border-input/30 dark:border-input/20 focus:border-primary focus:ring-2 focus:ring-primary/30 p-4 text-base transition-all duration-200 shadow-inner"
           autoFocus
         />
         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center space-x-2">
@@ -474,7 +487,7 @@ const MessageInput = ({
               disabled={status !== 'ready'}
               variant="ghost"
               size="icon"
-              className="h-9 w-9 text-primary hover:bg-primary/10 rounded-full transition-colors duration-200"
+              className="h-9 w-9 text-primary hover:bg-primary/10 dark:hover:bg-primary/20 rounded-full transition-colors duration-200"
               type="button"
               title="Regenerate response"
             >
@@ -487,7 +500,7 @@ const MessageInput = ({
               onClick={stop}
               variant="ghost"
               size="icon"
-              className="h-9 w-9 rounded-full bg-destructive/10 hover:bg-destructive/20 text-destructive transition-colors duration-200"
+              className="h-9 w-9 rounded-full bg-destructive/10 dark:bg-destructive/20 hover:bg-destructive/20 dark:hover:bg-destructive/30 text-destructive transition-colors duration-200"
               type="button"
               title="Stop generating"
             >

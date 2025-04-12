@@ -46,13 +46,5 @@ async function DocumentComponent({ fileName }: { fileName: string }) {
   const session = await getUserInfo();
   const userId = session?.id;
 
-  const hasActiveSubscription = Boolean(session);
-
-  return (
-    <DocumentViewer
-      fileName={fileName}
-      userId={userId}
-      hasActiveSubscription={hasActiveSubscription}
-    />
-  );
+  return <DocumentViewer fileName={fileName} userId={userId} />;
 }

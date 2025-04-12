@@ -8,6 +8,7 @@ import type { Options as HighlightOptions } from 'rehype-highlight';
 import Link from 'next/link';
 import { ExternalLink } from 'lucide-react';
 import { encodeBase64 } from '../../lib/base64';
+import Image from 'next/image';
 
 // Function to parse markdown into blocks for memoization
 function parseMarkdownIntoBlocks(markdown: string): string[] {
@@ -62,7 +63,7 @@ const MemoizedMarkdownBlock = memo(
                     href={`?url=${encodeURIComponent(href)}`}
                     scroll={false}
                     prefetch={false}
-                    className="text-primary hover:underline"
+                    className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
                   >
                     {children}
                     <ExternalLink size={12} className="inline-block ml-0.5" />
@@ -76,7 +77,7 @@ const MemoizedMarkdownBlock = memo(
                     href={fullHref}
                     passHref
                     prefetch={false}
-                    className="text-primary hover:underline"
+                    className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
                   >
                     {children}
                     <ExternalLink size={12} className="inline-block ml-0.5" />
@@ -84,8 +85,13 @@ const MemoizedMarkdownBlock = memo(
                 );
               }
             }
-            return <a className="text-primary hover:underline">{children}</a>;
+            return (
+              <a className="text-blue-600 dark:text-blue-400 hover:underline font-medium">
+                {children}
+              </a>
+            );
           },
+          // Tables
           table: ({ children }) => (
             <div className="block py-2 overflow-x-auto">
               <table className="w-full border-collapse break-normal text-[0.85rem]">
@@ -99,7 +105,7 @@ const MemoizedMarkdownBlock = memo(
           th: ({ children }) => (
             <th
               scope="row"
-              className="border border-border p-1 text-left text-[0.9em] break-normal font-normal hyphens-auto overflow-wrap-normal"
+              className="border border-border p-1 text-left text-[0.9em] break-normal font-semibold hyphens-auto overflow-wrap-normal"
             >
               {children}
             </th>
@@ -112,14 +118,23 @@ const MemoizedMarkdownBlock = memo(
               {children}
             </td>
           ),
+          // Paragraphs and text formatting
           p: ({ children }) => <p className="mb-4 last:mb-0">{children}</p>,
+          em: ({ children }) => <em className="italic">{children}</em>,
+          strong: ({ children }) => (
+            <strong className="font-bold">{children}</strong>
+          ),
+          del: ({ children }) => <del className="line-through">{children}</del>,
+          hr: () => <hr className="my-6 border-t border-border" />,
+          // Lists
           ul: ({ children }) => (
-            <ul className="list-disc pl-6 mb-4">{children}</ul>
+            <ul className="list-disc pl-6 mb-4 space-y-1">{children}</ul>
           ),
           ol: ({ children }) => (
-            <ol className="list-decimal pl-6 mb-4">{children}</ol>
+            <ol className="list-decimal pl-6 mb-4 space-y-1">{children}</ol>
           ),
           li: ({ children }) => <li className="mb-1">{children}</li>,
+          // Headings
           h1: ({ children }) => (
             <h1 className="text-2xl font-bold mb-4 mt-6">{children}</h1>
           ),
@@ -129,11 +144,32 @@ const MemoizedMarkdownBlock = memo(
           h3: ({ children }) => (
             <h3 className="text-lg font-bold mb-2 mt-4">{children}</h3>
           ),
+          h4: ({ children }) => (
+            <h4 className="text-base font-bold mb-2 mt-4">{children}</h4>
+          ),
+          h5: ({ children }) => (
+            <h5 className="text-sm font-bold mb-2 mt-3">{children}</h5>
+          ),
+          h6: ({ children }) => (
+            <h6 className="text-xs font-bold mb-2 mt-3">{children}</h6>
+          ),
+          // Block elements
           blockquote: ({ children }) => (
-            <blockquote className="border-l-4 border-border/60 pl-4 italic my-4">
+            <blockquote className="border-l-4 border-border/60 pl-4 italic my-4 text-foreground/80">
               {children}
             </blockquote>
           ),
+          // Images
+          img: ({ src, alt }) => (
+            <Image
+              src={src || ''}
+              width={500}
+              height={500}
+              alt={alt || ''}
+              className="max-w-full h-auto my-4 rounded-md"
+            />
+          ),
+          // Code blocks
           code({ className, children, ...props }) {
             const match = /language-(\w+)/.exec(className ?? '');
             const language = match?.[1] ? match[1] : '';

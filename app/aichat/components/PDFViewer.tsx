@@ -49,12 +49,10 @@ const fetcher = async (
 
 export default function DocumentViewer({
   fileName,
-  userId,
-  hasActiveSubscription
+  userId
 }: {
   fileName: string;
   userId: string | undefined;
-  hasActiveSubscription: boolean;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -75,12 +73,12 @@ export default function DocumentViewer({
     error,
     isLoading
   } = useSWRImmutable(
-    userId && hasActiveSubscription ? [fileName, userId, fileExtension] : null,
+    userId ? [fileName, userId, fileExtension] : null,
     ([fileName, userId, fileExtension]) =>
       fetcher(fileName, userId, fileExtension)
   );
 
-  if (!userId || !hasActiveSubscription) {
+  if (!userId) {
     return (
       <div className="flex flex-col justify-center items-center h-[97vh] text-center">
         <p className="text-foreground text-base">
