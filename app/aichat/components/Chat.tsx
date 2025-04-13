@@ -153,7 +153,7 @@ const ChatComponent: React.FC<ChatProps> = ({
   const { mutate } = useSWRConfig();
 
   return (
-    <div className="flex flex-col h-screen md:h-[calc(100vh-48px)] w-full mx-auto">
+    <div className="flex h-[calc(100vh-48px)] w-full flex-col overflow-y-auto">
       {messages.length === 0 ? (
         <div className="flex flex-col justify-center items-center h-[90vh] text-center px-4">
           <h2 className="text-2xl font-semibold text-foreground/80 pb-2">
@@ -183,160 +183,158 @@ const ChatComponent: React.FC<ChatProps> = ({
           </h2>
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto">
-          <ul className="flex-1 overflow-y-auto w-full mx-auto max-w-[1000px] px-0 md:px-1 lg:px-4">
-            {messages.map((message, index) => {
-              const isUserMessage = message.role === 'user';
-              const copyToClipboard = (str: string) => {
-                window.navigator.clipboard.writeText(str);
-              };
-              const handleCopy = (content: string) => {
-                copyToClipboard(content);
-                setIsCopied(true);
-                setTimeout(() => setIsCopied(false), 1000);
-              };
+        <ul className="flex-1 w-full mx-auto max-w-[1000px] px-0 md:px-1 lg:px-4">
+          {messages.map((message, index) => {
+            const isUserMessage = message.role === 'user';
+            const copyToClipboard = (str: string) => {
+              window.navigator.clipboard.writeText(str);
+            };
+            const handleCopy = (content: string) => {
+              copyToClipboard(content);
+              setIsCopied(true);
+              setTimeout(() => setIsCopied(false), 1000);
+            };
 
-              // First filter the tool invocation parts to check if we need the accordion
-              const toolInvocationParts = !isUserMessage
-                ? message.parts?.filter(
-                    (part) => part.type === 'tool-invocation'
-                  ) || []
-                : [];
+            // First filter the tool invocation parts to check if we need the accordion
+            const toolInvocationParts = !isUserMessage
+              ? message.parts?.filter(
+                  (part) => part.type === 'tool-invocation'
+                ) || []
+              : [];
 
-              const hasToolInvocations = toolInvocationParts.length > 0;
+            const hasToolInvocations = toolInvocationParts.length > 0;
 
-              return (
-                <li
-                  key={`${message.id}-${index}`}
-                  className={`relative flex flex-col items-start m-2 rounded-lg shadow-md p-4 break-words ${
-                    isUserMessage
-                      ? 'bg-primary/10 dark:bg-primary/20 text-foreground'
-                      : 'bg-card dark:bg-card/90 text-card-foreground border border-border/30 dark:border-border/20'
-                  }`}
-                >
-                  <div className="absolute top-2 left-2">
-                    {isUserMessage ? (
-                      <User className="text-primary" size={20} />
-                    ) : (
-                      <Bot
-                        className="text-primary/70 dark:text-primary/80"
-                        size={20}
-                      />
-                    )}
-                  </div>
-
-                  {!isUserMessage && (
-                    <button
-                      className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                      onClick={() => handleCopy(message.content)}
-                    >
-                      {isCopied ? (
-                        <CheckCircle
-                          size={18}
-                          className="text-green-600 dark:text-green-400"
-                        />
-                      ) : (
-                        <Copy size={18} />
-                      )}
-                    </button>
+            return (
+              <li
+                key={`${message.id}-${index}`}
+                className={`relative flex flex-col items-start m-2 rounded-lg shadow-md p-4 break-words ${
+                  isUserMessage
+                    ? 'bg-primary/10 dark:bg-primary/20 text-foreground'
+                    : 'bg-card dark:bg-card/90 text-card-foreground border border-border/30 dark:border-border/20'
+                }`}
+              >
+                <div className="absolute top-2 left-2">
+                  {isUserMessage ? (
+                    <User className="text-primary" size={20} />
+                  ) : (
+                    <Bot
+                      className="text-primary/70 dark:text-primary/80"
+                      size={20}
+                    />
                   )}
+                </div>
 
-                  <div className="w-full pt-6">
-                    {/* Use the switch statement pattern to render different part types */}
-                    {message.parts?.map((part, partIndex) => {
-                      switch (part.type) {
-                        case 'text':
-                          return (
-                            <MemoizedMarkdown
-                              key={`text-${partIndex}`}
-                              content={part.text}
-                              id={`${
-                                isUserMessage ? 'user' : 'assistant'
-                              }-text-${message.id}-${partIndex}`}
-                            />
-                          );
-
-                        case 'reasoning':
-                          return !isUserMessage ? (
-                            <ReasoningContent
-                              key={`reasoning-${partIndex}`}
-                              details={part.details}
-                              messageId={message.id}
-                            />
-                          ) : null;
-
-                        case 'source':
-                          return !isUserMessage ? (
-                            <SourceView
-                              key={`source-${partIndex}`}
-                              source={part.source}
-                            />
-                          ) : null;
-
-                        case 'tool-invocation':
-                          // Don't render individual tools here - they'll be rendered in the accordion
-                          return null;
-
-                        default:
-                          return null;
-                      }
-                    })}
-
-                    {/* Render all tool invocations in a single accordion, outside the switch */}
-                    {hasToolInvocations && (
-                      <div className="mt-4 pt-2 border-t border-border/40 dark:border-border/30">
-                        <Accordion
-                          type="single"
-                          defaultValue="tool-invocation"
-                          collapsible
-                          className="w-full"
-                        >
-                          <AccordionItem
-                            value="tool-invocation"
-                            className="bg-background/40 dark:bg-background/20 rounded-lg overflow-hidden border border-border/50 dark:border-border/30 shadow-sm"
-                          >
-                            <AccordionTrigger className="font-bold text-foreground/80 hover:text-foreground py-2 px-3 cursor-pointer">
-                              Tools
-                            </AccordionTrigger>
-                            <AccordionContent className="bg-muted/50 dark:bg-muted/30 p-3 text-sm text-foreground/90 overflow-x-auto max-h-[300px] overflow-y-auto border-t border-border/40 dark:border-border/30">
-                              {toolInvocationParts.map((part) => {
-                                const toolName = part.toolInvocation.toolName;
-                                const toolId = part.toolInvocation.toolCallId;
-                                switch (toolName) {
-                                  case 'searchUserDocument':
-                                    return (
-                                      <DocumentSearchTool
-                                        key={toolId}
-                                        toolInvocation={part.toolInvocation}
-                                      />
-                                    );
-                                  case 'websiteSearchTool':
-                                    return (
-                                      <WebsiteSearchTool
-                                        key={toolId}
-                                        toolInvocation={part.toolInvocation}
-                                      />
-                                    );
-                                  default:
-                                    return null;
-                                }
-                              })}
-                            </AccordionContent>
-                          </AccordionItem>
-                        </Accordion>
-                      </div>
+                {!isUserMessage && (
+                  <button
+                    className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={() => handleCopy(message.content)}
+                  >
+                    {isCopied ? (
+                      <CheckCircle
+                        size={18}
+                        className="text-green-600 dark:text-green-400"
+                      />
+                    ) : (
+                      <Copy size={18} />
                     )}
-                  </div>
-                </li>
-              );
-            })}
-            <ChatScrollAnchor trackVisibility />
-          </ul>
-        </div>
+                  </button>
+                )}
+
+                <div className="w-full pt-6">
+                  {/* Use the switch statement pattern to render different part types */}
+                  {message.parts?.map((part, partIndex) => {
+                    switch (part.type) {
+                      case 'text':
+                        return (
+                          <MemoizedMarkdown
+                            key={`text-${partIndex}`}
+                            content={part.text}
+                            id={`${isUserMessage ? 'user' : 'assistant'}-text-${
+                              message.id
+                            }-${partIndex}`}
+                          />
+                        );
+
+                      case 'reasoning':
+                        return !isUserMessage ? (
+                          <ReasoningContent
+                            key={`reasoning-${partIndex}`}
+                            details={part.details}
+                            messageId={message.id}
+                          />
+                        ) : null;
+
+                      case 'source':
+                        return !isUserMessage ? (
+                          <SourceView
+                            key={`source-${partIndex}`}
+                            source={part.source}
+                          />
+                        ) : null;
+
+                      case 'tool-invocation':
+                        // Don't render individual tools here - they'll be rendered in the accordion
+                        return null;
+
+                      default:
+                        return null;
+                    }
+                  })}
+
+                  {/* Render all tool invocations in a single accordion, outside the switch */}
+                  {hasToolInvocations && (
+                    <div className="mt-4 pt-2 border-t border-border/40 dark:border-border/30">
+                      <Accordion
+                        type="single"
+                        defaultValue="tool-invocation"
+                        collapsible
+                        className="w-full"
+                      >
+                        <AccordionItem
+                          value="tool-invocation"
+                          className="bg-background/40 dark:bg-background/20 rounded-lg overflow-hidden border border-border/50 dark:border-border/30 shadow-sm"
+                        >
+                          <AccordionTrigger className="font-bold text-foreground/80 hover:text-foreground py-2 px-3 cursor-pointer">
+                            Tools
+                          </AccordionTrigger>
+                          <AccordionContent className="bg-muted/50 dark:bg-muted/30 p-3 text-sm text-foreground/90 overflow-x-auto max-h-[300px] overflow-y-auto border-t border-border/40 dark:border-border/30">
+                            {toolInvocationParts.map((part) => {
+                              const toolName = part.toolInvocation.toolName;
+                              const toolId = part.toolInvocation.toolCallId;
+                              switch (toolName) {
+                                case 'searchUserDocument':
+                                  return (
+                                    <DocumentSearchTool
+                                      key={toolId}
+                                      toolInvocation={part.toolInvocation}
+                                    />
+                                  );
+                                case 'websiteSearchTool':
+                                  return (
+                                    <WebsiteSearchTool
+                                      key={toolId}
+                                      toolInvocation={part.toolInvocation}
+                                    />
+                                  );
+                                default:
+                                  return null;
+                              }
+                            })}
+                          </AccordionContent>
+                        </AccordionItem>
+                      </Accordion>
+                    </div>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+          <ChatScrollAnchor trackVisibility />
+        </ul>
       )}
 
-      <div className="sticky bottom-0 mt-auto pb-2 max-w-[800px] mx-auto w-full">
-        <Card className="bg-gradient-to-r from-background/70 to-muted/80 dark:from-background/50 dark:to-muted/30 rounded-2xl w-full border-border/50 dark:border-border/30 shadow-md py-1">
+      <div className="sticky bottom-0 mt-auto max-w-[800px] mx-auto w-full z-5 pb-2">
+        <Card className="bg-background rounded-2xl w-full border-border/50 dark:border-border/30 shadow-md py-2">
           <CardContent className="px-1">
             <MessageInput
               chatId={chatId}
@@ -477,7 +475,7 @@ const MessageInput = ({
           onKeyDown={handleKeyDown}
           placeholder="Type your message..."
           disabled={status !== 'ready'}
-          className="min-h-12 resize-none rounded-xl pr-24 bg-background/90 dark:bg-background/80 backdrop-blur-sm border-input/30 dark:border-input/20 focus:border-primary focus:ring-2 focus:ring-primary/30 p-4 text-base transition-all duration-200 shadow-inner"
+          className="min-h-12 resize-none rounded-xl pr-24 backdrop-blur-sm border-input/30 dark:border-input/20 focus:border-primary focus:ring-2 focus:ring-primary/30 p-4 text-base transition-all duration-200 shadow-inner"
           autoFocus
         />
         <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center space-x-2">
