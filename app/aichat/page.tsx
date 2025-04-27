@@ -19,14 +19,8 @@ export default async function ChatPage(props: PageProps) {
   const createChatId = uuidv4();
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        width: '100%',
-        overflow: 'hidden'
-      }}
-    >
-      <div style={{ flex: 1 }}>
+    <div className="flex w-full h-[calc(100vh-48px)] overflow-hidden">
+      <div className="flex-1">
         <ChatComponent
           chatId={createChatId}
           initialModelType={modelType}

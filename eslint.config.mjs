@@ -10,10 +10,11 @@ const compat = new FlatCompat({
 
 const config = tseslint.config(
   {
-    ignores: ['.next', 'node_modules', '**/*.d.ts', '/components/**/*']
+    ignores: ['.next', 'node_modules', '**/*.d.ts', 'components/**/*']
   },
   // Base configs
   js.configs.recommended,
+  //Remove this if you don't want the optional stylistic rules liek the type and interface
   ...tseslint.configs.stylisticTypeChecked,
 
   // Next.js config
@@ -71,14 +72,6 @@ const config = tseslint.config(
       // React hooks rules
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
-
-      // Import rules
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns: ['@mui/*/*/*']
-        }
-      ],
 
       // Turn off rules that conflict with Next.js
       'react/react-in-jsx-scope': 'off',

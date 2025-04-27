@@ -2,12 +2,13 @@
 import React from 'react';
 import { createServerSupabaseClient } from '@/lib/server/server';
 import { getUserInfo } from '@/lib/server/supabase';
-import ChatHistoryDrawer from './components/UserCharListDrawer';
+import ChatHistoryDrawer from './components/ChatHistorySidebar';
 import { unstable_noStore as noStore } from 'next/cache';
 import type { Tables } from '@/types/database';
 import { UploadProvider } from './context/uploadContext';
 import { isToday, isYesterday, subDays } from 'date-fns';
 import { TZDate } from '@date-fns/tz';
+import { SidebarProvider } from '@/components/ui/sidebar';
 
 export const maxDuration = 60;
 
@@ -131,7 +132,7 @@ export default async function Layout(props: { children: React.ReactNode }) {
   }
 
   return (
-    <div style={{ display: 'flex' }}>
+    <SidebarProvider>
       <UploadProvider userId={userInfo.id}>
         <ChatHistoryDrawer
           userInfo={userInfo}
@@ -140,6 +141,6 @@ export default async function Layout(props: { children: React.ReactNode }) {
         />
         {props.children}
       </UploadProvider>
-    </div>
+    </SidebarProvider>
   );
 }

@@ -160,15 +160,27 @@ const MemoizedMarkdownBlock = memo(
             </blockquote>
           ),
           // Images
-          img: ({ src, alt }) => (
-            <Image
-              src={src || ''}
-              width={500}
-              height={500}
-              alt={alt || ''}
-              className="max-w-full h-auto my-4 rounded-md"
-            />
-          ),
+          img: ({ src, alt }) => {
+            // Check if src exists and is a string (not a Blob)
+            if (typeof src === 'string') {
+              return (
+                <Image
+                  src={src}
+                  width={500}
+                  height={300}
+                  alt={alt || ''}
+                  className="max-w-full h-auto my-4 rounded-md"
+                />
+              );
+            }
+
+            // Fallback for cases where src is not a valid string URL
+            return (
+              <span className="text-destructive">
+                [Image with invalid source]
+              </span>
+            );
+          },
           // Code blocks
           code({ className, children, ...props }) {
             const match = /language-(\w+)/.exec(className ?? '');

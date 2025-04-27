@@ -3,13 +3,13 @@ import React, {
   createContext,
   useState,
   useContext,
-  useEffect,
   useMemo,
   useCallback
 } from 'react';
 import { createClient } from '@/lib/client/client';
 import { encodeBase64 } from '../lib/base64';
-import useSWR, { useSWRConfig } from 'swr';
+import useSWR, { mutate } from 'swr';
+import { useRouter } from 'next/navigation';
 
 interface UploadContextType {
   isUploading: boolean;
@@ -21,6 +21,7 @@ interface UploadContextType {
   setSelectedFile: React.Dispatch<React.SetStateAction<File | null>>;
   selectedBlobs: string[];
   setSelectedBlobs: (blobs: string[]) => void;
+  resetUploadState: () => void;
 }
 
 const UploadContext = createContext<UploadContextType | undefined>(undefined);
@@ -46,21 +47,23 @@ export const UploadProvider: React.FC<{
   const [statusSeverity, setStatusSeverity] = useState<string>('info');
   const [currentJobId, setCurrentJobId] = useState<string | null>(null);
   const [currentFileName, setCurrentFileName] = useState<string | null>(null);
+  const [shouldCheckStatus, setShouldCheckStatus] = useState(false);
   const [shouldProcessDoc, setShouldProcessDoc] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedBlobs, setSelectedBlobs] = useState<string[]>([]);
 
-  const { mutate } = useSWRConfig();
+  const router = useRouter();
 
-  const { data: processingStatus, error: processingError } = useSWR(
-    currentJobId && !shouldProcessDoc ? `/api/checkdoc` : null,
-    async (url) => {
+  // SWR for checking document processing status
+  useSWR(
+    shouldCheckStatus && currentJobId ? [`/api/checkdoc`, currentJobId] : null,
+    async ([url, jobId]) => {
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ jobId: currentJobId })
+        body: JSON.stringify({ jobId })
       });
       if (!response.ok) {
         throw new Error('Failed to fetch processing status');
@@ -69,11 +72,35 @@ export const UploadProvider: React.FC<{
     },
     {
       refreshInterval: 5000,
-      revalidateOnFocus: false
+      revalidateOnFocus: false,
+      onSuccess: (data) => {
+        if (data.status === 'SUCCESS') {
+          setUploadProgress(75);
+          setUploadStatus('Finalizing files...');
+          setShouldCheckStatus(false);
+          setShouldProcessDoc(true);
+        } else if (data.status === 'PENDING') {
+          setUploadStatus('Still analyzing files...');
+        } else {
+          // Handle other statuses like ERROR
+          setIsUploading(false);
+          setUploadStatus('Error analyzing files.');
+          setStatusSeverity('error');
+          resetUploadState();
+        }
+      },
+      onError: (error) => {
+        console.error('Error fetching processing status:', error);
+        setIsUploading(false);
+        setUploadStatus('Error analyzing files.');
+        setStatusSeverity('error');
+        resetUploadState();
+      }
     }
   );
 
-  const { data: processDocResult, error: processDocError } = useSWR(
+  // SWR for processing document
+  useSWR(
     shouldProcessDoc && currentJobId && currentFileName
       ? ['/api/processdoc', currentJobId, currentFileName]
       : null,
@@ -89,15 +116,66 @@ export const UploadProvider: React.FC<{
         throw new Error('Failed to process document');
       }
       return response.json();
+    },
+    {
+      onSuccess: (data) => {
+        if (data.status === 'SUCCESS') {
+          setIsUploading(false);
+          setUploadProgress(100);
+          setUploadStatus('Files are uploaded and processed.');
+          setStatusSeverity('success');
+          mutate('userFiles');
+          router.refresh();
+
+          // Reset state after 3 seconds
+          setTimeout(() => {
+            resetUploadState();
+          }, 3000);
+        } else {
+          setIsUploading(false);
+          setUploadStatus('Error finalizing files.');
+          setStatusSeverity('error');
+          resetUploadState();
+        }
+      },
+      onError: (error) => {
+        console.error('Error processing document:', error);
+        setIsUploading(false);
+        setUploadStatus('Error finalizing files.');
+        setStatusSeverity('error');
+        resetUploadState();
+      }
     }
   );
 
+  const resetUploadState = useCallback(() => {
+    // Cancel any ongoing SWR requests
+    setShouldCheckStatus(false);
+    setShouldProcessDoc(false);
+
+    // Clear SWR cache
+    mutate([`/api/checkdoc`, currentJobId], null, false);
+    mutate(['/api/processdoc', currentJobId, currentFileName], null, false);
+
+    // Reset all state variables
+    setIsUploading(false);
+    setUploadProgress(0);
+    setUploadStatus('');
+    setStatusSeverity('info');
+    setCurrentJobId(null);
+    setCurrentFileName(null);
+    setSelectedFile(null);
+  }, [currentJobId, currentFileName]);
+
   const uploadFile = useCallback(
     async (file: File) => {
+      // First reset all state
       setIsUploading(true);
       setUploadProgress(0);
       setUploadStatus('Uploading file...');
       setStatusSeverity('info');
+
+      let uploadedFilePath: string | null = null;
       async function getTotalUploadedSize(): Promise<number> {
         const { data, error } = await supabase.storage
           .from('userfiles')
@@ -109,34 +187,10 @@ export const UploadProvider: React.FC<{
         }
 
         return data.reduce(
-          (total, file) => total + (file.metadata.size || 0),
+          (total, file) => total + (file.metadata?.size || 0),
           0
         );
       }
-
-      const uploadToSupabase = async (file: File, userId: string) => {
-        const fileNameWithUnderscores = file.name.replace(/ /g, '_').trim();
-        const encodedFileName = encodeBase64(fileNameWithUnderscores);
-        const filePath = `${userId}/${encodedFileName}`;
-
-        const { data, error } = await supabase.storage
-          .from('userfiles')
-          .upload(filePath, file, { upsert: true });
-
-        if (error) {
-          console.error('Error uploading file:', error);
-          throw new Error(`Failed to upload file: ${file.name}`);
-        }
-
-        if (!data.path) {
-          console.error('Upload successful but path is missing');
-          throw new Error(`Failed to get path for uploaded file: ${file.name}`);
-        }
-
-        return data.path;
-      };
-      let uploadedFilePath: string | null = null;
-
       try {
         const currentTotalSize = await getTotalUploadedSize();
         const newTotalSize = currentTotalSize + file.size;
@@ -172,12 +226,15 @@ export const UploadProvider: React.FC<{
         }
 
         const result = await response.json();
+
         setUploadProgress(50);
         setUploadStatus('Analyzing file...');
 
         if (result.results[0].jobId) {
           setCurrentJobId(result.results[0].jobId);
           setCurrentFileName(file.name);
+          // Activate the SWR for status checking
+          setShouldCheckStatus(true);
         } else {
           throw new Error('No job ID received from server.');
         }
@@ -213,77 +270,34 @@ export const UploadProvider: React.FC<{
         }
         setStatusSeverity('error');
         setIsUploading(false);
-        setCurrentJobId(null);
-        setCurrentFileName(null);
       }
     },
     [userId]
   );
 
-  const resetUploadState = () => {
-    setIsUploading(false);
-    setUploadProgress(0);
-    setUploadStatus('');
-    setStatusSeverity('info');
-    setCurrentJobId(null);
-    setCurrentFileName(null);
-    setShouldProcessDoc(false);
-    setSelectedFile(null);
+  // Helper functions for uploadFile
+
+  const uploadToSupabase = async (file: File, userId: string) => {
+    const fileNameWithUnderscores = file.name.replace(/ /g, '_').trim();
+    const encodedFileName = encodeBase64(fileNameWithUnderscores);
+    const filePath = `${userId}/${encodedFileName}`;
+
+    const { data, error } = await supabase.storage
+      .from('userfiles')
+      .upload(filePath, file, { upsert: true });
+
+    if (error) {
+      console.error('Error uploading file:', error);
+      throw new Error(`Failed to upload file: ${file.name}`);
+    }
+
+    if (!data?.path) {
+      console.error('Upload successful but path is missing');
+      throw new Error(`Failed to get path for uploaded file: ${file.name}`);
+    }
+
+    return data.path;
   };
-
-  useEffect(() => {
-    if (processingStatus) {
-      if (processingStatus.status === 'SUCCESS') {
-        setUploadProgress(75);
-        setUploadStatus('Finalizing files...');
-        setShouldProcessDoc(true);
-      } else if (processingStatus.status === 'PENDING') {
-        setUploadStatus('Still analyzing files...');
-      }
-    } else if (processingError) {
-      setIsUploading(false);
-      setUploadStatus('Error analyzing files.');
-      setStatusSeverity('error');
-      setCurrentJobId(null);
-      setCurrentFileName(null);
-      setShouldProcessDoc(false);
-    }
-
-    if (processDocResult) {
-      if (processDocResult.status === 'SUCCESS') {
-        setIsUploading(false);
-        setUploadProgress(100);
-        setUploadStatus('Files are uploaded and processed.');
-        setStatusSeverity('success');
-        mutate(`userFiles`);
-
-        // Set a timeout to reset the state after 2 seconds
-        setTimeout(() => {
-          resetUploadState();
-        }, 3000);
-      } else {
-        setIsUploading(false);
-        setUploadStatus('Error finalizing files.');
-        setStatusSeverity('error');
-        setCurrentJobId(null);
-        setCurrentFileName(null);
-        setShouldProcessDoc(false);
-      }
-    } else if (processDocError) {
-      setIsUploading(false);
-      setUploadStatus('Error finalizing files.');
-      setStatusSeverity('error');
-      setCurrentJobId(null);
-      setCurrentFileName(null);
-      setShouldProcessDoc(false);
-    }
-  }, [
-    processingStatus,
-    processingError,
-    processDocResult,
-    processDocError,
-    mutate
-  ]);
 
   const contextValue = useMemo(
     () => ({
@@ -295,7 +309,8 @@ export const UploadProvider: React.FC<{
       selectedFile,
       setSelectedFile,
       selectedBlobs,
-      setSelectedBlobs
+      setSelectedBlobs,
+      resetUploadState
     }),
     [
       isUploading,
@@ -305,7 +320,8 @@ export const UploadProvider: React.FC<{
       statusSeverity,
       selectedFile,
       setSelectedFile,
-      selectedBlobs
+      selectedBlobs,
+      resetUploadState
     ]
   );
 

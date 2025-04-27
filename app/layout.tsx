@@ -8,7 +8,7 @@ import NavBar from '@/app/components/ui/Navbar/TopBar';
 import { ThemeProvider } from '@/components/ui/theme-provider';
 import { Toaster } from '@/components/ui/sonner';
 
-import './global.css';
+import './globals.css';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -33,14 +33,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <RootErrorBoundary>
-        <body
-          className={inter.className}
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            minHeight: '100vh'
-          }}
-        >
+        <body className={inter.className}>
           <ThemeProvider
             attribute="class"
             defaultTheme="system"
