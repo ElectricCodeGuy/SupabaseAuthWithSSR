@@ -1,13 +1,16 @@
 'use client';
-
 import React, { useEffect, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
 
 interface ChatScrollAnchorProps {
   trackVisibility?: boolean;
+  status: 'error' | 'submitted' | 'streaming' | 'ready';
 }
 
-export function ChatScrollAnchor({ trackVisibility }: ChatScrollAnchorProps) {
+export function ChatScrollAnchor({
+  trackVisibility,
+  status
+}: ChatScrollAnchorProps) {
   const [isAtBottom, setIsAtBottom] = useState(false);
 
   const { ref, entry, inView } = useInView({
@@ -32,12 +35,15 @@ export function ChatScrollAnchor({ trackVisibility }: ChatScrollAnchorProps) {
   }, []);
 
   useEffect(() => {
-    if (isAtBottom && trackVisibility && !inView) {
+    // Only auto-scroll if status is "submitted" or "streaming"
+    const shouldAutoScroll = status === 'submitted' || status === 'streaming';
+
+    if (isAtBottom && trackVisibility && !inView && shouldAutoScroll) {
       entry?.target.scrollIntoView({
         block: 'start'
       });
     }
-  }, [inView, entry, isAtBottom, trackVisibility]);
+  }, [inView, entry, isAtBottom, trackVisibility, status]);
 
   return (
     <div

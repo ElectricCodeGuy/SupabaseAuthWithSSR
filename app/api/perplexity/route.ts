@@ -67,6 +67,11 @@ export async function POST(req: NextRequest) {
       system: systemPromptTemplate,
       messages: convertToCoreMessages(messages),
       abortSignal: signal,
+      providerOptions: {
+        perplexity: {
+          return_images: true // Enable image responses (Tier-2 Perplexity users only)
+        }
+      },
       experimental_telemetry: {
         isEnabled: true,
         functionId: 'perplexity',

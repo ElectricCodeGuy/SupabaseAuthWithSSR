@@ -1,7 +1,7 @@
 'use client';
 
 import type { KeyboardEvent } from 'react';
-import React, { useState, useOptimistic, startTransition } from 'react';
+import React, { useState, useOptimistic, startTransition, useRef } from 'react';
 import { useChat, type Message } from '@ai-sdk/react';
 import {
   useRouter,
@@ -14,9 +14,9 @@ import { ChatScrollAnchor } from '../hooks/chat-scroll-anchor';
 import { setModelSettings } from '../actions';
 import Link from 'next/link';
 import { useUpload } from '../context/uploadContext';
+import { toast } from 'sonner';
 // Shadcn UI components
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import {
   DropdownMenu,
@@ -47,13 +47,16 @@ import WebsiteSearchTool from './tools/WebsiteChatTool';
 // Icons from Lucide React
 import {
   Send,
-  RotateCw,
   Loader2,
   ChevronDown,
   User,
   Bot,
   Copy,
-  CheckCircle
+  CheckCircle,
+  Paperclip,
+  Square,
+  X,
+  FileIcon
 } from 'lucide-react';
 
 import type { Tables } from '@/types/database';
@@ -79,7 +82,6 @@ const ChatComponent: React.FC<ChatProps> = ({
   initialSelectedOption
 }) => {
   const param = useParams();
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const currentChatId = param.id as string;
   const { selectedBlobs } = useUpload();
 
@@ -122,7 +124,7 @@ const ChatComponent: React.FC<ChatProps> = ({
   const apiEndpoint = getApiEndpoint();
 
   // Get messages from chat
-  const { messages } = useChat({
+  const { messages, status } = useChat({
     id: 'chat',
     api: apiEndpoint,
     body: {
@@ -281,6 +283,27 @@ const ChatComponent: React.FC<ChatProps> = ({
                     }
                   })}
 
+                  {/* Display attached files in user messages */}
+                  {isUserMessage &&
+                    message.experimental_attachments &&
+                    message.experimental_attachments.length > 0 && (
+                      <div className="border-t pt-2 mt-2">
+                        {message.experimental_attachments.map(
+                          (attachment, idx) => (
+                            <div
+                              key={`attachment-${idx}`}
+                              className="flex items-center gap-2 text-sm"
+                            >
+                              <FileIcon className="h-4 w-4 text-blue-500" />
+                              <span className="font-medium text-blue-600 dark:text-blue-400">
+                                {attachment.name}
+                              </span>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    )}
+
                   {/* Render all tool invocations in a single accordion, outside the switch */}
                   {hasToolInvocations && (
                     <div className="mt-4 pt-2 border-t border-border/40 dark:border-border/30">
@@ -329,89 +352,22 @@ const ChatComponent: React.FC<ChatProps> = ({
               </li>
             );
           })}
-          <ChatScrollAnchor trackVisibility />
+          <ChatScrollAnchor trackVisibility status={status} />
         </ul>
       )}
 
-      <div className="sticky bottom-0 mt-auto max-w-[800px] mx-auto w-full z-5 pb-2">
-        <Card className="bg-background rounded-2xl w-full border-border/50 dark:border-border/30 shadow-md py-2">
-          <CardContent className="px-1">
-            <MessageInput
-              chatId={chatId}
-              apiEndpoint={apiEndpoint}
-              option={optimisticOption}
-              messagesLength={messages.length}
-              currentChatId={currentChatId}
-            />
-
-            <div className="flex justify-between items-center mt-2 px-1 py-1 gap-2">
-              {/* Model Type Select */}
-              <div className="flex-1 max-w-[180px]">
-                <Select
-                  value={optimisticModelType}
-                  onValueChange={handleModelTypeChange}
-                >
-                  <SelectTrigger className="w-full h-9 text-sm bg-background/80 dark:bg-background/60 hover:bg-background dark:hover:bg-background/80 border-border/50 dark:border-border/40 transition-all duration-200">
-                    <SelectValue placeholder="Select model" />
-                  </SelectTrigger>
-                  <SelectContent className="border-border/50 dark:border-border/30 bg-background/95 dark:bg-background/90 backdrop-blur-sm">
-                    {modelTypes.map((model) => (
-                      <SelectItem
-                        key={model.value}
-                        value={model.value}
-                        className="text-sm"
-                      >
-                        {model.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Model Options Dropdown - only shown for standard model */}
-              {optimisticModelType === 'standart' && (
-                <div className="flex-1 ml-2">
-                  <DropdownMenu
-                    open={dropdownOpen}
-                    onOpenChange={setDropdownOpen}
-                  >
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full rounded-lg bg-background/80 dark:bg-background/60 hover:bg-background dark:hover:bg-background/80 hover:shadow-sm justify-between px-4 py-2 text-sm border-border/50 dark:border-border/40 transition-all duration-200"
-                      >
-                        <span className="truncate">{optimisticOption}</span>
-                        <ChevronDown className="h-4 w-4 ml-2 flex-shrink-0 opacity-70" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56 rounded-lg shadow-lg border-border/50 dark:border-border/30 bg-popover/95 dark:bg-popover/90 backdrop-blur-sm">
-                      {[
-                        'gpt-3.5-turbo-1106',
-                        'gpt-3.5-turbo-16k',
-                        'gpt-4-0125-preview',
-                        'gpt-4-1106-preview',
-                        'gpt-4',
-                        'sonnet-3-7'
-                      ].map((option) => (
-                        <DropdownMenuItem
-                          key={option}
-                          onClick={() => handleOptionChange(option)}
-                          className={`rounded-md my-0.5 transition-colors duration-200 ${
-                            optimisticOption === option
-                              ? 'bg-primary/20 dark:bg-primary/30 text-primary dark:text-primary-foreground font-medium'
-                              : 'hover:bg-muted dark:hover:bg-muted/70'
-                          }`}
-                        >
-                          {option}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+      <div className="sticky bottom-0 mt-auto max-w-[720px] mx-auto w-full z-5 pb-2">
+        <MessageInput
+          chatId={chatId}
+          apiEndpoint={apiEndpoint}
+          option={optimisticOption}
+          currentChatId={currentChatId}
+          modelType={optimisticModelType}
+          selectedOption={optimisticOption}
+          handleModelTypeChange={handleModelTypeChange}
+          handleOptionChange={handleOptionChange}
+          modelTypes={modelTypes}
+        />
       </div>
     </div>
   );
@@ -422,39 +378,49 @@ const MessageInput = ({
   chatId,
   apiEndpoint,
   option,
-  messagesLength,
-  currentChatId
+  currentChatId,
+  modelType,
+  selectedOption,
+  handleModelTypeChange,
+  handleOptionChange,
+  modelTypes
 }: {
   chatId: string;
   apiEndpoint: string;
   option: string;
-  messagesLength: number;
   currentChatId: string;
+  modelType: string;
+  selectedOption: string;
+  handleModelTypeChange: (value: string) => void;
+  handleOptionChange: (value: string) => void;
+  modelTypes: { value: string; label: string }[];
 }) => {
   const { selectedBlobs } = useUpload();
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
   const { mutate } = useSWRConfig();
-  const { input, handleInputChange, handleSubmit, status, stop, reload } =
-    useChat({
-      id: 'chat', // Use the same ID to share state
-      api: apiEndpoint,
-      body: {
-        chatId: chatId,
-        option: option,
-        selectedBlobs: selectedBlobs
-      },
-      onFinish: async () => {
-        if (chatId === currentChatId) return;
-        const existingParams = searchParams.toString();
-        const newUrl = `${pathname}/${chatId}${
-          existingParams ? `?${existingParams}` : ''
-        }`;
-        router.replace(newUrl, { scroll: false });
-        await mutate((key) => Array.isArray(key) && key[0] === 'chatPreviews');
-      }
-    });
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [attachedFile, setAttachedFile] = useState<File | null>(null);
+
+  const { input, handleInputChange, handleSubmit, status, stop } = useChat({
+    id: 'chat', // Use the same ID to share state
+    api: apiEndpoint,
+    body: {
+      chatId: chatId,
+      option: option,
+      selectedBlobs: selectedBlobs
+    },
+    onFinish: async () => {
+      if (chatId === currentChatId) return;
+      const existingParams = searchParams.toString();
+      const newUrl = `${pathname}/${chatId}${
+        existingParams ? `?${existingParams}` : ''
+      }`;
+      router.replace(newUrl, { scroll: false });
+      await mutate((key) => Array.isArray(key) && key[0] === 'chatPreviews');
+    }
+  });
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && event.shiftKey) {
@@ -462,66 +428,219 @@ const MessageInput = ({
     } else if (event.key === 'Enter') {
       // Prevent default behavior and submit form on Enter only
       event.preventDefault();
-      handleSubmit(event);
+      handleFormSubmit(event);
+    }
+  };
+
+  // Create FileList from files
+  function createFileList(files: File[]): FileList {
+    const dataTransfer = new DataTransfer();
+    files.forEach((file) => dataTransfer.items.add(file));
+    return dataTransfer.files;
+  }
+
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.includes('pdf')) {
+      toast.error('Only PDF files are allowed');
+      return;
+    }
+
+    if (file.size > 3 * 1024 * 1024) {
+      // This file limit is here due to Vercel serverless function impose a 4.5 MB limit
+      toast.error('File is too large (max 3MB)');
+      return;
+    }
+
+    setAttachedFile(file);
+  };
+
+  // Handle form submission
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() && !attachedFile) return;
+
+    // Handle the submission with experimental attachments
+    if (attachedFile) {
+      handleSubmit(e, {
+        experimental_attachments: createFileList([attachedFile])
+      });
+
+      setAttachedFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } else {
+      handleSubmit(e);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div className="relative">
+    <>
+      <form
+        onSubmit={handleFormSubmit}
+        className="relative max-w-[720px] mx-auto mb-1 backdrop-blur-sm rounded-2xl overflow-hidden border-1 shadow-sm flex flex-col transition-all duration-200 shadow-md dark:shadow-lg focus-within:shadow-lg dark:focus-within:shadow-xl hover:border-gray-300 dark:hover:border-gray-700 focus-within:border-gray-300 dark:focus-within:border-gray-700 cursor-text"
+      >
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          accept=".pdf,application/pdf"
+          className="hidden"
+        />
+
         <Textarea
           value={input}
-          onChange={(e) => handleInputChange(e)}
+          onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           placeholder="Type your message..."
           disabled={status !== 'ready'}
-          className="min-h-12 resize-none rounded-xl pr-24 backdrop-blur-sm border-input/30 dark:border-input/20 focus:border-primary focus:ring-2 focus:ring-primary/30 p-4 text-base transition-all duration-200 shadow-inner"
-          autoFocus
+          className="w-full pt-3 pb-1.5 min-h-0 max-h-40 resize-none border-0 shadow-none focus:ring-0 focus-visible:ring-0 focus:outline-none bg-transparent focus:bg-transparent dark:bg-transparent dark:focus:bg-transparent"
+          rows={1}
         />
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center space-x-2">
-          {messagesLength > 0 && (
-            <Button
-              onClick={() => reload()}
-              disabled={status !== 'ready'}
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 text-primary hover:bg-primary/10 dark:hover:bg-primary/20 rounded-full transition-colors duration-200"
-              type="button"
-              title="Regenerate response"
-            >
-              <RotateCw className="h-4 w-4" />
-            </Button>
-          )}
 
+        {/* Bottom controls row with buttons */}
+        <div className="flex px-2.5 pb-1 pt-1.5 items-center gap-2 justify-between">
+          <div className="flex items-center gap-2">
+            {!attachedFile && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                className="h-8 cursor-pointer text-xs rounded-md flex items-center gap-1.5 hover:bg-primary/5 dark:hover:bg-primary/10"
+                disabled={status !== 'ready'}
+              >
+                <Paperclip className="h-3.5 w-3.5" />
+                <span>Attach file</span>
+              </Button>
+            )}
+
+            <div className="flex-1 max-w-[160px]">
+              <Select value={modelType} onValueChange={handleModelTypeChange}>
+                <SelectTrigger className="w-full h-8 text-xs">
+                  <SelectValue placeholder="Select model" />
+                </SelectTrigger>
+                <SelectContent>
+                  {modelTypes.map((model) => (
+                    <SelectItem
+                      key={model.value}
+                      value={model.value}
+                      className="text-xs"
+                    >
+                      {model.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {modelType === 'standart' && (
+              <div className="flex-1 ml-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full h-8 justify-between text-xs"
+                    >
+                      <span className="truncate">{selectedOption}</span>
+                      <ChevronDown className="h-3 w-3 ml-2 flex-shrink-0 opacity-70" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56">
+                    {[
+                      'gpt-3.5-turbo-1106',
+                      'gpt-3.5-turbo-16k',
+                      'gpt-4-0125-preview',
+                      'gpt-4-1106-preview',
+                      'gpt-4',
+                      'sonnet-3-7'
+                    ].map((option) => (
+                      <DropdownMenuItem
+                        key={option}
+                        onClick={() => handleOptionChange(option)}
+                        className={`text-xs ${
+                          selectedOption === option
+                            ? 'bg-primary/20 dark:bg-primary/30 text-primary dark:text-primary-foreground'
+                            : ''
+                        }`}
+                      >
+                        {option}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            )}
+
+            {attachedFile && (
+              <div className="bg-primary/5 dark:bg-primary/10 p-1 rounded-lg flex items-center justify-between">
+                <div className="flex items-center">
+                  <FileIcon className="h-4 w-4 text-primary mr-2" />
+                  <span className="text-sm font-medium dark:text-white">
+                    {attachedFile.name}
+                  </span>
+                  <span className="text-xs text-muted-foreground ml-2">
+                    ({Math.round(attachedFile.size / 1024)} KB)
+                  </span>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setAttachedFile(null)}
+                  className="h-6 w-6 p-0"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            {selectedBlobs.length > 0 && (
+              <div className="hidden sm:flex items-center rounded-full text-xs px-2 h-8 bg-primary/10 border border-primary/30">
+                <Paperclip className="mr-1 h-4 w-4 text-primary" />
+                <span className="text-primary font-medium">
+                  {selectedBlobs.length} file
+                  {selectedBlobs.length > 1 ? 's' : ''} attached
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Send button or spinner with matched sizing */}
           {status !== 'ready' ? (
-            <Button
+            <div
+              className="h-8 w-8 sm:h-10 sm:w-10 mr-2 flex items-center justify-center border border-primary/30 cursor-pointer relative group rounded-lg bg-background"
               onClick={stop}
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 rounded-full bg-destructive/10 dark:bg-destructive/20 hover:bg-destructive/20 dark:hover:bg-destructive/30 text-destructive transition-colors duration-200"
-              type="button"
-              title="Stop generating"
             >
-              {status === 'submitted' && (
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-destructive border-t-transparent" />
-              )}
-              {status === 'streaming' && <Loader2 className="animate-spin" />}
-            </Button>
+              {/* Loading indicator (visible by default, hidden on hover) */}
+              <div className="flex items-center justify-center transition-opacity group-hover:opacity-0">
+                <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 text-primary animate-spin" />
+              </div>
+
+              {/* Stop button (hidden by default, visible on hover) */}
+              <div className="absolute inset-0 hidden group-hover:flex items-center justify-center">
+                <Square size={14} className="text-red-500 sm:h-4 sm:w-4" />
+              </div>
+            </div>
           ) : (
             <Button
               type="submit"
-              disabled={status !== 'ready' || !input.trim()}
-              variant="default"
               size="icon"
-              className="h-9 w-9 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground transition-colors duration-200 shadow-md"
-              title="Send message"
+              variant="ghost"
+              disabled={!input.trim() && !attachedFile}
+              className="h-8 w-8 sm:h-10 sm:w-10 hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors border border-primary/30 rounded-lg cursor-pointer"
             >
-              <Send className="h-4 w-4" />
+              <Send className="text-primary w-5 h-5 sm:w-8 sm:h-8" />
             </Button>
           )}
         </div>
-      </div>
-    </form>
+      </form>
+    </>
   );
 };
 
