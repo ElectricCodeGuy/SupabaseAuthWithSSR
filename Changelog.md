@@ -1,5 +1,28 @@
 ## CHANGELOG
 
+## [v2.0.0] - 2025-05-04
+
+### Added
+
+- **Redesigned Chat Interface**: Complete visual overhaul with modern UI design and improved layout
+- **Direct File Upload to AI**: Added ability to upload files directly to the AI model instead of going through the vector database
+- **Google Model Integration**: Added Google as an additional AI model option alongside existing GPT and Claude models
+- **Persistent Tool Results**: Tool results now stored in database for conversation history
+- **Enhanced Reasoning Display**: AI reasoning steps now properly displayed and stored
+- **File Attachment Persistence**: Uploaded files are correctly parsed and stored in the database for future access
+
+### Changed
+
+- **Improved Model Switching**: Seamless model switching within the same chat session
+- **Better File Handling**: More intuitive file upload and attachment system with improved persistence
+- **Enhanced Tool Integration**: Tools results and reasoning are now properly integrated into chat flow
+
+### Improved
+
+- **User Experience**: More intuitive interface for file uploads and model selection
+- **Data Persistence**: All chat elements including tools, files, and reasoning are now stored
+- **Model Flexibility**: Better handling of switching between different AI providers mid-conversation
+
 ## [v1.9.0] - 2025-01-15
 
 ### Added

@@ -1,8 +1,9 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import type { Message } from 'ai';
+import type { Message, Attachment } from 'ai';
 import { streamText, convertToCoreMessages } from 'ai';
 import { saveChatToSupbabase } from './SaveToDb';
 import { Ratelimit } from '@upstash/ratelimit';
+import type { OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
 import { openai } from '@ai-sdk/openai';
 import type { AnthropicProviderOptions } from '@ai-sdk/anthropic';
 import { anthropic } from '@ai-sdk/anthropic';
@@ -10,13 +11,20 @@ import { redis } from '@/lib/server/server';
 import { getSession } from '@/lib/server/supabase';
 import { searchUserDocument } from './tools/documentChat';
 import { websiteSearchTool } from './tools/WebsiteSearchTool';
+import { google } from '@ai-sdk/google';
+import type { LanguageModelV1ProviderMetadata } from '@ai-sdk/provider';
 
 export const dynamic = 'force-dynamic';
 
 export const maxDuration = 60;
 
 const getSystemPrompt = (selectedFiles: string[]) => {
-  const basePrompt = `You are a helpful assistant. Answer all questions to the best of your ability. Use markdown for formatting your responses to improve readability.`;
+  const basePrompt = `You are a helpful assistant. Answer all questions to the best of your ability. Use tools when necessary. Strive to only use a tool one time per question.
+
+FORMATTING: Your responses are rendered using react-markdown with the following capabilities:
+- GitHub Flavored Markdown (GFM) support through remarkGfm plugin
+- Syntax highlighting for code blocks through rehypeHighlight plugin
+- All standard markdown formatting`;
 
   if (selectedFiles.length > 0) {
     return `${basePrompt}
@@ -37,11 +45,39 @@ For questions not related to the uploaded documents, you can respond based on yo
   return basePrompt;
 };
 
+function errorHandler(error: unknown) {
+  if (error == null) {
+    return 'unknown error';
+  }
+
+  if (typeof error === 'string') {
+    return error;
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return JSON.stringify(error);
+}
+
 const getModel = (selectedModel: string) => {
-  if (selectedModel === 'sonnet-3-7') {
-    return anthropic('claude-3-7-sonnet-20250219');
-  } else {
-    return openai(selectedModel);
+  switch (selectedModel) {
+    case 'claude-3.7-sonnet':
+      return anthropic('claude-3-7-sonnet-20250219');
+    case 'gpt-4.1':
+      return openai('gpt-4.1-2025-04-14');
+    case 'gpt-4.1-mini':
+      return openai('gpt-4.1-mini');
+    case 'o3':
+      return openai('o3-2025-04-16');
+    case 'gemini-2.5-pro':
+      return google('gemini-2.5-pro-preview-03-25');
+    case 'gemini-2.5-flash':
+      return google('gemini-2.5-flash-preview-04-17');
+    default:
+      console.error('Invalid model selected:', selectedModel);
+      return openai('gpt-4.1-2025-04-14');
   }
 };
 
@@ -90,82 +126,95 @@ export async function POST(req: NextRequest) {
       }
     });
   }
+
+  let fileAttachments: Attachment[] = [];
+
+  // Check if the last message is from the user and contains attachments
+  const lastMessage = messages[messages.length - 1];
+  if (lastMessage?.role === 'user' && lastMessage?.experimental_attachments) {
+    fileAttachments = lastMessage.experimental_attachments;
+  }
+
   const selectedModel = body.option ?? 'gpt-3.5-turbo-1106';
   const userId = session.id;
-  try {
-    const model = getModel(selectedModel);
-    const SYSTEM_PROMPT = getSystemPrompt(selectedFiles);
-    const result = streamText({
-      model,
-      system: SYSTEM_PROMPT,
-      messages: convertToCoreMessages(messages),
-      abortSignal: signal,
-      providerOptions: {
-        anthropic: {
-          thinking: { type: 'enabled', budgetTokens: 12000 }
-        } satisfies AnthropicProviderOptions
-      },
-      tools: {
-        searchUserDocument: searchUserDocument({ userId, selectedFiles }),
-        websiteSearchTool: websiteSearchTool
-      },
-      maxSteps: 3,
-      experimental_telemetry: {
-        isEnabled: true,
-        functionId: 'api_chat',
-        metadata: {
-          userId: session.id,
-          chatId: chatSessionId
-        },
-        recordInputs: true,
-        recordOutputs: true
-      },
-      onFinish: async (event) => {
-        try {
-          const lastMessage = messages[messages.length - 1];
-          const lastMessageContent =
-            typeof lastMessage.content === 'string' ? lastMessage.content : '';
 
-          // Fix: Extract the reasoning string from the step if found
-          const foundReasoningStep = event.steps.find((step) => step.reasoning);
-          const reasoningText =
-            event.reasoning ||
-            (foundReasoningStep?.reasoning
-              ? foundReasoningStep.reasoning
-              : undefined);
+  const model = getModel(selectedModel);
+  const SYSTEM_PROMPT = getSystemPrompt(selectedFiles);
 
-          await saveChatToSupbabase(
-            chatSessionId,
-            session.id,
-            lastMessageContent,
-            event.text,
-            reasoningText // Now we're passing a string | undefined as required
-          );
-          console.log('Chat saved to Supabase:', chatSessionId);
-        } catch (error) {
-          console.error('Error saving chat to Redis:', error);
-        }
-      }
-    });
-
-    return result.toDataStreamResponse({
-      sendReasoning: true
-    });
-  } catch (e) {
-    if (e instanceof Error && e.message === 'InvalidToken') {
-      return new NextResponse('Autentifikationstokenet fejlede.', {
-        status: 401,
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-    }
-    console.error('Error occurred:', e);
-    return new NextResponse('En uventet fejl opstod.', {
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
+  const providerOptions: LanguageModelV1ProviderMetadata = {};
+  if (selectedModel === 'claude-3.7-sonnet') {
+    providerOptions.anthropic = {
+      thinking: { type: 'enabled', budgetTokens: 12000 }
+    } satisfies AnthropicProviderOptions;
   }
+
+  // Only add OpenAI options if o3 model is selected
+  if (selectedModel === 'o3') {
+    providerOptions.openai = {
+      reasoningEffort: 'high'
+    } satisfies OpenAIResponsesProviderOptions;
+  }
+
+  const result = streamText({
+    model,
+    system: SYSTEM_PROMPT,
+    messages: convertToCoreMessages(messages),
+    abortSignal: signal,
+    providerOptions,
+    tools: {
+      searchUserDocument: searchUserDocument({ userId, selectedFiles }),
+      websiteSearchTool: websiteSearchTool
+    },
+    experimental_activeTools:
+      selectedFiles.length > 0
+        ? ['searchUserDocument', 'websiteSearchTool']
+        : ['websiteSearchTool'],
+    maxSteps: 3,
+    experimental_telemetry: {
+      isEnabled: true,
+      functionId: 'api_chat',
+      metadata: {
+        userId: session.id,
+        chatId: chatSessionId
+      },
+      recordInputs: true,
+      recordOutputs: true
+    },
+    onFinish: async (event) => {
+      const { text, reasoning, steps, sources } = event;
+      const lastMessage = messages[messages.length - 1];
+      const lastMessageContent =
+        typeof lastMessage.content === 'string' ? lastMessage.content : '';
+
+      const foundReasoningStep = event.steps.find((step) => step.reasoning);
+      const reasoningText =
+        reasoning ||
+        (foundReasoningStep?.reasoning
+          ? foundReasoningStep.reasoning
+          : undefined);
+
+      await saveChatToSupbabase(
+        chatSessionId,
+        session.id,
+        lastMessageContent,
+        text,
+        fileAttachments,
+        reasoningText,
+        sources,
+        steps.map((step) => step.toolResults).flat()
+      );
+      console.log('Chat saved to Supabase:', chatSessionId);
+    },
+    onError: async (error) => {
+      console.error('Error processing chat:', error);
+    }
+  });
+
+  result.consumeStream(); // We consume the stream if the server is discnnected from the client to ensure the onFinish callback is called
+
+  return result.toDataStreamResponse({
+    sendReasoning: true,
+    sendSources: true,
+    getErrorMessage: errorHandler
+  });
 }

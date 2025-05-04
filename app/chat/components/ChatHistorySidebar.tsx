@@ -234,7 +234,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
         await mutateChatPreviews();
 
         if (chatToDelete === currentChatId) {
-          router.push('/aichat');
+          router.push('/chat');
         }
       } catch (error) {
         console.error('Failed to delete the chat:', error);
@@ -292,9 +292,9 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
                   aria-label="Start new chat"
                   className="my-2"
                 >
-                  <Link href="/aichat">
+                  <a href="/chat">
                     <FilePlus size={20} />
-                  </Link>
+                  </a>
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="right">New chat</TooltipContent>
@@ -464,10 +464,10 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
               {/* New chat and toggle button in same flex container */}
               <div className="flex items-center justify-between w-full">
                 <SidebarMenuButton asChild className="flex-grow">
-                  <Link href="/aichat" aria-label="Start new chat">
+                  <a href="/chat" aria-label="Start new chat">
                     <FilePlus size={16} />
                     <span>New Chat</span>
-                  </Link>
+                  </a>
                 </SidebarMenuButton>
                 <Button
                   variant="ghost"
@@ -543,7 +543,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
                                 asChild
                                 className="flex-grow min-w-0"
                               >
-                                <Link
+                                <a
                                   href={href}
                                   onClick={handleChatSelect}
                                   className={`block p-2 rounded hover:bg-muted/50 transition-colors ${
@@ -556,7 +556,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
                                   <div className="text-xs text-muted-foreground">
                                     {format(new Date(file.created_at), 'PPP')}
                                   </div>
-                                </Link>
+                                </a>
                               </TooltipTrigger>
                               <TooltipContent
                                 side="top"
@@ -599,6 +599,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
                                   formData
                                 );
                                 await mutateFiles();
+                                router.refresh();
                               }}
                             >
                               <SubmitButton />
@@ -803,7 +804,6 @@ const RenderChatSectionWithSidebar: FC<RenderChatSectionProps> = ({
   onChatSelect
 }) => {
   const searchParams = useSearchParams();
-  const router = useRouter();
 
   if (chats.length === 0) return null;
 
@@ -814,7 +814,7 @@ const RenderChatSectionWithSidebar: FC<RenderChatSectionProps> = ({
         <SidebarMenu>
           {chats.map(({ id, firstMessage }) => {
             const currentParams = new URLSearchParams(searchParams.toString());
-            const href = `/aichat/${id}${
+            const href = `/chat/${id}${
               currentParams.toString() ? '?' + currentParams.toString() : ''
             }`;
 
@@ -825,14 +825,9 @@ const RenderChatSectionWithSidebar: FC<RenderChatSectionProps> = ({
                   isActive={currentChatId === id}
                   onClick={() => onChatSelect(id)}
                 >
-                  <Link
-                    href={href}
-                    prefetch={false}
-                    scroll={false}
-                    onMouseEnter={() => router.prefetch(href)}
-                  >
+                  <a href={href}>
                     <span className="truncate">{firstMessage}</span>
-                  </Link>
+                  </a>
                 </SidebarMenuButton>
 
                 <DropdownMenu>

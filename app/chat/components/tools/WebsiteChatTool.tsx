@@ -1,7 +1,7 @@
 import React from 'react';
 import { Globe, CheckCircle } from 'lucide-react';
 import { type ToolInvocation } from 'ai';
-import type { WebsiteSearchArgs } from '@/app/aichat/types/tooltypes';
+import type { WebsiteSearchArgs } from '@/app/chat/types/tooltypes';
 
 interface WebsiteSearchToolProps {
   toolInvocation: ToolInvocation;

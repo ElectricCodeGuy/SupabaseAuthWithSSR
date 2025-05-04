@@ -9,8 +9,8 @@ import { Linkedin, Youtube } from 'lucide-react';
 const Footer: React.FC = () => {
   const pathname = usePathname();
 
-  // If the current pathname is '/aichat'  do not render the component
-  if (pathname.startsWith('/aichat')) {
+  // If the current pathname is '/chat'  do not render the component
+  if (pathname === '/chat' || /^\/chat\/[^/]+$/.test(pathname)) {
     return null;
   }
 

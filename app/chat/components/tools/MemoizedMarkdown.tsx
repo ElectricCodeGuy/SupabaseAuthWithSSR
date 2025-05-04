@@ -2,7 +2,6 @@ import { marked } from 'marked';
 import { memo, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import remarkMath from 'remark-math';
 import rehypeHighlight from 'rehype-highlight';
 import type { Options as HighlightOptions } from 'rehype-highlight';
 import Link from 'next/link';
@@ -211,7 +210,7 @@ const MemoizedMarkdownBlock = memo(
             );
           }
         }}
-        remarkPlugins={[remarkGfm, remarkMath]}
+        remarkPlugins={[remarkGfm]}
         rehypePlugins={[[rehypeHighlight, highlightOptionsAI]]}
       >
         {content}

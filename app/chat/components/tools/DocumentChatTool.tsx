@@ -1,7 +1,7 @@
 import React from 'react';
 import { FileText, CheckCircle } from 'lucide-react';
 import { type ToolInvocation } from 'ai';
-import type { SearchDocumentsArgs } from '@/app/aichat/types/tooltypes';
+import type { SearchDocumentsArgs } from '@/app/chat/types/tooltypes';
 
 interface DocumentsToolProps {
   toolInvocation: ToolInvocation;

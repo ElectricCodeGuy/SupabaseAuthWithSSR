@@ -69,6 +69,7 @@ export async function deleteChatData(chatId: string) {
       .eq('id', chatId);
 
     if (sessionError) throw sessionError;
+    revalidatePath(`/chat/[id]`, 'layout');
     return { message: 'Chat data and references deleted successfully' };
   } catch (error) {
     console.error('Error during deletion:', error);
@@ -200,7 +201,7 @@ export async function updateChatTitle(formData: FormData) {
     };
   }
 
-  revalidatePath(`/aichat/[id]`, 'layout');
+  revalidatePath(`/chat/[id]`, 'layout');
 
   return { success: true };
 }

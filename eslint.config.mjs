@@ -62,7 +62,7 @@ const config = tseslint.config(
       '@typescript-eslint/no-non-null-assertion': 'off',
       '@typescript-eslint/prefer-nullish-coalescing': 'off',
       // Next.js specific rules
-      '@next/next/no-html-link-for-pages': 'error',
+      '@next/next/no-html-link-for-pages': 'off',
       '@next/next/no-img-element': 'error',
       '@next/next/no-head-element': 'error',
       '@next/next/no-sync-scripts': 'error',

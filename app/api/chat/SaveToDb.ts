@@ -1,5 +1,8 @@
 import 'server-only';
 import { createServerSupabaseClient } from '@/lib/server/server';
+import type { Attachment } from 'ai';
+import type { LanguageModelV1Source } from '@ai-sdk/provider';
+import type { ToolResult } from '@/app/chat/types/tooltypes';
 
 export interface OpenAiLog {
   id: string;
@@ -13,8 +16,10 @@ export const saveChatToSupbabase = async (
   userId: string,
   currentMessageContent: string,
   completion: string,
+  attachments?: Attachment[],
   reasoning?: string,
-  sources?: string[]
+  sources?: LanguageModelV1Source[],
+  toolInvocations?: ToolResult[]
 ): Promise<void> => {
   if (!chatSessionId) {
     console.warn('Chat session ID is empty. Skipping saving chat to Supabase.');
@@ -44,6 +49,7 @@ export const saveChatToSupbabase = async (
         chat_session_id: chatSessionId,
         is_user_message: true,
         content: currentMessageContent,
+        attachments: attachments ? JSON.stringify(attachments) : null,
         created_at: now.toISOString() // User message timestamp
       },
       {
@@ -52,7 +58,10 @@ export const saveChatToSupbabase = async (
         content: completion,
         reasoning: reasoning || null,
         sources: sources && sources.length > 0 ? sources : null,
-        created_at: aiMessageTime.toISOString() // AI message timestamp (1 second later)
+        tool_invocations: toolInvocations
+          ? JSON.stringify(toolInvocations)
+          : null,
+        created_at: aiMessageTime.toISOString()
       }
     ];
 

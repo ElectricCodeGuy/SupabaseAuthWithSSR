@@ -43,7 +43,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
   }
 
-  if (currentRoute.startsWith('/aichat') && !session) {
+  if (currentRoute.startsWith('/chat') && !session) {
     const redirectUrl = new URL(request.url);
     redirectUrl.pathname = '/signin';
     return NextResponse.redirect(redirectUrl);

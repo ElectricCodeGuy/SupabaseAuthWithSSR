@@ -2,20 +2,25 @@
 
 Next.js API Route Handler - Why We Ditched LangChain
 This TypeScript code demonstrates a clean Next.js API route handler using the Vercel AI SDK. We've completely removed LangChain, and here's why you should too:
-Why LangChain Is a Liability
 
-Bloated Abstractions: LangChain adds unnecessary layers of complexity that make debugging a nightmare. What could be a simple API call becomes a maze of abstractions.
-Performance Overhead: LangChain's "chains" and "agents" add significant processing overhead for simple operations that can be done with a few lines of native code.
-Version Instability: Breaking changes are frequent, and documentation often lags behind the actual implementation. You'll spend more time fixing broken dependencies than building features.
-Poor TypeScript Support: The type definitions are often incomplete or incorrect, leading to frustrating development experiences and potential runtime errors.
+## Important Note
 
-Benefits of Using Vercel AI SDK Directly
+I want to be transparent: I'm not sponsored by or affiliated with Vercel. I receive no compensation for recommending their AI SDK. I just genuinely believe it's the better tool for this job, and I feel obligated to warn other developers about the pitfalls of bloated packages that add unnecessary complexity without providing real value.
 
-**Simplicity:** Direct integration with AI models using clear, predictable patterns
-**Better Performance:** No bloat or unnecessary abstraction layers
-**Superior TypeScript Support:** First-class types and better IDE integration
-**Easier Debugging:** Clear stack traces and predictable behavior
-**Smaller Bundle Size:** No massive dependency tree to manage
+## Why LangChain Is a Liability
+
+1. **Bloated Abstractions**: LangChain adds unnecessary layers of complexity that make debugging a nightmare. What could be a simple API call becomes a maze of abstractions.
+2. **Performance Overhead**: LangChain's "chains" and "agents" add significant processing overhead for simple operations that can be done with a few lines of native code.
+3. **Version Instability**: Breaking changes are frequent, and documentation often lags behind the actual implementation. You'll spend more time fixing broken dependencies than building features.
+4. **Poor TypeScript Support**: The type definitions are often incomplete or incorrect, leading to frustrating development experiences and potential runtime errors.
+
+## Benefits of Using Vercel AI SDK Directly
+
+- **Simplicity:** Direct integration with AI models using clear, predictable patterns
+- **Better Performance:** No bloat or unnecessary abstraction layers
+- **Superior TypeScript Support:** First-class types and better IDE integration
+- **Easier Debugging:** Clear stack traces and predictable behavior
+- **Smaller Bundle Size:** No massive dependency tree to manage
 
 The code example shows how to handle streaming responses, rate limiting, and error handling without LangChain's overcomplicated abstractions. See the Vercel AI SDK docs at: https://sdk.vercel.ai/docs/introduction
 

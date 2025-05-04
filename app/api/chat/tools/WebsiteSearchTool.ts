@@ -61,7 +61,6 @@ export const websiteSearchTool = tool({
   execute: async (args, { messages }) => {
     // Generate improved search queries
     const currentDate = new Date().toISOString().split('T')[0];
-    const filteredMessages = messages.filter((msg) => msg.role !== 'tool');
 
     const queryOptimizationPrompt = `
       <metadata>
@@ -102,11 +101,11 @@ export const websiteSearchTool = tool({
       `;
 
     const { object } = await generateObject({
-      model: openai('gpt-4o-mini'),
+      model: openai('gpt-4.1-mini'),
       system: queryOptimizationPrompt,
       schema: websiteSearchSchema,
       temperature: 0,
-      messages: filteredMessages
+      messages
     });
 
     const websiteQueries = [

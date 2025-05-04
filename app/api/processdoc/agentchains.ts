@@ -1,7 +1,7 @@
 import 'server-only';
 import { generateObject } from 'ai';
 import { z } from 'zod';
-import { openai } from '@ai-sdk/openai';
+import { google } from '@ai-sdk/google';
 
 const contentAnalysisSchema = z.object({
   preliminary_answer_1: z
@@ -39,7 +39,7 @@ export const preliminaryAnswerChainAgent = async (
     'Given the content provided below, perform a comprehensive analysis. Generate two preliminary answers, tag key concepts or topics, and generate two hypothetical questions. Ensure all outputs address specific elements mentioned in the text. Focus on interpreting key themes, implications of specific concepts, and potential real-life applications or consequences. Answers and questions should be detailed and thought-provoking. The output language should be in the same as the input text.';
 
   const { object, usage } = await generateObject({
-    model: openai('gpt-4o-mini'),
+    model: google('gemini-2.0-flash-001'),
     system: SystemPrompt,
     prompt: content,
     schema: contentAnalysisSchema,
@@ -103,7 +103,7 @@ export const generateDocumentMetadata = async (
   `;
 
   const { object, usage, finishReason } = await generateObject({
-    model: openai('gpt-4o-mini'),
+    model: google('gemini-2.0-flash-001'),
     system: SystemPrompt,
     prompt: content,
     schema: documentMetadataSchema,

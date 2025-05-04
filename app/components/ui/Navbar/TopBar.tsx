@@ -40,7 +40,7 @@ const Header: React.FC<HeaderProps> = ({ session }) => {
 
   const navigationItems = [
     { href: '/protected', text: 'Protected' },
-    { href: '/aichat', text: 'AI Chat' }
+    { href: '/chat', text: 'AI Chat' }
   ];
 
   return (

@@ -191,6 +191,8 @@ This SQL statement creates a trigger named `on_auth_user_created` that executes 
       content text null,
       is_user_message boolean not null,
       sources jsonb null,
+      attachments jsonb null,
+      tool_invocations null,
       created_at timestamp with time zone not null default current_timestamp,
       constraint chat_messages_pkey primary key (id),
       constraint chat_messages_chat_session_id_fkey foreign key (chat_session_id) references chat_sessions (id) on delete cascade

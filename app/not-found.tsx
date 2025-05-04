@@ -6,7 +6,7 @@ import { FileX, Home } from 'lucide-react';
 
 const Custom404: React.FC = () => {
   return (
-    <div className="container max-w-sm mx-auto text-center py-20 md:py-40">
+    <div className="container max-w-sm mx-auto text-center py-20 md:py-40 h-screen">
       <div className="mb-8">
         <FileX className="h-20 w-20 md:h-36 md:w-36 text-primary mx-auto" />
       </div>

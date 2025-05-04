@@ -1,15 +1,14 @@
 import ChatComponent from '../components/Chat';
-import { format } from 'date-fns';
-import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import WebsiteWiever from '../components/WebsiteWiever';
 import DocumentViewer from '../components/PDFViewer';
+import UserPdfViewer from '../components/UserPdfFiles';
 import { fetchChat, formatMessages } from './fetch';
 import { getUserInfo } from '@/lib/server/supabase';
 
 export default async function ChatPage(props: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ url?: string; pdf?: string }>;
+  searchParams: Promise<{ url?: string; pdf?: string; file?: string }>;
 }) {
   const params = await props.params;
   const searchParams = await props.searchParams;
@@ -17,42 +16,56 @@ export default async function ChatPage(props: {
 
   const chatData = await fetchChat(id);
 
-  if (!chatData) {
-    redirect('/aichat');
-  }
-
   const cookieStore = await cookies();
   const modelType = cookieStore.get('modelType')?.value ?? 'standart';
   const selectedOption =
     cookieStore.get('selectedOption')?.value ?? 'gpt-3.5-turbo-1106';
 
-  const formattedMessages = formatMessages(chatData.chat_messages);
+  let formattedMessages = undefined;
+  let attachmentUrl = undefined;
 
-  const formattedChatData = {
-    id: chatData.id,
-    user_id: chatData.user_id,
-    prompt: formattedMessages
-      .filter((m) => m.role === 'user')
-      .map((m) => m.content),
-    completion: formattedMessages
-      .filter((m) => m.role === 'assistant')
-      .map((m) => m.content),
-    created_at: format(new Date(chatData.created_at), 'dd-MM-yyyy HH:mm'),
-    updated_at: format(new Date(chatData.updated_at), 'dd-MM-yyyy HH:mm'),
-    chat_messages: formattedMessages
-  };
+  if (chatData) {
+    formattedMessages = formatMessages(chatData.chat_messages);
+
+    if (searchParams.file && formattedMessages) {
+      const fileName = decodeURIComponent(searchParams.file);
+
+      // Scan through all messages to find the attachment
+      for (const message of formattedMessages) {
+        if (message.experimental_attachments) {
+          const attachment = message.experimental_attachments.find(
+            (att) => att.name === fileName
+          );
+
+          if (attachment) {
+            attachmentUrl = attachment.url;
+            break;
+          }
+        }
+      }
+    }
+  }
 
   return (
     <div className="flex w-full h-[calc(100vh-48px)] overflow-hidden">
       <div className="flex-1">
         <ChatComponent
-          currentChat={formattedChatData}
+          currentChat={formattedMessages}
           chatId={id}
           initialModelType={modelType}
           initialSelectedOption={selectedOption}
         />
       </div>
-      {searchParams.url ? (
+      {attachmentUrl ? (
+        <UserPdfViewer
+          url={attachmentUrl}
+          fileName={
+            searchParams.file
+              ? decodeURIComponent(searchParams.file)
+              : 'Document'
+          }
+        />
+      ) : searchParams.url ? (
         <WebsiteWiever url={decodeURIComponent(searchParams.url)} />
       ) : searchParams.pdf ? (
         <DocumentComponent fileName={decodeURIComponent(searchParams.pdf)} />
