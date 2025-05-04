@@ -62,7 +62,7 @@ const MessageInput = ({
   const router = useRouter();
   const { mutate } = useSWRConfig();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
 
   const { input, handleInputChange, handleSubmit, status, stop } = useChat({
     id: 'chat', // Use the same ID to share state
@@ -118,13 +118,20 @@ const MessageInput = ({
       return;
     }
 
-    setAttachedFile(file);
+    setAttachedFiles((prev) => [...prev, file]);
+  };
+
+  const removeFile = (index: number) => {
+    setAttachedFiles((prev) => prev.filter((_, i) => i !== index));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   // Handle form submission
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() && !attachedFile) return;
+    if (!input.trim() && attachedFiles.length === 0) return;
 
     if (chatId !== currentChatId) {
       const currentSearchParams = new URLSearchParams(window.location.search);
@@ -137,18 +144,89 @@ const MessageInput = ({
       router.push(newUrl, { scroll: false });
     }
     // Handle the submission with experimental attachments
-    if (attachedFile) {
+    if (attachedFiles.length > 0) {
       handleSubmit(e, {
-        experimental_attachments: createFileList([attachedFile])
+        experimental_attachments: createFileList(attachedFiles)
       });
 
-      setAttachedFile(null);
+      setAttachedFiles([]);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
     } else {
       handleSubmit(e);
     }
+  };
+
+  // File preview component
+  const FilePreview = ({ file, index }: { file: File; index: number }) => {
+    const [previewUrl, setPreviewUrl] = useState<string>('');
+
+    React.useEffect(() => {
+      // Create a URL for the PDF file
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+
+      // Cleanup: revoke the URL when component unmounts
+      return () => {
+        URL.revokeObjectURL(url);
+      };
+    }, [file]);
+
+    return (
+      <div className="group/thumbnail relative" key={file.name + index}>
+        <div
+          className="rounded-lg overflow-hidden border-0.5 border-border-300/25 shadow-sm shadow-always-black/5 can-focus-within rounded-lg cursor-pointer hover:border-border-200/50 hover:shadow-always-black/10"
+          style={{ width: 120, height: 120, minWidth: 120, minHeight: 120 }}
+        >
+          <div
+            className="relative bg-bg-000"
+            style={{ width: '100%', height: '100%' }}
+          >
+            {previewUrl && file.type === 'application/pdf' ? (
+              <iframe
+                src={previewUrl}
+                title={`Preview of ${file.name}`}
+                className="w-full h-full pointer-events-none"
+                style={{
+                  transform: 'scale(0.2)',
+                  transformOrigin: 'top left',
+                  width: '500%',
+                  height: '500%'
+                }}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800">
+                <FileIcon className="w-12 h-12 text-gray-400" />
+              </div>
+            )}
+          </div>
+          <div className="absolute bottom-2 left-0 right-0 px-2.5 overflow-x-hidden overflow-y-visible">
+            <div className="relative flex flex-row items-center gap-1 justify-between">
+              <div
+                className="flex flex-row gap-1 shrink min-w-0"
+                style={{ opacity: 1 }}
+              >
+                <div className="min-w-0 h-[18px] flex flex-row items-center justify-center gap-0.5 px-1 border-0.5 border-border-300/25 shadow-sm rounded bg-bg-000/70 backdrop-blur-sm font-medium">
+                  <p className="uppercase truncate font-styrene text-text-300 text-[11px] leading-[13px]">
+                    pdf
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => removeFile(index)}
+          className="transition-all hover:bg-bg-000/50 text-text-500 hover:text-text-200 group-focus-within/thumbnail:opacity-100 group-hover/thumbnail:opacity-100 opacity-0 w-5 h-5 absolute -top-2 -left-2 rounded-full border-0.5 border-border-300/25 bg-bg-000/90 backdrop-blur-sm flex items-center justify-center"
+        >
+          <X className="w-3 h-3" />
+        </Button>
+      </div>
+    );
   };
 
   return (
@@ -178,7 +256,7 @@ const MessageInput = ({
         {/* Bottom controls row with buttons */}
         <div className="flex px-2.5 pb-1 pt-1.5 items-center gap-2 justify-between">
           <div className="flex items-center gap-2">
-            {!attachedFile && (
+            {attachedFiles.length === 0 && (
               <Button
                 type="button"
                 variant="outline"
@@ -253,28 +331,6 @@ const MessageInput = ({
               </div>
             )}
 
-            {attachedFile && (
-              <div className="bg-primary/5 dark:bg-primary/10 p-1 rounded-lg flex items-center justify-between">
-                <div className="flex items-center">
-                  <FileIcon className="h-4 w-4 text-primary mr-2" />
-                  <span className="text-sm font-medium dark:text-white">
-                    {attachedFile.name}
-                  </span>
-                  <span className="text-xs text-muted-foreground ml-2">
-                    ({Math.round(attachedFile.size / 1024)} KB)
-                  </span>
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setAttachedFile(null)}
-                  className="h-6 w-6 p-0"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
             {selectedBlobs.length > 0 && (
               <div className="hidden sm:flex items-center rounded-full text-xs px-2 h-8 bg-primary/10 border border-primary/30">
                 <Paperclip className="mr-1 h-4 w-4 text-primary" />
@@ -307,13 +363,28 @@ const MessageInput = ({
               type="submit"
               size="icon"
               variant="ghost"
-              disabled={!input.trim() && !attachedFile}
+              disabled={!input.trim() && attachedFiles.length === 0}
               className="h-8 w-8 sm:h-10 sm:w-10 hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors border border-primary/30 rounded-lg cursor-pointer"
             >
               <Send className="text-primary w-5 h-5 sm:w-8 sm:h-8" />
             </Button>
           )}
         </div>
+
+        {/* File previews section with clear visual separation */}
+        {attachedFiles.length > 0 && (
+          <div className="overflow-hidden border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 rounded-b-2xl">
+            <div className="flex flex-row overflow-x-auto gap-3 px-3.5 py-2.5">
+              {attachedFiles.map((file, index) => (
+                <FilePreview
+                  key={file.name + index}
+                  file={file}
+                  index={index}
+                />
+              ))}
+            </div>
+          </div>
+        )}
       </form>
     </>
   );
