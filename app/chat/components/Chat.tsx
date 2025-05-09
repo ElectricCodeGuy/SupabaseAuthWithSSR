@@ -175,7 +175,7 @@ const ChatComponent: React.FC<ChatProps> = ({
             return (
               <li key={`${message.id}-${index}`} className="my-4 mx-2">
                 <Card
-                  className={`relative gap-2 py-4 ${
+                  className={`relative gap-2 py-2 ${
                     isUserMessage
                       ? 'bg-primary/5 dark:bg-primary/10 border-primary/20'
                       : 'bg-card dark:bg-card/90 border-border/50'
@@ -233,7 +233,7 @@ const ChatComponent: React.FC<ChatProps> = ({
                     </div>
                   </CardHeader>
 
-                  <CardContent className="pt-0 px-4">
+                  <CardContent className="py-0 px-4">
                     {/* Render text parts first (main message content) */}
                     {textParts.map((part, partIndex) => (
                       <MemoizedMarkdown
@@ -257,12 +257,13 @@ const ChatComponent: React.FC<ChatProps> = ({
                       ))}
 
                     {/* Then render source parts (only for assistant messages) */}
-                    {!isUserMessage &&
-                      sourceParts.map((part, partIndex) => (
-                        <div key={`source-${partIndex}`} className="mt-2">
-                          <SourceView source={part.source} />
-                        </div>
-                      ))}
+                    {!isUserMessage && sourceParts.length > 0 && (
+                      <div className="mt-2">
+                        <SourceView
+                          sources={sourceParts.map((part) => part.source)}
+                        />
+                      </div>
+                    )}
 
                     {/* Display attached files in user messages */}
                     {isUserMessage &&

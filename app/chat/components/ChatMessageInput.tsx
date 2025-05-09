@@ -1,5 +1,3 @@
-'use client';
-
 import type { KeyboardEvent } from 'react';
 import React, { useState, useRef } from 'react';
 import { useChat, type Message } from '@ai-sdk/react';
