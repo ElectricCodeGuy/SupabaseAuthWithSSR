@@ -26,7 +26,7 @@ The code example shows how to handle streaming responses, rate limiting, and err
 
 **Remember:** Just because a tool is popular doesn't mean it's the right choice. LangChain tries to solve problems that don't exist while creating new ones. Stick with direct, purpose-built tools like the Vercel AI SDK for cleaner, more maintainable code.
 
-## Code Example with both Langchain and ai sdk from Vercel.
+## Code Example with both LangChain and AI SDK from Vercel.
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server';

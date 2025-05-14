@@ -1,5 +1,6 @@
+/* eslint-disable @next/next/no-img-element */
 import { marked } from 'marked';
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
@@ -8,6 +9,13 @@ import Link from 'next/link';
 import { ExternalLink } from 'lucide-react';
 import { encodeBase64 } from '../../lib/base64';
 import Image from 'next/image';
+import useSWRImmutable from 'swr/immutable';
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger
+} from '@/components/ui/hover-card';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // Function to parse markdown into blocks for memoization
 function parseMarkdownIntoBlocks(markdown: string): string[] {
@@ -20,6 +28,126 @@ const highlightOptionsAI: HighlightOptions = {
   prefix: 'hljs-'
 };
 
+interface MetadataResponse {
+  title: string;
+  description: string;
+  url: string;
+  error?: string;
+}
+// Fetcher function for useSWR
+const fetcher = (url: string): Promise<MetadataResponse> =>
+  fetch(url).then((res) => res.json());
+
+// External Link Component with Hovercard
+const ExternalLinkWithHovercard = ({
+  href,
+  children
+}: {
+  href: string;
+  children: React.ReactNode;
+}) => {
+  const [isHovering, setIsHovering] = useState(false);
+  const { data, isLoading } = useSWRImmutable(
+    isHovering ? `/api/getmetadata?url=${encodeURIComponent(href)}` : null,
+    fetcher
+  );
+
+  // Get hostname for display and favicon
+  const hostname = useMemo(() => {
+    try {
+      return new URL(href).hostname.replace(/^www\./, '');
+    } catch (e) {
+      console.error('Invalid URL:', href, e);
+      return '';
+    }
+  }, [href]);
+
+  // Get favicon URL using Google's favicon service
+  const faviconUrl = `https://www.google.com/s2/favicons?domain=${hostname}&sz=64`;
+
+  return (
+    <HoverCard openDelay={300} closeDelay={200}>
+      <HoverCardTrigger asChild>
+        <Link
+          href={`?url=${encodeURIComponent(href)}`}
+          scroll={false}
+          prefetch={false}
+          className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline inline-flex items-center gap-1 group"
+          onMouseEnter={() => setIsHovering(true)}
+        >
+          {children}
+          <ExternalLink className="h-3 w-3 opacity-70 group-hover:opacity-100 transition-opacity" />
+        </Link>
+      </HoverCardTrigger>
+      <HoverCardContent className="w-80 p-0 overflow-hidden border border-border/40 shadow-lg">
+        {/* Card Header with gradient background */}
+        <div className="bg-gradient-to-r from-slate-100 to-slate-50 dark:from-slate-900 dark:to-slate-800 p-2 border-b border-border/10">
+          <div className="flex items-center gap-3">
+            {/* Favicon with better styling */}
+            <div className="h-10 w-10 overflow-hidden flex-shrink-0 bg-white dark:bg-slate-700 shadow-sm flex items-center justify-center border border-border/20">
+              {isLoading ? (
+                <Skeleton className="h-10 w-10 rounded" />
+              ) : (
+                <img
+                  src={faviconUrl}
+                  alt="Website favicon"
+                  className="max-h-10 max-w-10 object-contain"
+                  onError={(e) => {
+                    // Fallback if favicon fails to load
+                    (e.target as HTMLImageElement).src =
+                      'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWdsb2JlIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIvPjxsaW5lIHgxPSIyIiB5MT0iMTIiIHgyPSIyMiIgeTI9IjEyIi8+PHBhdGggZD0iTTEyIDJhMTUuMyAxNS4zIDAgMCAxIDQgMTAgMTUuMyAxNS4zIDAgMCAxLTQgMTAgMTUuMyAxNS4zIDAgMCAxLTQtMTAgMTUuMyAxNS4zIDAgMCAxIDQtMTB6Ii8+PC9zdmc+';
+                  }}
+                />
+              )}
+            </div>
+
+            {/* Title and URL with better typography */}
+            <div className="flex-1 min-w-0">
+              {isLoading ? (
+                <Skeleton className="h-5 w-40 mb-1" />
+              ) : (
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate leading-tight">
+                  {data?.title || hostname}
+                </h3>
+              )}
+              <div className="flex items-center gap-1 mt-0.5">
+                <span className="inline-flex items-center text-xs text-slate-500 dark:text-slate-400 truncate">
+                  <span className="w-3 h-3 mr-1 text-slate-400">
+                    <ExternalLink className="h-3 w-3" />
+                  </span>
+                  {hostname}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Card Content with description */}
+        <div className="p-2 bg-white dark:bg-slate-950">
+          {isLoading ? (
+            <div className="space-y-1.5">
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-11/12" />
+              <Skeleton className="h-3 w-4/5" />
+            </div>
+          ) : (
+            <div>
+              {data?.description ? (
+                <p className="text-xs leading-normal text-slate-600 dark:text-slate-300 line-clamp-3 p-0">
+                  {data.description}
+                </p>
+              ) : (
+                <p className="text-xs italic text-slate-400 dark:text-slate-500">
+                  No description available
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      </HoverCardContent>
+    </HoverCard>
+  );
+};
 // Memoized component for rendering a single markdown block
 const MemoizedMarkdownBlock = memo(
   ({ content }: { content: string }) => {
@@ -58,15 +186,9 @@ const MemoizedMarkdownBlock = memo(
               if (href.startsWith('http://') || href.startsWith('https://')) {
                 // For web links, return a regular link that opens in a new tab
                 return (
-                  <Link
-                    href={`?url=${encodeURIComponent(href)}`}
-                    scroll={false}
-                    prefetch={false}
-                    className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
-                  >
+                  <ExternalLinkWithHovercard href={href}>
                     {children}
-                    <ExternalLink size={12} className="inline-block ml-0.5" />
-                  </Link>
+                  </ExternalLinkWithHovercard>
                 );
               } else {
                 // For document links, use createDocumentLink
