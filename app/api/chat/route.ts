@@ -138,9 +138,6 @@ export async function POST(req: NextRequest) {
   const selectedModel = body.option ?? 'gpt-3.5-turbo-1106';
   const userId = session.id;
 
-  const model = getModel(selectedModel);
-  const SYSTEM_PROMPT = getSystemPrompt(selectedFiles);
-
   const providerOptions: LanguageModelV1ProviderMetadata = {};
   if (selectedModel === 'claude-3.7-sonnet') {
     providerOptions.anthropic = {
@@ -156,8 +153,8 @@ export async function POST(req: NextRequest) {
   }
 
   const result = streamText({
-    model,
-    system: SYSTEM_PROMPT,
+    model: getModel(selectedModel),
+    system: getSystemPrompt(selectedFiles),
     messages: convertToCoreMessages(messages),
     abortSignal: signal,
     providerOptions,

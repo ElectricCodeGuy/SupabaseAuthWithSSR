@@ -109,6 +109,12 @@ const FilePreview = React.memo(
 // Add display name for debugging
 FilePreview.displayName = 'FilePreview';
 
+const modelTypes = [
+  { value: 'standart', label: 'Standard' },
+  { value: 'perplex', label: 'Perplexity' },
+  { value: 'website', label: 'Website' }
+];
+
 const MessageInput = ({
   chatId,
   apiEndpoint,
@@ -118,8 +124,7 @@ const MessageInput = ({
   modelType,
   selectedOption,
   handleModelTypeChange,
-  handleOptionChange,
-  modelTypes
+  handleOptionChange
 }: {
   chatId: string;
   apiEndpoint: string;
@@ -130,7 +135,6 @@ const MessageInput = ({
   selectedOption: string;
   handleModelTypeChange: (value: string) => void;
   handleOptionChange: (value: string) => void;
-  modelTypes: { value: string; label: string }[];
 }) => {
   const { selectedBlobs } = useUpload();
   const router = useRouter();

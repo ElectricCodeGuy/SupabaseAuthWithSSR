@@ -128,7 +128,7 @@ export default function DocumentViewer({
         variant="ghost"
         size="icon"
         onClick={handleClose}
-        className="absolute right-1 top-1 z-50 bg-background/70 hover:bg-background/90"
+        className="absolute left-1 top-1 z-50 bg-background/70 hover:bg-background/90"
       >
         <X className="h-4 w-4" />
       </Button>

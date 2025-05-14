@@ -7,7 +7,6 @@ import { useSWRConfig } from 'swr';
 import { ChatScrollAnchor } from '../hooks/chat-scroll-anchor';
 import { setModelSettings } from '../actions';
 import Link from 'next/link';
-import { useUpload } from '../context/uploadContext';
 // Shadcn UI components
 import { Button } from '@/components/ui/button';
 import {
@@ -43,7 +42,6 @@ const ChatComponent: React.FC<ChatProps> = ({
 }) => {
   const param = useParams();
   const currentChatId = param.id as string;
-  const { selectedBlobs } = useUpload();
 
   const [optimisticModelType, setOptimisticModelType] = useOptimistic<
     string,
@@ -87,11 +85,6 @@ const ChatComponent: React.FC<ChatProps> = ({
   const { messages, status } = useChat({
     id: 'chat',
     api: apiEndpoint,
-    body: {
-      chatId: chatId,
-      option: optimisticOption,
-      selectedBlobs: selectedBlobs
-    },
     experimental_throttle: 50,
     initialMessages: currentChat,
     onFinish: async () => {
@@ -105,11 +98,6 @@ const ChatComponent: React.FC<ChatProps> = ({
     }
   });
 
-  const modelTypes = [
-    { value: 'standart', label: 'Standard' },
-    { value: 'perplex', label: 'Perplexity' },
-    { value: 'website', label: 'Website' }
-  ];
   const { mutate } = useSWRConfig();
 
   return (
@@ -364,7 +352,6 @@ const ChatComponent: React.FC<ChatProps> = ({
           selectedOption={optimisticOption}
           handleModelTypeChange={handleModelTypeChange}
           handleOptionChange={handleOptionChange}
-          modelTypes={modelTypes}
         />
       </div>
     </div>
