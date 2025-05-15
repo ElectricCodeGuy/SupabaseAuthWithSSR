@@ -43,8 +43,6 @@ interface DocumentRecord {
   filter_tags: string;
   page_number: number;
   total_pages: number;
-  chunk_number: number;
-  total_chunks: number;
 }
 
 async function processFile(pages: string[], fileName: string, userId: string) {
@@ -163,9 +161,7 @@ async function processFile(pages: string[], fileName: string, userId: string) {
               primary_language: object.primaryLanguage,
               filter_tags: filterTags,
               page_number: pageNumber,
-              total_pages: totalPages,
-              chunk_number: 1, // Since we're now treating each page as one document
-              total_chunks: 1 // Since we're now treating each page as one document
+              total_pages: totalPages
             });
           } catch (embedError) {
             console.error(
@@ -191,8 +187,7 @@ async function processFile(pages: string[], fileName: string, userId: string) {
           const { error } = await supabase
             .from('vector_documents')
             .upsert(batch, {
-              onConflict:
-                'user_id, title, timestamp, page_number, chunk_number',
+              onConflict: 'user_id, title, timestamp, page_number',
               ignoreDuplicates: false
             });
 

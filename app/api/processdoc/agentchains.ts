@@ -107,7 +107,6 @@ export const generateDocumentMetadata = async (
     system: SystemPrompt,
     prompt: content,
     schema: documentMetadataSchema,
-    mode: 'json',
     temperature: 0,
     experimental_telemetry: {
       isEnabled: true,

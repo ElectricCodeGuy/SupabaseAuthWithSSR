@@ -161,7 +161,6 @@ export type Database = {
           ai_keyentities: string[] | null;
           ai_maintopics: string[] | null;
           ai_title: string | null;
-          chunk_number: number;
           created_at: string | null;
           embedding: string | null;
           filter_tags: string | null;
@@ -171,7 +170,6 @@ export type Database = {
           text_content: string;
           timestamp: string;
           title: string;
-          total_chunks: number;
           total_pages: number;
           user_id: string;
         };
@@ -180,7 +178,6 @@ export type Database = {
           ai_keyentities?: string[] | null;
           ai_maintopics?: string[] | null;
           ai_title?: string | null;
-          chunk_number: number;
           created_at?: string | null;
           embedding?: string | null;
           filter_tags?: string | null;
@@ -190,7 +187,6 @@ export type Database = {
           text_content: string;
           timestamp: string;
           title: string;
-          total_chunks: number;
           total_pages: number;
           user_id: string;
         };
@@ -199,7 +195,6 @@ export type Database = {
           ai_keyentities?: string[] | null;
           ai_maintopics?: string[] | null;
           ai_title?: string | null;
-          chunk_number?: number;
           created_at?: string | null;
           embedding?: string | null;
           filter_tags?: string | null;
@@ -209,7 +204,6 @@ export type Database = {
           text_content?: string;
           timestamp?: string;
           title?: string;
-          total_chunks?: number;
           total_pages?: number;
           user_id?: string;
         };

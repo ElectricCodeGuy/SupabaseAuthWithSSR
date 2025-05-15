@@ -135,7 +135,7 @@ export default function ServerUploadPage() {
               isDragActive
                 ? 'border-primary bg-primary/5'
                 : 'border-border hover:border-primary hover:bg-primary/5'
-            } rounded-lg flex items-center justify-center text-center cursor-pointer p-4 mb-4 transition-all duration-200`}
+            } rounded-lg flex items-center justify-center text-center cursor-pointer p-4 transition-all duration-200`}
           >
             <input {...getInputProps()} />
             <div>
@@ -170,14 +170,6 @@ export default function ServerUploadPage() {
               </p>
             </div>
           </div>
-          <Button
-            type="submit"
-            disabled={isUploading || !selectedFile}
-            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-base font-semibold rounded-lg py-2 disabled:opacity-50"
-          >
-            <CloudUploadIcon className="mr-2 h-5 w-5" />
-            {isUploading ? 'Uploading...' : 'Upload File'}
-          </Button>
         </>
       ) : (
         <Card className="bg-card/50 p-4 mb-4 rounded-lg shadow-none">
@@ -205,6 +197,7 @@ export default function ServerUploadPage() {
               <CloseIcon className="h-4 w-4" />
             </Button>
           </div>
+
           <div className="mt-2">
             <LinearProgressWithLabel
               value={uploadProgress}
@@ -219,6 +212,14 @@ export default function ServerUploadPage() {
               </Alert>
             )}
           </div>
+          <Button
+            type="submit"
+            disabled={isUploading || !selectedFile}
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-base font-semibold rounded-lg py-2 disabled:opacity-50"
+          >
+            <CloudUploadIcon className="mr-2 h-5 w-5" />
+            {isUploading ? 'Uploading...' : 'Upload File'}
+          </Button>
         </Card>
       )}
     </form>

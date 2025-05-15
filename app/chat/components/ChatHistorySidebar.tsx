@@ -684,7 +684,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({
           )}
         </SidebarContent>
 
-        <SidebarFooter className="px-0">
+        <SidebarFooter className="px-0 pb-0">
           {activeMode === 'files' ? (
             <ServerUploadPage />
           ) : hasMore ? (
