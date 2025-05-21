@@ -2,7 +2,7 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import { generateObject } from 'ai';
-import { openai } from '@ai-sdk/openai';
+import { google } from '@ai-sdk/google';
 
 // Zod schema for query variations
 const websiteSearchSchema = z.object({
@@ -101,7 +101,7 @@ export const websiteSearchTool = tool({
       `;
 
     const { object } = await generateObject({
-      model: openai('gpt-4.1-mini'),
+      model: google('gemini-2.0-flash-001'),
       system: queryOptimizationPrompt,
       schema: websiteSearchSchema,
       temperature: 0,

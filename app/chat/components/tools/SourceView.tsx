@@ -37,7 +37,6 @@ const getDomain = (url: string): string => {
   }
 };
 
-// Individual source item component to fix conditional hook issue
 const SourceItem = ({
   source,
   index

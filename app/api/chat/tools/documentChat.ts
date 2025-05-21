@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { embed, generateObject } from 'ai';
 import { voyage } from 'voyage-ai-provider';
 import { createServerSupabaseClient } from '@/lib/server/server';
-import { openai } from '@ai-sdk/openai';
+import { google } from '@ai-sdk/google';
 
 // Function to sanitize filenames
 function sanitizeFilename(filename: string): string {
@@ -177,7 +177,7 @@ export const searchUserDocument = ({ userId, selectedFiles }: DocToolProps) =>
 
       // Generate optimized queries
       const { object } = await generateObject({
-        model: openai('gpt-4o-mini'),
+        model: google('gemini-2.0-flash-001'),
         system: `You are an expert in information retrieval. Your task is to reformulate the user's query to optimize search results for vector similarity search.
     
 Available documents context:

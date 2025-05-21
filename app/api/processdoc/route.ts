@@ -31,7 +31,7 @@ function sanitizeFilename(filename: string): string {
 
 interface DocumentRecord {
   user_id: string;
-  embedding: string; // Changed from number[] to string
+  embedding: string;
   text_content: string;
   title: string;
   timestamp: string;
@@ -135,8 +135,6 @@ async function processFile(pages: string[], fileName: string, userId: string) {
       ${doc}
       `;
 
-          // FIXED: Generate a single embedding for the entire content
-          // instead of iterating character by character
           try {
             const { embedding } = await embed({
               model: embeddingModel,
