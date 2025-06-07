@@ -137,6 +137,85 @@ export type Database = {
         };
         Relationships: [];
       };
+      user_documents: {
+        Row: {
+          ai_description: string | null;
+          ai_keyentities: string[] | null;
+          ai_maintopics: string[] | null;
+          ai_title: string | null;
+          created_at: string;
+          filter_tags: string;
+          id: string;
+          title: string;
+          total_pages: number;
+          user_id: string;
+        };
+        Insert: {
+          ai_description?: string | null;
+          ai_keyentities?: string[] | null;
+          ai_maintopics?: string[] | null;
+          ai_title?: string | null;
+          created_at?: string;
+          filter_tags: string;
+          id?: string;
+          title: string;
+          total_pages: number;
+          user_id: string;
+        };
+        Update: {
+          ai_description?: string | null;
+          ai_keyentities?: string[] | null;
+          ai_maintopics?: string[] | null;
+          ai_title?: string | null;
+          created_at?: string;
+          filter_tags?: string;
+          id?: string;
+          title?: string;
+          total_pages?: number;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'user_documents_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
+      user_documents_vec: {
+        Row: {
+          document_id: string;
+          embedding: string | null;
+          id: string;
+          page_number: number;
+          text_content: string;
+        };
+        Insert: {
+          document_id: string;
+          embedding?: string | null;
+          id?: string;
+          page_number: number;
+          text_content: string;
+        };
+        Update: {
+          document_id?: string;
+          embedding?: string | null;
+          id?: string;
+          page_number?: number;
+          text_content?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'user_documents_vec_document_id_fkey';
+            columns: ['document_id'];
+            isOneToOne: false;
+            referencedRelation: 'user_documents';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
       users: {
         Row: {
           email: string;
@@ -154,68 +233,6 @@ export type Database = {
           id?: string;
         };
         Relationships: [];
-      };
-      vector_documents: {
-        Row: {
-          ai_description: string | null;
-          ai_keyentities: string[] | null;
-          ai_maintopics: string[] | null;
-          ai_title: string | null;
-          created_at: string | null;
-          embedding: string | null;
-          filter_tags: string | null;
-          id: string;
-          page_number: number;
-          primary_language: string | null;
-          text_content: string;
-          timestamp: string;
-          title: string;
-          total_pages: number;
-          user_id: string;
-        };
-        Insert: {
-          ai_description?: string | null;
-          ai_keyentities?: string[] | null;
-          ai_maintopics?: string[] | null;
-          ai_title?: string | null;
-          created_at?: string | null;
-          embedding?: string | null;
-          filter_tags?: string | null;
-          id?: string;
-          page_number: number;
-          primary_language?: string | null;
-          text_content: string;
-          timestamp: string;
-          title: string;
-          total_pages: number;
-          user_id: string;
-        };
-        Update: {
-          ai_description?: string | null;
-          ai_keyentities?: string[] | null;
-          ai_maintopics?: string[] | null;
-          ai_title?: string | null;
-          created_at?: string | null;
-          embedding?: string | null;
-          filter_tags?: string | null;
-          id?: string;
-          page_number?: number;
-          primary_language?: string | null;
-          text_content?: string;
-          timestamp?: string;
-          title?: string;
-          total_pages?: number;
-          user_id?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'fk_user';
-            columns: ['user_id'];
-            isOneToOne: false;
-            referencedRelation: 'users';
-            referencedColumns: ['id'];
-          }
-        ];
       };
     };
     Views: {
@@ -258,8 +275,6 @@ export type Database = {
           filter_tags: string;
           page_number: number;
           total_pages: number;
-          chunk_number: number;
-          total_chunks: number;
           similarity: number;
         }[];
       };

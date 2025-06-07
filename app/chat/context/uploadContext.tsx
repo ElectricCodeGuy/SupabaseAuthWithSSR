@@ -7,7 +7,7 @@ import React, {
   useCallback
 } from 'react';
 import { createClient } from '@/lib/client/client';
-import { encodeBase64 } from '../lib/base64';
+import { encodeBase64 } from '../utils/base64';
 import useSWR, { mutate } from 'swr';
 import { useRouter } from 'next/navigation';
 

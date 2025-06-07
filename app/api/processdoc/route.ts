@@ -9,10 +9,12 @@ import {
   generateDocumentMetadata
 } from './agentchains';
 import { voyage } from 'voyage-ai-provider';
+import type { TablesInsert } from '@/types/database';
+import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
 
-export const maxDuration = 60;
+export const maxDuration = 800;
 
 const embeddingModel = voyage.textEmbeddingModel('voyage-3-large', {
   inputType: 'document',
@@ -29,21 +31,7 @@ function sanitizeFilename(filename: string): string {
   return sanitized;
 }
 
-interface DocumentRecord {
-  user_id: string;
-  embedding: string;
-  text_content: string;
-  title: string;
-  timestamp: string;
-  ai_title: string;
-  ai_description: string;
-  ai_maintopics: string[];
-  ai_keyentities: string[];
-  primary_language: string;
-  filter_tags: string;
-  page_number: number;
-  total_pages: number;
-}
+type DocumentVectorRecord = TablesInsert<'user_documents_vec'>;
 
 async function processFile(pages: string[], fileName: string, userId: string) {
   let selectedDocuments = pages;
@@ -66,9 +54,6 @@ async function processFile(pages: string[], fileName: string, userId: string) {
   const processingBatchSize = 100;
   const upsertBatchSize = 100;
 
-  let totalPromptTokens = 0;
-  let totalCompletionTokens = 0;
-
   const chunks = <T>(array: T[], size: number): T[][] => {
     const chunks: T[][] = [];
     for (let i = 0; i < array.length; i += size) {
@@ -78,13 +63,43 @@ async function processFile(pages: string[], fileName: string, userId: string) {
   };
 
   const pageChunks = chunks(pages, processingBatchSize);
-  console.log('Processing page chunks:', pageChunks.length);
+
   const supabase = createAdminClient();
 
+  // Upsert the document metadata
+  const { error: docError, data: docData } = await supabase
+    .from('user_documents')
+    .upsert(
+      {
+        user_id: userId,
+        title: fileName.replace(/ /g, '_').trim(),
+        ai_title: object.descriptiveTitle,
+        ai_description: object.shortDescription,
+        ai_maintopics: object.mainTopics,
+        ai_keyentities: object.keyEntities,
+        filter_tags: filterTags,
+        total_pages: totalPages,
+        created_at: new Date().toISOString()
+      },
+      {
+        onConflict: 'user_id,title'
+      }
+    )
+    .select('id')
+    .single();
+
+  if (docError) {
+    console.error('Error upserting document metadata:', docError);
+    throw new Error(`Failed to create document record: ${docError.message}`);
+  }
+
+  // Get the document ID (either from upsert response or the generated UUID)
+  const finalDocumentId = docData.id;
+
+  // Now process each page chunk and create vector entries
   for (let chunkIndex = 0; chunkIndex < pageChunks.length; chunkIndex++) {
-    console.log(`Processing chunk ${chunkIndex + 1} of ${pageChunks.length}`);
     const batch = pageChunks[chunkIndex];
-    let batchRecords: DocumentRecord[] = [];
+    let vectorBatchRecords: DocumentVectorRecord[] = [];
 
     await Promise.all(
       batch.map(async (doc: string, index: number) => {
@@ -94,10 +109,9 @@ async function processFile(pages: string[], fileName: string, userId: string) {
         }
 
         const pageNumber = chunkIndex * processingBatchSize + index + 1;
-        console.log(`Processing page ${pageNumber} of ${totalPages}`);
 
         try {
-          const { combinedPreliminaryAnswers, usage } =
+          const { combinedPreliminaryAnswers } =
             await processDocumentWithAgentChains(
               doc,
               object.descriptiveTitle,
@@ -106,32 +120,21 @@ async function processFile(pages: string[], fileName: string, userId: string) {
               userId
             );
 
-          totalPromptTokens += usage.promptTokens;
-          totalCompletionTokens += usage.completionTokens;
-
           const combinedContent = combinedPreliminaryAnswers
             ? `
-      File Name: ${fileName}
-      Date: ${timestamp}
-      Page: ${pageNumber} of ${totalPages}
-      Title: ${object.descriptiveTitle}
-      Description: ${object.shortDescription}
-      Main Topics: ${object.mainTopics}
-      Key Entities: ${object.keyEntities}
+      ${fileName} \n
+      ${object.descriptiveTitle} \n
+      ${object.shortDescription} \n
+      ${object.mainTopics} \n
+      ${object.keyEntities} \n\n
       
-      Content:
-      ${doc}
+      ${doc} \n\n
       
-      Preliminary Analysis:
       ${combinedPreliminaryAnswers}
       `
             : `
-      File Name: ${fileName}
-      Date: ${timestamp}
-      Page: ${pageNumber} of ${totalPages}
-      Title: ${object.descriptiveTitle}
+      ${object.descriptiveTitle} \n\n
       
-      Content:
       ${doc}
       `;
 
@@ -142,24 +145,15 @@ async function processFile(pages: string[], fileName: string, userId: string) {
             });
 
             if (!embedding) {
-              console.log('No embedding generated, skipping document');
+              console.error('No embedding generated, skipping document');
               return;
             }
 
-            batchRecords.push({
-              user_id: userId,
-              embedding: `[${embedding.join(',')}]`,
-              text_content: doc,
-              title: fileName,
-              timestamp,
-              ai_title: object.descriptiveTitle,
-              ai_description: object.shortDescription,
-              ai_maintopics: object.mainTopics,
-              ai_keyentities: object.keyEntities,
-              primary_language: object.primaryLanguage,
-              filter_tags: filterTags,
+            vectorBatchRecords.push({
+              document_id: finalDocumentId,
               page_number: pageNumber,
-              total_pages: totalPages
+              text_content: doc,
+              embedding: `[${embedding.join(',')}]`
             });
           } catch (embedError) {
             console.error(
@@ -174,44 +168,33 @@ async function processFile(pages: string[], fileName: string, userId: string) {
     );
 
     // Only attempt to upsert if we have records
-    if (batchRecords.length > 0) {
-      // Upsert records in batches
-      const upsertBatches = chunks(batchRecords, upsertBatchSize);
-      console.log(`Processing ${upsertBatches.length} upsert batches`);
+    if (vectorBatchRecords.length > 0) {
+      // Upsert vector records in batches
+      const upsertBatches = chunks(vectorBatchRecords, upsertBatchSize);
 
       for (const batch of upsertBatches) {
-        try {
-          console.log(`Upserting batch of ${batch.length} records`);
-          const { error } = await supabase
-            .from('vector_documents')
-            .upsert(batch, {
-              onConflict: 'user_id, title, timestamp, page_number',
-              ignoreDuplicates: false
-            });
+        const { error } = await supabase
+          .from('user_documents_vec')
+          .upsert(batch, {
+            onConflict: 'document_id,page_number'
+          });
 
-          if (error) {
-            console.error('Error upserting batch to Supabase:', error);
-          } else {
-            console.log(
-              `Successfully upserted batch of ${batch.length} records`
-            );
-          }
-        } catch (error) {
-          console.error('Error upserting batch to Supabase:', error);
+        if (error) {
+          console.error('Error upserting vector batch to Supabase:', error);
         }
       }
     } else {
-      console.warn('No records to upsert for this batch');
+      console.warn('No vector records to upsert for this batch');
     }
 
     // Clear batch records for next iteration
-    batchRecords = [];
+    vectorBatchRecords = [];
   }
 
-  console.log('Final Token Usage:', totalPromptTokens, totalCompletionTokens);
   return filterTags;
 }
 
+// Rest of your code remains unchanged...
 async function processDocumentWithAgentChains(
   doc: string,
   ai_title: string,
@@ -220,7 +203,6 @@ async function processDocumentWithAgentChains(
   userId: string
 ): Promise<{
   combinedPreliminaryAnswers: string;
-  usage: { promptTokens: number; completionTokens: number };
 }> {
   const prompt = `
   Title: ${ai_title}
@@ -232,8 +214,8 @@ async function processDocumentWithAgentChains(
   try {
     const result = await preliminaryAnswerChainAgent(prompt, userId);
 
-    const { object, usage } = result;
-    console.log('Result:', object);
+    const { object } = result;
+
     // If tags is potentially undefined, use nullish coalescing
     const tagTaxProvisions = object.tags.join(', ') || '';
 
@@ -244,32 +226,21 @@ async function processDocumentWithAgentChains(
       object.hypothetical_question_1,
       object.hypothetical_question_2
     ].join('\n');
-    return {
-      combinedPreliminaryAnswers,
-      usage: {
-        promptTokens: usage.promptTokens,
-        completionTokens: usage.completionTokens
-      }
-    };
+    return { combinedPreliminaryAnswers };
   } catch (error) {
     if (
       error instanceof Error &&
       error.message === 'Processing timeout after 15 seconds'
     ) {
-      console.log('Skipping document processing due to timeout');
-    } else {
       console.error(`Error processing document with agent chains: ${error}`);
     }
 
     return {
-      combinedPreliminaryAnswers: '',
-      usage: {
-        promptTokens: 0,
-        completionTokens: 0
-      }
+      combinedPreliminaryAnswers: ''
     };
   }
 }
+
 export async function POST(req: NextRequest) {
   try {
     // Check for Llama Cloud API key
@@ -299,7 +270,8 @@ export async function POST(req: NextRequest) {
         headers: {
           Authorization: `Bearer ${process.env.LLAMA_CLOUD_API_KEY}`,
           Accept: 'application/json'
-        }
+        },
+        cache: 'no-store'
       }
     );
 
@@ -316,14 +288,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const markdown = await markdownResponse.text();
-    const pages = markdown
-      .split('\\n---\\n')
+    // Parse the JSON response to extract just the markdown property
+    const responseJson = await markdownResponse.json();
+
+    // Extract the clean markdown content from the response
+    const markdownContent = responseJson.markdown as string;
+
+    // Use the correct page splitting pattern
+    const pages = markdownContent
+      .split('\n---\n')
       .map((page) => page.trim())
       .filter((page) => page !== '');
 
     const filterTags = await processFile(pages, fileName, userId);
-
+    revalidatePath('/chat', 'layout');
     return NextResponse.json({ status: 'SUCCESS', filterTags });
   } catch (error) {
     console.error('Error in POST request:', error);

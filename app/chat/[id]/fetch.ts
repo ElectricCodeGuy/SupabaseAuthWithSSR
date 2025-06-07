@@ -174,11 +174,11 @@ export function formatMessages(messages: ChatMessage[]): Message[] {
 export async function fetchChat(chatId: string) {
   noStore();
   const supabase = await createServerSupabaseClient();
-  try {
-    const { data, error } = await supabase
-      .from('chat_sessions')
-      .select(
-        `
+
+  const { data, error } = await supabase
+    .from('chat_sessions')
+    .select(
+      `
         id,
         user_id,
         created_at,
@@ -194,19 +194,17 @@ export async function fetchChat(chatId: string) {
           tool_invocations
         )
       `
-      )
-      .eq('id', chatId)
-      .order('created_at', {
-        ascending: true,
-        referencedTable: 'chat_messages'
-      })
-      .maybeSingle();
+    )
+    .eq('id', chatId)
+    .order('created_at', {
+      ascending: true,
+      referencedTable: 'chat_messages'
+    })
+    .maybeSingle();
 
-    if (error) throw error;
-
-    return data;
-  } catch (error) {
-    console.error('Error fetching chat data from Supabase:', error);
-    return null;
+  if (error) {
+    console.error('Error fetching chat:', error);
   }
+
+  return data;
 }

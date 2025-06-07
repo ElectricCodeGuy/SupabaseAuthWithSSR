@@ -7,7 +7,7 @@ import { websiteSearchTool } from '@/app/api/chat/tools/WebsiteSearchTool';
 export const toolSet = {
   searchUserDocument: searchUserDocument({
     userId: '123',
-    selectedFiles: []
+    selectedBlobs: []
   }),
   websiteSearchTool: websiteSearchTool
 };

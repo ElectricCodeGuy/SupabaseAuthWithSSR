@@ -1,10 +1,8 @@
 // app/chat/[chatId]/layout.tsx
 import React from 'react';
 import { createServerSupabaseClient } from '@/lib/server/server';
-import { getUserInfo } from '@/lib/server/supabase';
-import ChatHistoryDrawer from './components/ChatHistorySidebar';
+import ChatHistoryDrawer from './components/chat_history/ChatHistorySidebar';
 import { unstable_noStore as noStore } from 'next/cache';
-import type { Tables } from '@/types/database';
 import { UploadProvider } from './context/uploadContext';
 import { isToday, isYesterday, subDays } from 'date-fns';
 import { TZDate } from '@date-fns/tz';
@@ -27,27 +25,54 @@ interface CategorizedChats {
   older: ChatPreview[];
 }
 
-async function fetchData(limit = 30, offset = 0) {
+// Single combined query
+// Single combined query with proper first message fetching
+const fetchUserData = async () => {
   noStore();
   const supabase = await createServerSupabaseClient();
+
   try {
-    const { data, error } = await supabase
-      .from('chat_sessions')
+    const { data: userData, error: userError } = await supabase
+      .from('users')
       .select(
         `
+        id,
+        full_name,
+        email,
+        chat_sessions (
           id,
           created_at,
           chat_title,
           first_message:chat_messages!inner(content)
-        `
+        ),
+        user_documents (
+          id,
+          title,
+          created_at,
+          total_pages,
+          filter_tags
+        )
+      `
       )
-      .order('created_at', { ascending: false })
-      .limit(1, { foreignTable: 'chat_messages' })
-      .range(offset, offset + limit - 1);
+      .order('created_at', {
+        ascending: false,
+        referencedTable: 'chat_sessions'
+      })
+      .order('created_at', {
+        ascending: false,
+        referencedTable: 'user_documents'
+      })
+      .limit(30, { foreignTable: 'chat_sessions' })
+      .limit(1, { foreignTable: 'chat_sessions.chat_messages' })
+      .maybeSingle();
 
-    if (error) throw error;
+    if (userError || !userData) {
+      console.error('User Error:', userError);
+      return null;
+    }
 
-    return data.map((session) => ({
+    // Transform chat data using the same logic as the original fetchData function
+    const chatPreviews = (userData.chat_sessions || []).map((session) => ({
       id: session.id,
       firstMessage:
         session.chat_title ??
@@ -55,12 +80,28 @@ async function fetchData(limit = 30, offset = 0) {
         'No messages yet',
       created_at: session.created_at
     }));
-  } catch (error) {
-    console.error('Error fetching chat previews:', error);
-    return [];
-  }
-}
 
+    // Transform documents data
+    const documents = (userData.user_documents || []).map((doc) => ({
+      id: doc.id,
+      title: doc.title,
+      created_at: doc.created_at,
+      total_pages: doc.total_pages,
+      filter_tags: doc.filter_tags
+    }));
+
+    return {
+      id: userData.id,
+      full_name: userData.full_name,
+      email: userData.email,
+      chatPreviews,
+      documents
+    };
+  } catch (error) {
+    console.error('Error fetching user data:', error);
+    return null;
+  }
+};
 function categorizeChats(chatPreviews: ChatPreview[]): CategorizedChats {
   const getZonedDate = (date: string) =>
     new TZDate(new Date(date), 'Europe/Copenhagen');
@@ -103,41 +144,21 @@ function categorizeChats(chatPreviews: ChatPreview[]): CategorizedChats {
   return { today, yesterday, last7Days, last30Days, last2Months, older };
 }
 
-type UserInfo = Pick<Tables<'users'>, 'full_name' | 'email' | 'id'>;
-
 export default async function Layout(props: { children: React.ReactNode }) {
-  const userData = await getUserInfo();
-
-  let userInfo: UserInfo;
-  let initialChatPreviews: ChatPreview[] = [];
-  let categorizedChats: CategorizedChats = {
-    today: [],
-    yesterday: [],
-    last7Days: [],
-    last30Days: [],
-    last2Months: [],
-    older: []
-  };
-
-  if (userData) {
-    userInfo = userData;
-    initialChatPreviews = await fetchData(30, 0);
-    categorizedChats = categorizeChats(initialChatPreviews);
-  } else {
-    userInfo = {
-      id: '',
-      full_name: '',
-      email: ''
-    };
-  }
+  const userData = await fetchUserData();
 
   return (
     <SidebarProvider>
-      <UploadProvider userId={userInfo.id}>
+      <UploadProvider userId={userData?.id || ''}>
         <ChatHistoryDrawer
-          userInfo={userInfo}
-          initialChatPreviews={initialChatPreviews}
-          categorizedChats={categorizedChats}
+          userInfo={{
+            id: userData?.id || '',
+            full_name: userData?.full_name || '',
+            email: userData?.email || ''
+          }}
+          initialChatPreviews={userData?.chatPreviews || []}
+          categorizedChats={categorizeChats(userData?.chatPreviews || [])}
+          documents={userData?.documents || []}
         />
         {props.children}
       </UploadProvider>

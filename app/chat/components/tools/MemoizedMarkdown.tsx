@@ -7,7 +7,7 @@ import rehypeHighlight from 'rehype-highlight';
 import type { Options as HighlightOptions } from 'rehype-highlight';
 import Link from 'next/link';
 import { ExternalLink } from 'lucide-react';
-import { encodeBase64 } from '../../lib/base64';
+import { encodeBase64 } from '../../utils/base64';
 import Image from 'next/image';
 import useSWRImmutable from 'swr/immutable';
 import {

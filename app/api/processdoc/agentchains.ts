@@ -43,7 +43,7 @@ export const preliminaryAnswerChainAgent = async (
     system: SystemPrompt,
     prompt: content,
     schema: contentAnalysisSchema,
-    abortSignal: AbortSignal.timeout(15000),
+    abortSignal: AbortSignal.timeout(15000), // 15 seconds timeout
     temperature: 0,
     experimental_telemetry: {
       isEnabled: true,

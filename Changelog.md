@@ -1,5 +1,48 @@
 ## CHANGELOG
 
+## [v2.1.0] - 2025-06-07
+
+### Added
+
+- **Normalized Document Database Schema**: Redesigned document storage architecture with separated concerns for better performance and maintainability
+- **Enhanced Document Retrieval Tool**: Completely optimized the document retrieval system for more accurate and relevant chunk matching
+- **Modular Chat History Components**: Split chat history management into separate, reusable components for improved code organization
+
+### Changed
+
+- **Document Schema Restructure**: Migrated from single `vector_documents` table to a normalized two-table structure:
+
+  ```sql
+  -- Main document metadata table
+  CREATE TABLE public.user_documents (
+    id uuid NOT NULL DEFAULT gen_random_uuid(),
+    user_id uuid NOT NULL,
+    title text NOT NULL,
+    total_pages integer NOT NULL,
+    ai_description text NULL,
+    ai_keyentities text[] NULL,
+    ai_maintopics text[] NULL,
+    ai_title text NULL,
+    filter_tags text NOT NULL,
+    created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT user_documents_pkey PRIMARY KEY (id),
+    CONSTRAINT user_documents_user_title_unique UNIQUE (user_id, title),
+    CONSTRAINT user_documents_user_id_fkey FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+  );
+
+  -- Separate vector embeddings table
+  CREATE TABLE public.user_documents_vec (
+    id uuid NOT NULL DEFAULT gen_random_uuid(),
+    document_id uuid NOT NULL,
+    text_content text NOT NULL,
+    page_number integer NOT NULL,
+    embedding extensions.vector(1024) NULL,
+    CONSTRAINT user_documents_vec_pkey PRIMARY KEY (id),
+    CONSTRAINT user_documents_vec_document_page_unique UNIQUE (document_id, page_number),
+    CONSTRAINT user_documents_vec_document_id_fkey FOREIGN KEY (document_id) REFERENCES user_documents (id) ON DELETE CASCADE
+  );
+  ```
+
 ## [v2.0.0] - 2025-05-04
 
 ### Added

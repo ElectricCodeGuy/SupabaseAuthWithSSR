@@ -1,44 +1,9 @@
-// app/api/chat/tools/UploadedDocumentTool.ts
+// app/api/chat/tools/DocumentChatTool.ts
 import { tool } from 'ai';
 import { z } from 'zod';
-import { embed, generateObject } from 'ai';
+import { embed } from 'ai';
 import { voyage } from 'voyage-ai-provider';
 import { createServerSupabaseClient } from '@/lib/server/server';
-import { google } from '@ai-sdk/google';
-
-// Function to sanitize filenames
-function sanitizeFilename(filename: string): string {
-  return filename
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-zA-Z0-9._-]/g, '_');
-}
-
-interface DocToolProps {
-  userId: string;
-  selectedFiles: string[];
-}
-
-const zodSchemaSearch = z.object({
-  variation1: z
-    .string()
-    .min(1)
-    .describe(
-      'A variation that precisely identifies the main topic or key concept of the query, aiming to match specific terminology used in authoritative sources. Output should be in English and is required.'
-    ),
-  variation2: z
-    .string()
-    .min(1)
-    .describe(
-      'A variation that focuses on the context or domain relevant to the question, tailored to find documents within the same field or area of interest. Output should be in English and is required.'
-    ),
-  variation3: z
-    .string()
-    .min(1)
-    .describe(
-      'A variation that focuses on potential applications or implications of the topic, to target documents discussing related outcomes or consequences. Output should be in English and is required.'
-    )
-});
 
 // Embedding model for query
 const embeddingModel = voyage.textEmbeddingModel('voyage-3-large', {
@@ -48,8 +13,21 @@ const embeddingModel = voyage.textEmbeddingModel('voyage-3-large', {
   outputDtype: 'int8'
 });
 
+// Function to sanitize filenames
+function sanitizeFilename(filename: string): string {
+  return filename
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9._-]/g, '_');
+}
+
+interface ChatwithDocsProps {
+  userId: string;
+  selectedBlobs: string[];
+}
+
 // Embed query function
-async function embedQuery(text: string): Promise<number[]> {
+async function embedQuery(text: string) {
   const { embedding } = await embed({
     model: embeddingModel,
     value: text
@@ -57,13 +35,13 @@ async function embedQuery(text: string): Promise<number[]> {
   return embedding;
 }
 
-// Function to query Supabase vectors
+// Function to query Supabase vectors with new RPC
 async function querySupabaseVectors(
   queryEmbedding: number[],
   userId: string,
   selectedFiles: string[],
-  topK = 40, // number of top matches to return
-  similarityThreshold = 0.3 // similarity threshold for filtering results
+  topK: number,
+  similarityThreshold: number
 ) {
   const supabase = await createServerSupabaseClient();
 
@@ -84,52 +62,29 @@ async function querySupabaseVectors(
   }
 
   return matches.map((match) => ({
-    pageContent: match.text_content,
-    metadata: {
-      text: match.text_content,
-      title: match.title,
-      timestamp: match.doc_timestamp,
-      ai_title: match.ai_title,
-      ai_description: match.ai_description,
-      ai_maintopics: match.ai_maintopics,
-      ai_keyentities: match.ai_keyentities,
-      filterTags: match.filter_tags,
-      page: match.page_number,
-      totalPages: match.total_pages,
-      chunk: match.chunk_number,
-      totalChunks: match.total_chunks,
-      similarity: match.similarity
-    }
+    id: match.id,
+    text: match.text_content,
+    title: match.title,
+    timestamp: match.doc_timestamp,
+    ai_title: match.ai_title,
+    ai_description: match.ai_description,
+    ai_maintopics: match.ai_maintopics,
+    ai_keyentities: match.ai_keyentities,
+    filterTags: match.filter_tags,
+    page: match.page_number,
+    totalPages: match.total_pages,
+    similarity: match.similarity
   }));
 }
 
-// Get document metadata for displaying in the UI
-async function getSelectedDocumentsMetadata(
-  userId: string,
-  selectedFiles: string[]
-) {
-  const supabase = await createServerSupabaseClient();
-
-  const { data, error } = await supabase
-    .from('vector_documents')
-    .select('title, ai_title, ai_description, ai_maintopics, primary_language')
-    .eq('user_id', userId)
-    .in('filter_tags', selectedFiles)
-    .eq('page_number', 1);
-
-  if (error) {
-    console.error('Error fetching document metadata:', error);
-    return [];
-  }
-
-  return data;
-}
-
-export const searchUserDocument = ({ userId, selectedFiles }: DocToolProps) =>
+export const searchUserDocument = ({
+  userId,
+  selectedBlobs
+}: ChatwithDocsProps) =>
   tool({
     description: `Search through ${
-      selectedFiles.length
-    } uploaded documents to find relevant information based on the query. ALWAYS use this tool when documents have been uploaded by the user. Currently selected documents: ${selectedFiles.join(
+      selectedBlobs.length
+    } uploaded documents to find relevant information based on the query. ALWAYS use this tool when documents have been uploaded by the user. Currently selected documents: ${selectedBlobs.join(
       ', '
     )}`,
     parameters: z.object({
@@ -140,8 +95,12 @@ export const searchUserDocument = ({ userId, selectedFiles }: DocToolProps) =>
         )
     }),
     execute: async (args, { messages }) => {
+      // Get both query sources
+      const toolQuery = args.query;
+      const userMessage = messages[messages.length - 1].content;
+
       // Sanitize filenames
-      const sanitizedFilenames = selectedFiles.map((filename) => {
+      const sanitizedFilenames = selectedBlobs.map((filename) => {
         // Split the filename and timestamp
         const [name, timestamp] = filename.split('[[');
 
@@ -152,103 +111,62 @@ export const searchUserDocument = ({ userId, selectedFiles }: DocToolProps) =>
         return timestamp ? `${sanitizedName}[[${timestamp}` : sanitizedName;
       });
 
-      // Get document metadata
-      const documentsMetadata = await getSelectedDocumentsMetadata(
-        userId,
-        sanitizedFilenames
-      );
+      // Process both queries in parallel
+      const [toolQueryEmbedding, userMessageEmbedding] = await Promise.all([
+        embedQuery(toolQuery),
+        embedQuery(userMessage.toString())
+      ]);
 
-      const documentContext = documentsMetadata
-        .map((doc) => {
-          const parts = [`Document Title: ${doc.title}`];
-          if (doc.ai_title) parts.push(`Improved Title: ${doc.ai_title}`);
-          if (doc.ai_description)
-            parts.push(`Description: ${doc.ai_description}`);
-          if (doc.ai_maintopics && Array.isArray(doc.ai_maintopics)) {
-            parts.push(`Main Topics: ${doc.ai_maintopics.join(', ')}`);
-          }
-          if (doc.primary_language)
-            parts.push(
-              `Primary Language used in the document: ${doc.primary_language}`
-            );
-          return parts.join('\n');
-        })
-        .join('\n\n');
-
-      // Generate optimized queries
-      const { object } = await generateObject({
-        model: google('gemini-2.0-flash-001'),
-        system: `You are an expert in information retrieval. Your task is to reformulate the user's query to optimize search results for vector similarity search.
-    
-Available documents context:
-${documentContext}
-
-Generate three variations of the query that:
-1. Precisely identifies the main topic or key concept, matching terminology from the available documents
-2. Focuses on the context or domain relevant to the question
-3. Explores potential applications or implications of the topic
-
-Keep the variations focused on the content available in the provided documents.`,
-        schema: zodSchemaSearch,
-        messages: messages
-      });
-      const queries = [
-        object.variation1,
-        object.variation2,
-        object.variation3
-      ].filter((q) => q && q.trim() !== '');
-
-      console.log('Optimized queries:', queries);
-
-      // Get embedding for each query
-      const embeddings = await Promise.all(
-        queries.map((query) => embedQuery(query))
-      );
-
-      // Query for vector search results for each embedding
-      const searchResultsArrays = await Promise.all(
-        embeddings.map((embedding) =>
-          querySupabaseVectors(embedding, userId, sanitizedFilenames, 40, 0.5)
+      // Search vectors with both embeddings in parallel
+      const [toolQueryResults, userMessageResults] = await Promise.all([
+        querySupabaseVectors(
+          toolQueryEmbedding,
+          userId,
+          sanitizedFilenames,
+          30,
+          0.3
+        ),
+        querySupabaseVectors(
+          userMessageEmbedding,
+          userId,
+          sanitizedFilenames,
+          30,
+          0.3
         )
-      );
+      ]);
 
-      // Sort results by similarity
-      const allSearchResults = searchResultsArrays.flat();
+      // Combine results from both searches
+      const allSearchResults = [...toolQueryResults, ...userMessageResults];
 
       // Deduplicate results based on title and page number
       const seenKeys = new Set();
-      const uniqueResults = allSearchResults.filter((item) => {
-        const key = `${item.metadata.title}-${item.metadata.page}`;
+      const searchResults = allSearchResults.filter((item) => {
+        const key = `${item.title}-${item.page}`;
         if (seenKeys.has(key)) return false;
         seenKeys.add(key);
         return true;
       });
 
-      // Sort by similarity score
-      const sortedSearchResults = uniqueResults.sort(
-        (a, b) => b.metadata.similarity - a.metadata.similarity
-      );
+      // Sort by similarity score (higher = more relevant)
+      searchResults.sort((a, b) => b.similarity - a.similarity);
 
       // Format search results
       const formattedSearchResults = (() => {
         // Group results by document (using title and timestamp as identifier)
-        const groupedResults = sortedSearchResults.reduce((acc, result) => {
-          const key = `${result.metadata.title}[[${result.metadata.timestamp}]]`;
+        const groupedResults = searchResults.reduce((acc, result) => {
+          const key = `${result.title}[[${result.timestamp}]]`;
           if (!acc[key]) {
             acc[key] = [];
           }
           acc[key].push(result);
           return acc;
-        }, {} as Record<string, typeof sortedSearchResults>);
+        }, {} as Record<string, typeof searchResults>);
 
         // Sort and format each group
         return Object.entries(groupedResults)
           .map(([_key, docs]) => {
             // Sort documents by page number
-            docs.sort(
-              (a, b) =>
-                (a.metadata.page as number) - (b.metadata.page as number)
-            );
+            docs.sort((a, b) => (a.page as number) - (b.page as number));
 
             // Extract common metadata (only once per document)
             const {
@@ -258,106 +176,94 @@ Keep the variations focused on the content available in the provided documents.`
               ai_keyentities,
               title,
               timestamp
-            } = docs[0].metadata;
+            } = docs[0];
 
             // Format the document group
             return `
-<document>
-  <metadata>
-    <title>${title}</title>
-    <timestamp>${timestamp}</timestamp>
-    <ai_title>${ai_title || ''}</ai_title>
-    <ai_description>${ai_description || ''}</ai_description>
-    <ai_maintopics>${
-      Array.isArray(ai_maintopics)
-        ? ai_maintopics.join(', ')
-        : ai_maintopics || ''
-    }</ai_maintopics>
-    <ai_keyentities>${
-      Array.isArray(ai_keyentities)
-        ? ai_keyentities.join(', ')
-        : ai_keyentities || ''
-    }</ai_keyentities>
-  </metadata>
-  <content>
-    ${docs
-      .map(
-        (doc) => `
-    <page number="${doc.metadata.page}">
-      <reference_link>[${doc.metadata.title}, p.${
-          doc.metadata.page
-        }](<?pdf=${doc.metadata.title.replace(/ /g, '_').trim()}&p=${
-          doc.metadata.page
-        }>)</reference_link>
-      <text>${doc.pageContent}</text>
-    </page>`
-      )
-      .join('')}
-  </content>
-</document>`;
+      <document>
+        <metadata>
+          <title>${title}</title>
+          <timestamp>${timestamp}</timestamp>
+          <ai_title>${ai_title || ''}</ai_title>
+          <ai_description>${ai_description || ''}</ai_description>
+          <ai_maintopics>${
+            Array.isArray(ai_maintopics)
+              ? ai_maintopics.join(', ')
+              : ai_maintopics || ''
+          }</ai_maintopics>
+          <ai_keyentities>${
+            Array.isArray(ai_keyentities)
+              ? ai_keyentities.join(', ')
+              : ai_keyentities || ''
+          }</ai_keyentities>
+        </metadata>
+        <content>
+          ${docs
+            .map(
+              (doc) => `
+          <page number="${doc.page}">
+            <reference_link>[${doc.title}, p.${doc.page}](<?pdf=${doc.title
+                .replace(/ /g, '_')
+                .trim()}&p=${doc.page}>)</reference_link>
+            <text>${doc.text}</text>
+          </page>`
+            )
+            .join('')}
+        </content>
+      </document>`;
           })
           .join('\n');
       })();
 
       // Create system prompt
       const systemPromptTemplate = (() => {
-        // Get actual document examples from search results
-        const documentExamples = sortedSearchResults
-          .slice(0, 2)
-          .map(
-            (result) =>
-              `[${result.metadata.title}, p.${
-                result.metadata.page
-              }](<?pdf=${result.metadata.title.replace(/ /g, '_').trim()}&p=${
-                result.metadata.page
-              }>)`
-          )
-          .join(' and ');
-
         return `
-<instructions>
-Based on the content in the search results extracted from the uploaded files, please provide an answer to the question. The search results contain information relevant to the query.
+        <instructions>
 
-IMPORTANT: Every time you use information from the documents, you must immediately add a reference after the relevant information. The reference MUST be in Markdown link format and include the document title and page number as a search parameter.
+        Based on the content of the search results, which are extracted from the uploaded files, please provide an answer to the question. The search results contain information that is relevant to the query.
 
-The Markdown link format must be exactly as follows:
+        IMPORTANT: Every time you use information from the documents, you must immediately add a reference after the relevant information. The reference MUST be in Markdown link format with a contextually meaningful link text.
 
-[Document title, p.X](<?pdf=Document_title&p=X>)
+        The Markdown link format should be:
 
-where X is the page number.
+        [Short description or context](<?pdf=Document_title&p=X>)
 
-For example:
-"The document states that... ${documentExamples}"
+        where X is the page number and "Short description or context" is meaningful text that relates to the content.
 
-This Markdown link format is crucial as it makes the references clickable and leads directly to the relevant page in the document. Please use this Markdown reference format consistently throughout your answer.
+        Good examples of link text:
+        - [Section §12 of the law](<?pdf=Document_title&p=8>)
+        - [Figure 3.2](<?pdf=Document_title&p=15>)
+        - [Definition of the concept](<?pdf=Document_title&p=2>)
 
-If the given content does not seem to contain sufficient information to answer the question, please suggest asking the question differently or provide more context. Do your best to help based on the available information.
+        This Markdown link format is crucial as it makes the references clickable and leads directly to the relevant page in the document. Please use this Markdown reference format consistently throughout your response, but make sure the link text is short and contextually relevant instead of the entire filename.
 
-If relevant information cannot be found to answer the question, please inform about this and suggest a rephrasing or request additional details.
+        If the given content does not seem to contain sufficient information to answer the question, please suggest rephrasing the question or providing more context. Do your best to help based on the available information.
 
-Please respond in the same language as the user's question.
-</instructions>
+        If no relevant information can be found to answer the question, you should inform about this and suggest a reformulation or request additional details.
 
-<search_results>
-${formattedSearchResults}
-</search_results>
-`;
+        Please respond in the same language as the user's question.
+        </instructions>
+
+        <search_results>
+        ${formattedSearchResults}
+        </search_results>
+        `;
       })();
 
       // Extract document results metadata for UI
       const documentResults = Object.entries(
-        sortedSearchResults.reduce(
+        searchResults.reduce(
           (acc, result) => {
-            const key = `${result.metadata.title}[[${result.metadata.timestamp}]]`;
+            const key = result.id;
             if (!acc[key]) {
               acc[key] = {
-                title: result.metadata.title,
-                timestamp: result.metadata.timestamp,
-                aiTitle: result.metadata.ai_title,
+                title: result.title,
+                timestamp: result.timestamp,
+                aiTitle: result.ai_title,
                 pages: new Set()
               };
             }
-            acc[key].pages.add(result.metadata.page);
+            acc[key].pages.add(result.page);
             return acc;
           },
           {} as Record<
@@ -383,7 +289,9 @@ ${formattedSearchResults}
         .slice(0, 3)
         .map(
           (doc) =>
-            `[${doc.title}](<?pdf=${doc.title.replace(/ /g, '_').trim()}&p=1>)`
+            `[View document: ${
+              doc.aiTitle || doc.title.substring(0, 30)
+            }...](<?pdf=${doc.title.replace(/ /g, '_').trim()}&p=1>)`
         )
         .join('\n');
 
@@ -394,11 +302,10 @@ ${formattedSearchResults}
 
 ${systemPromptTemplate}
 
-For each document relevant to the user's question, provide a clear and concise answer based on the document content, and include links to the documents in this format:
+For each document that is relevant to the user's question, provide a clear and concise answer based on the document's content, and include links to the documents with contextual descriptions:
 ${exampleLinks}
 `
-          : `I could not find any documents matching the user's query.`;
-
+          : `Unfortunately, I could not find documents that match the user's query.`;
       return {
         systemPrompt: finalSystemPrompt
       };

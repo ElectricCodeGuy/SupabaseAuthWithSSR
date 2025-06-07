@@ -6,6 +6,7 @@ import { createServerSupabaseClient } from '@/lib/server/server';
 import { createAdminClient } from '@/lib/server/admin';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
+import { decodeBase64 } from './utils/base64';
 
 export interface ChatPreview {
   id: string;
@@ -78,20 +79,24 @@ export async function deleteChatData(chatId: string) {
 }
 
 const deleteFileSchema = z.object({
-  filePath: z.string(),
-  filterTag: z.string()
+  filePath: z.string()
 });
+
+function sanitizeFilename(filename: string): string {
+  return filename
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9._-]/g, '_');
+}
 
 export async function deleteFilterTagAndDocumentChunks(formData: FormData) {
   const session = await getSession();
   if (!session) {
     throw new Error('User not authenticated');
   }
-
   try {
     const result = deleteFileSchema.safeParse({
-      filePath: formData.get('filePath'),
-      filterTag: formData.get('filterTag')
+      filePath: formData.get('filePath')
     });
 
     if (!result.success) {
@@ -102,50 +107,52 @@ export async function deleteFilterTagAndDocumentChunks(formData: FormData) {
       };
     }
 
-    const { filePath, filterTag } = result.data;
-    const supabase = await createServerSupabaseClient();
+    const { filePath } = result.data;
+    const userId = session.id;
 
-    // Delete file from storage
-    const fileToDelete = session.id + '/' + filePath;
-    const { error: deleteStorageError } = await supabase.storage
+    // Delete the file from storage
+    const supabase = await createServerSupabaseClient();
+    const fileToDelete = userId + '/' + filePath;
+
+    const { error: deleteError } = await supabase.storage
       .from('userfiles')
       .remove([fileToDelete]);
 
-    if (deleteStorageError) {
-      console.error(
-        'Error deleting file from Supabase storage:',
-        deleteStorageError
-      );
+    if (deleteError) {
+      console.error('Error deleting file from Supabase storage:', deleteError);
       return {
         success: false,
         message: 'Error deleting file from storage'
       };
     }
 
-    // Delete vectors from vector_documents table
+    // Generate the filter tag from the file path
+    const prefixToDelete = decodeBase64(filePath);
+    const sanitizedFilename = sanitizeFilename(prefixToDelete);
 
-    const supabaseAdmin = createAdminClient();
-
-    const { error: deleteVectorsError } = await supabaseAdmin
-      .from('vector_documents')
+    // Find and delete document records with the matching filter tag
+    // Vector records will be deleted automatically via ON DELETE CASCADE
+    const { data: deletedData, error: docDeleteError } = await supabase
+      .from('user_documents')
       .delete()
-      .eq('user_id', session.id)
-      .eq('filter_tags', filterTag);
+      .eq('user_id', userId)
+      .like('filter_tags', `${sanitizedFilename}%`)
+      .select('id, title');
 
-    if (deleteVectorsError) {
-      console.error(
-        'Error deleting vectors from database:',
-        deleteVectorsError
-      );
+    if (docDeleteError) {
+      console.error('Error deleting document records:', docDeleteError);
       return {
         success: false,
-        message: 'Error deleting document vectors'
+        message: 'Error deleting document metadata'
       };
     }
 
+    const deletedCount = deletedData?.length || 0;
+    revalidatePath('/', 'layout');
+    revalidatePath('/chat', 'layout');
     return {
       success: true,
-      message: 'File and associated vectors deleted successfully'
+      message: `Successfully deleted file and ${deletedCount} associated documents`
     };
   } catch (error) {
     console.error('Error during deletion process:', error);

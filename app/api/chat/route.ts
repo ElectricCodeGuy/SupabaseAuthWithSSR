@@ -159,7 +159,10 @@ export async function POST(req: NextRequest) {
     abortSignal: signal,
     providerOptions,
     tools: {
-      searchUserDocument: searchUserDocument({ userId, selectedFiles }),
+      searchUserDocument: searchUserDocument({
+        userId,
+        selectedBlobs: selectedFiles
+      }),
       websiteSearchTool: websiteSearchTool
     },
     experimental_activeTools:

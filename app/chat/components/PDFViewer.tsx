@@ -6,7 +6,7 @@ import { Loader2, X } from 'lucide-react';
 import useSWRImmutable from 'swr/immutable';
 import { createClient } from '@/lib/client/client';
 import Link from 'next/link';
-import { decodeBase64 } from '../lib/base64';
+import { decodeBase64 } from '../utils/base64';
 import { useSearchParams, useRouter } from 'next/navigation';
 
 const supabase = createClient();
@@ -65,7 +65,7 @@ export default function DocumentViewer({
   };
 
   const decodedFileName = decodeURIComponent(decodeBase64(fileName));
-  console.log('Decoded file name:', decodedFileName);
+
   const fileExtension = decodedFileName.split('.').pop()?.toLowerCase() ?? '';
   const page = Number(searchParams.get('p')) || 1;
   const {
@@ -80,7 +80,7 @@ export default function DocumentViewer({
 
   if (!userId) {
     return (
-      <div className="flex flex-col justify-center items-center h-[97vh] text-center">
+      <div className="w-[55%] border-l border-border hidden sm:flex flex-row justify-center items-start overflow-hidden relative h-[96vh]">
         <p className="text-foreground text-base">
           You need to be logged in with an active subscription to view this
         </p>
@@ -94,7 +94,15 @@ export default function DocumentViewer({
   if (error) {
     console.error('Error loading document:', error);
     return (
-      <div className="flex flex-col justify-center items-center h-[97vh] text-center">
+      <div className="w-[55%] border-l border-border hidden sm:flex flex-row justify-center items-start overflow-hidden relative h-[96vh]">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleClose}
+          className="absolute left-1 top-1 z-50 bg-background/70 hover:bg-background/90"
+        >
+          <X className="h-4 w-4" />
+        </Button>
         <p className="text-foreground text-base">
           There was an error loading the document. Please try again later.
         </p>
@@ -112,7 +120,7 @@ export default function DocumentViewer({
 
   if (!fileUrl) {
     return (
-      <div className="flex flex-col justify-center items-center h-[97vh] text-center">
+      <div className="w-[55%] border-l border-border hidden sm:flex flex-row justify-center items-start overflow-hidden relative h-[96vh]">
         <p className="text-foreground text-base">No file available.</p>
       </div>
     );

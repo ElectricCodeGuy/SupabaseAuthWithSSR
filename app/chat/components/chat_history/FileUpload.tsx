@@ -1,7 +1,7 @@
 import React, { useCallback, useRef } from 'react';
 import type { FileRejection, FileWithPath } from 'react-dropzone';
 import { useDropzone } from 'react-dropzone';
-import { useUpload } from '../context/uploadContext';
+import { useUpload } from '../../context/uploadContext';
 import {
   Loader2,
   Upload as CloudUploadIcon,
@@ -67,7 +67,7 @@ function LinearProgressWithLabel({
   );
 }
 
-export default function ServerUploadPage() {
+export default function UploadPage() {
   const formRef = useRef<HTMLFormElement | null>(null);
   const {
     isUploading,

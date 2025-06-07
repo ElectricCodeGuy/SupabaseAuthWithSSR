@@ -227,59 +227,72 @@ When dealing with hundreds of thousands of document vectors, optimizing for both
 
 
 -- Create the vector_documents table
-CREATE TABLE IF NOT EXISTS public.vector_documents (
+CREATE TABLE public.user_documents (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL,
-  embedding extensions.vector(1024),
-  text_content text NOT NULL,
   title text NOT NULL,
-  timestamp date NOT NULL,
-  ai_title text,
-  ai_description text,
-  ai_maintopics text[],
-  ai_keyentities text[],
-  filter_tags text,
-  page_number integer NOT NULL,
   total_pages integer NOT NULL,
-  chunk_number integer NOT NULL,
-  total_chunks integer NOT NULL,
-  primary_language text,
-  created_at timestamptz DEFAULT CURRENT_TIMESTAMP,
-  updated_at timestamptz DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT vector_documents_pkey PRIMARY KEY (id),
-  CONSTRAINT vector_documents_unique_chunk UNIQUE (user_id, title, "timestamp", page_number, chunk_number),
-  CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
-);
+  ai_description text NULL,
+  ai_keyentities text[] NULL,
+  ai_maintopics text[] NULL,
+  ai_title text NULL,
+  filter_tags text NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at timestamp with time zone NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT user_documents_pkey PRIMARY KEY (id),
+  CONSTRAINT user_documents_user_title_unique UNIQUE (user_id, title),
+  CONSTRAINT user_documents_user_id_fkey FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) TABLESPACE pg_default;
 
--- Create standard indexes
-CREATE INDEX IF NOT EXISTS idx_vector_documents_user_id ON public.vector_documents USING btree (user_id);
-CREATE INDEX IF NOT EXISTS idx_vector_documents_lookup ON public.vector_documents USING btree (
-  user_id,
-  title,
-  "timestamp",
-  page_number,
-  chunk_number
-);
+-- Separate vector embeddings table
+CREATE TABLE public.user_documents_vec (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  document_id uuid NOT NULL,
+  text_content text NOT NULL,
+  page_number integer NOT NULL,
+  embedding extensions.vector(1024) NULL,
+  CONSTRAINT user_documents_vec_pkey PRIMARY KEY (id),
+  CONSTRAINT user_documents_vec_document_page_unique UNIQUE (document_id, page_number),
+  CONSTRAINT user_documents_vec_document_id_fkey FOREIGN KEY (document_id) REFERENCES user_documents (id) ON DELETE CASCADE
+) TABLESPACE pg_default;
 
--- Create HNSW index for efficient approximate nearest neighbor search
-CREATE INDEX IF NOT EXISTS idx_vector_documents_hnsw_cosine ON public.vector_documents
-USING hnsw (embedding extensions.vector_cosine_ops)
-WITH (m = '16', ef_construction = '64');
+ALTER TABLE public.user_documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_documents_vec ENABLE ROW LEVEL SECURITY;
 
--- Create function to auto-update timestamp if not exists
-CREATE OR REPLACE FUNCTION update_modified_column()
-RETURNS TRIGGER AS $$
-BEGIN
-   NEW.updated_at = now();
-   RETURN NEW;
-END;
-$$ language 'plpgsql';
+-- RLS policy for user_documents - users can only access their own documents
+CREATE POLICY "Users can only access their own documents" ON public.user_documents
+    FOR ALL
+    TO public
+    USING ((SELECT auth.uid()) = user_id);
 
--- Create trigger for auto-updating the modified timestamp
-CREATE TRIGGER update_vector_documents_modtime
-BEFORE UPDATE ON public.vector_documents
-FOR EACH ROW
-EXECUTE FUNCTION update_modified_column();
+CREATE POLICY "Users can only access their own document vectors" ON public.user_documents_vec
+    FOR ALL
+    TO public
+    USING (
+        EXISTS (
+            SELECT 1 FROM user_documents
+            WHERE user_documents.id = user_documents_vec.document_id
+            AND user_documents.user_id = (SELECT auth.uid())
+        )
+    );
+
+
+-- Create indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_user_documents_user_id
+ON public.user_documents USING btree (user_id) TABLESPACE pg_default;
+
+CREATE INDEX IF NOT EXISTS idx_user_documents_filter_tags
+ON public.user_documents USING btree (filter_tags) TABLESPACE pg_default;
+
+CREATE INDEX IF NOT EXISTS idx_user_documents_vec_document_id
+ON public.user_documents_vec USING btree (document_id) TABLESPACE pg_default;
+
+-- Create HNSW index for vector similarity search
+CREATE INDEX IF NOT EXISTS user_documents_vec_embedding_idx
+ON public.user_documents_vec
+USING hnsw (embedding extensions.vector_l2_ops)
+WITH (m = '16', ef_construction = '64')
+TABLESPACE pg_default;
 
 
 ## HNSW Index Configuration
@@ -298,6 +311,8 @@ These parameters balance build time, index size, and query performance for our d
 - **Cosine Similarity**: Best metric for normalized document embeddings
 
 These optimizations enable sub-second query times even with hundreds of thousands of document vectors in the database.
+
+Above 500k rows you should consider increasing m and ef_construction to m = '32' and ef_construction = '128'
 
 -- Enable RLS
 ALTER TABLE public.vector_documents ENABLE ROW LEVEL SECURITY;
@@ -357,22 +372,20 @@ CREATE OR REPLACE FUNCTION match_documents(
   match_count int,
   filter_user_id uuid,
   filter_files text[],
-  similarity_threshold float DEFAULT 0.70
+  similarity_threshold float DEFAULT 0.30
 )
 RETURNS TABLE (
   id uuid,
   text_content text,
   title text,
-  doc_timestamp date,
+  doc_timestamp timestamp with time zone,
   ai_title text,
   ai_description text,
   ai_maintopics text[],
   ai_keyentities text[],
   filter_tags text,
-  page_number int,
-  total_pages int,
-  chunk_number int,
-  total_chunks int,
+  page_number integer,
+  total_pages integer,
   similarity float
 )
 LANGUAGE plpgsql
@@ -380,28 +393,28 @@ AS $$
 BEGIN
   RETURN QUERY
   SELECT
-      vd.id,
-      vd.text_content,
-      vd.title,
-      vd."timestamp" as doc_timestamp,
-      vd.ai_title,
-      vd.ai_description,
-      vd.ai_maintopics,
-      vd.ai_keyentities,
-      vd.filter_tags,
-      vd.page_number,
-      vd.total_pages,
-      vd.chunk_number,
-      vd.total_chunks,
-      1 - (vd.embedding <=> query_embedding) as similarity
+    vec.id,
+    vec.text_content,
+    doc.title,
+    doc.created_at as doc_timestamp,
+    doc.ai_title,
+    doc.ai_description,
+    doc.ai_maintopics,
+    doc.ai_keyentities,
+    doc.filter_tags,
+    vec.page_number,
+    doc.total_pages,
+    1 - (vec.embedding <=> query_embedding) as similarity
   FROM
-      vector_documents vd
+    user_documents_vec vec
+  INNER JOIN
+    user_documents doc ON vec.document_id = doc.id
   WHERE
-      vd.user_id = filter_user_id
-      AND vd.filter_tags = ANY(filter_files)
-      AND 1 - (vd.embedding <=> query_embedding) > similarity_threshold
+    doc.user_id = filter_user_id
+    AND doc.filter_tags = ANY(filter_files)
+    AND 1 - (vec.embedding <=> query_embedding) > similarity_threshold
   ORDER BY
-      vd.embedding <=> query_embedding ASC
+    vec.embedding <=> query_embedding ASC
   LIMIT LEAST(match_count, 200);
 END;
 $$;
