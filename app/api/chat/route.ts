@@ -12,6 +12,7 @@ import { getSession } from '@/lib/server/supabase';
 import { searchUserDocument } from './tools/documentChat';
 import { websiteSearchTool } from './tools/WebsiteSearchTool';
 import { google } from '@ai-sdk/google';
+import type { GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
 import type { LanguageModelV1ProviderMetadata } from '@ai-sdk/provider';
 
 export const dynamic = 'force-dynamic';
@@ -64,7 +65,7 @@ function errorHandler(error: unknown) {
 const getModel = (selectedModel: string) => {
   switch (selectedModel) {
     case 'claude-3.7-sonnet':
-      return anthropic('claude-3-7-sonnet-20250219');
+      return anthropic('claude-4-sonnet-20250514');
     case 'gpt-4.1':
       return openai('gpt-4.1-2025-04-14');
     case 'gpt-4.1-mini':
@@ -72,9 +73,9 @@ const getModel = (selectedModel: string) => {
     case 'o3':
       return openai('o3-2025-04-16');
     case 'gemini-2.5-pro':
-      return google('gemini-2.5-pro-preview-03-25');
+      return google('gemini-2.5-pro');
     case 'gemini-2.5-flash':
-      return google('gemini-2.5-flash-preview-04-17');
+      return google('gemini-2.5-flash');
     default:
       console.error('Invalid model selected:', selectedModel);
       return openai('gpt-4.1-2025-04-14');
@@ -143,6 +144,18 @@ export async function POST(req: NextRequest) {
     providerOptions.anthropic = {
       thinking: { type: 'enabled', budgetTokens: 12000 }
     } satisfies AnthropicProviderOptions;
+  }
+
+  if (
+    selectedModel === 'gemini-2.5-pro' ||
+    selectedModel === 'gemini-2.5-flash'
+  ) {
+    providerOptions.google = {
+      thinkingConfig: {
+        thinkingBudget: 2048,
+        includeThoughts: true
+      }
+    } satisfies GoogleGenerativeAIProviderOptions;
   }
 
   // Only add OpenAI options if o3 model is selected
