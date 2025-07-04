@@ -239,22 +239,6 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      list_objects: {
-        Args: {
-          bucketid: string;
-          prefix: string;
-          limits?: number;
-          offsets?: number;
-        };
-        Returns: {
-          name: string;
-          id: string;
-          updated_at: string;
-          created_at: string;
-          last_accessed_at: string;
-          metadata: Json;
-        }[];
-      };
       match_documents: {
         Args: {
           query_embedding: string;
