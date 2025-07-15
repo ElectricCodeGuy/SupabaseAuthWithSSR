@@ -4,7 +4,7 @@ import React, { useState, useCallback, use } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Menu, ChevronDown } from 'lucide-react';
-import { type User } from '@supabase/supabase-js';
+import { type JwtPayload } from '@supabase/supabase-js';
 
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -20,7 +20,7 @@ import SignOut from './SignOut';
 import { ModeToggle } from '@/components/ui/toggleButton';
 
 interface HeaderProps {
-  session: Promise<User | null>;
+  session: Promise<JwtPayload | null | undefined>;
 }
 
 const Header: React.FC<HeaderProps> = ({ session }) => {

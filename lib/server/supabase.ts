@@ -8,9 +8,8 @@ import { createServerSupabaseClient } from '@/lib/server/server';
 export const getSession = cache(async () => {
   const supabase = await createServerSupabaseClient();
   try {
-    const {
-      data: { user }
-    } = await supabase.auth.getUser();
+    const { data } = await supabase.auth.getClaims();
+    const user = data?.claims;
     return user;
   } catch (error) {
     console.error('Error:', error);

@@ -31,9 +31,8 @@ export async function middleware(request: NextRequest) {
   );
 
   // Get user session
-  const {
-    data: { user: session }
-  } = await supabase.auth.getUser();
+  const { data } = await supabase.auth.getClaims();
+  const session = data?.claims || null;
 
   // Handle route-specific redirects
   const currentRoute = request.nextUrl.pathname;

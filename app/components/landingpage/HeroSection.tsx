@@ -4,10 +4,10 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Sparkles, Zap } from 'lucide-react';
-import { type User } from '@supabase/supabase-js';
+import { type JwtPayload } from '@supabase/supabase-js';
 
 interface HeroSectionProps {
-  session: Promise<User | null>;
+  session: Promise<JwtPayload | null | undefined>;
 }
 
 export const HeroSection: React.FC<HeroSectionProps> = ({ session }) => {
