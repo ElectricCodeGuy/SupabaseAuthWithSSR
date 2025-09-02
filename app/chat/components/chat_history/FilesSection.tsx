@@ -26,7 +26,7 @@ import { decodeBase64, encodeBase64 } from '../../utils/base64';
 
 type UserDocument = Pick<
   Tables<'user_documents'>,
-  'id' | 'title' | 'created_at' | 'total_pages' | 'filter_tags'
+  'id' | 'title' | 'created_at' | 'total_pages' | 'file_path'
 >;
 interface FilesSectionProps {
   searchParams: URLSearchParams;
@@ -54,8 +54,8 @@ const FilesSection: FC<FilesSectionProps> = ({
       <SidebarGroupContent>
         <SidebarMenu>
           {documents.map((document) => {
-            const displayName = document.title.replace(/_/g, ' ');
-            const isSelected = selectedBlobs.includes(document.filter_tags);
+            const displayName = document.title;
+            const isSelected = selectedBlobs.includes(document.id);
             const isCurrentFile = currentPdf === document.title;
 
             const newParams = new URLSearchParams(searchParams.toString());
@@ -106,24 +106,23 @@ const FilesSection: FC<FilesSectionProps> = ({
                   <Checkbox
                     checked={isSelected}
                     onCheckedChange={() => {
-                      if (selectedBlobs.includes(document.filter_tags)) {
+                      if (selectedBlobs.includes(document.id)) {
                         setSelectedBlobs(
-                          selectedBlobs.filter(
-                            (blob) => blob !== document.filter_tags
-                          )
+                          selectedBlobs.filter((blob) => blob !== document.id)
                         );
                       } else {
-                        setSelectedBlobs([
-                          ...selectedBlobs,
-                          document.filter_tags
-                        ]);
+                        setSelectedBlobs([...selectedBlobs, document.id]);
                       }
                     }}
                     onClick={(e) => e.stopPropagation()}
                   />
                   <form
                     action={async (formData: FormData) => {
-                      formData.append('filePath', encodeBase64(document.title));
+                      formData.append(
+                        'file_name',
+                        encodeBase64(document.title)
+                      );
+                      formData.append('file_id', document.id);
                       await deleteFilterTagAndDocumentChunks(formData);
                     }}
                   >

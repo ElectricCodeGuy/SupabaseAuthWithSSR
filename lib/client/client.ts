@@ -1,16 +1,19 @@
+import 'server-only';
 import { createBrowserClient } from '@supabase/ssr';
 import { type Database } from '@/types/database';
-// Create a Supabase client for browser-side operations. This can be used to interact with Supabase from the client-side. It is very importatnt
-// that you enable RLS on your tables to ensure that your client-side operations are secure. Ideally, you would only enablle Read access on your client-side operations.
+
+// NOTE: While the Supabase anon key is specifically designed to be exposed publicly
+// (it's safe to expose with RLS enabled), I prefer to keep everything server-side
+// as an extra security measure. This is why 'server-only' is imported at the top.
+// You can always handle everything through SSR anyway, so there's no need to expose
+// the client to the browser. All Supabase operations go through server components or API routes/server actions.
+
 export function createClient() {
-  if (
-    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  ) {
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
     throw new Error('Missing env variables');
   }
   return createBrowserClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_ANON_KEY
   );
 }

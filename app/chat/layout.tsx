@@ -25,8 +25,6 @@ interface CategorizedChats {
   older: ChatPreview[];
 }
 
-// Single combined query
-// Single combined query with proper first message fetching
 const fetchUserData = async () => {
   noStore();
   const supabase = await createServerSupabaseClient();
@@ -43,14 +41,19 @@ const fetchUserData = async () => {
           id,
           created_at,
           chat_title,
-          first_message:chat_messages!inner(content)
+          message_parts:message_parts!chat_session_id (
+            text_text,
+            type,
+            role,
+            order
+          )
         ),
         user_documents (
           id,
           title,
           created_at,
           total_pages,
-          filter_tags
+          file_path
         )
       `
       )
@@ -59,27 +62,42 @@ const fetchUserData = async () => {
         referencedTable: 'chat_sessions'
       })
       .order('created_at', {
+        ascending: true,
+        referencedTable: 'chat_sessions.message_parts'
+      })
+      .order('order', {
+        ascending: true,
+        referencedTable: 'chat_sessions.message_parts'
+      })
+      .order('created_at', {
         ascending: false,
         referencedTable: 'user_documents'
       })
       .limit(30, { foreignTable: 'chat_sessions' })
-      .limit(1, { foreignTable: 'chat_sessions.chat_messages' })
+      .limit(1, { foreignTable: 'chat_sessions.message_parts' })
       .maybeSingle();
 
-    if (userError || !userData) {
-      console.error('User Error:', userError);
+    if (userError) {
+      return null;
+    }
+    if (!userData) {
       return null;
     }
 
-    // Transform chat data using the same logic as the original fetchData function
-    const chatPreviews = (userData.chat_sessions || []).map((session) => ({
-      id: session.id,
-      firstMessage:
-        session.chat_title ??
-        session.first_message[0]?.content ??
-        'No messages yet',
-      created_at: session.created_at
-    }));
+    // Transform chat data
+    const chatPreviews = (userData.chat_sessions || []).map((session) => {
+      // Get the first text part from the first user message
+      const firstTextPart = session.message_parts?.find(
+        (part) => part.type === 'text' && part.role === 'user'
+      );
+
+      return {
+        id: session.id,
+        firstMessage:
+          session.chat_title || firstTextPart?.text_text || 'No messages yet',
+        created_at: session.created_at
+      };
+    });
 
     // Transform documents data
     const documents = (userData.user_documents || []).map((doc) => ({
@@ -87,7 +105,7 @@ const fetchUserData = async () => {
       title: doc.title,
       created_at: doc.created_at,
       total_pages: doc.total_pages,
-      filter_tags: doc.filter_tags
+      file_path: doc.file_path
     }));
 
     return {
@@ -102,6 +120,7 @@ const fetchUserData = async () => {
     return null;
   }
 };
+
 function categorizeChats(chatPreviews: ChatPreview[]): CategorizedChats {
   const getZonedDate = (date: string) =>
     new TZDate(new Date(date), 'Europe/Copenhagen');
@@ -149,7 +168,7 @@ export default async function Layout(props: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider>
-      <UploadProvider userId={userData?.id || ''}>
+      <UploadProvider>
         <ChatHistoryDrawer
           userInfo={{
             id: userData?.id || '',

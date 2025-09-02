@@ -27,6 +27,7 @@ import {
   SidebarMenuButton,
   SidebarMenuAction
 } from '@/components/ui/sidebar';
+import Link from 'next/link';
 
 interface ChatPreview {
   id: string;
@@ -258,6 +259,7 @@ const RenderChatSectionWithSidebar: FC<RenderChatSectionProps> = ({
   onChatSelect,
   searchParams
 }) => {
+  const router = useRouter();
   if (chats.length === 0) return null;
 
   return (
@@ -278,9 +280,17 @@ const RenderChatSectionWithSidebar: FC<RenderChatSectionProps> = ({
                   isActive={currentChatId === id}
                   onClick={() => onChatSelect()}
                 >
-                  <a href={href}>
+                  <Link
+                    href={href}
+                    passHref
+                    prefetch={false}
+                    onMouseEnter={() => {
+                      // Prefetch the chat page when hovering over the link
+                      router.prefetch(href);
+                    }}
+                  >
                     <span className="truncate">{firstMessage}</span>
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
 
                 <DropdownMenu>

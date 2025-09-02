@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useOptimistic, startTransition } from 'react';
-import { useChat, type Message } from '@ai-sdk/react';
+import { useChat, type UIMessage } from '@ai-sdk/react';
 import { useParams } from 'next/navigation';
 import { useSWRConfig } from 'swr';
 import { ChatScrollAnchor } from '../hooks/chat-scroll-anchor';
@@ -9,12 +9,6 @@ import { setModelSettings } from '../actions';
 import Link from 'next/link';
 // Shadcn UI components
 import { Button } from '@/components/ui/button';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger
-} from '@/components/ui/accordion';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import MemoizedMarkdown from './tools/MemoizedMarkdown';
 import ReasoningContent from './tools/Reasoning';
@@ -23,15 +17,23 @@ import DocumentSearchTool from './tools/DocumentChatTool';
 import WebsiteSearchTool from './tools/WebsiteChatTool';
 import MessageInput from './ChatMessageInput';
 import { toast } from 'sonner';
-
 // Icons from Lucide React
 import { User, Bot, Copy, CheckCircle, FileIcon } from 'lucide-react';
+import { type ToolUIPart, DefaultChatTransport } from 'ai';
+import type { UITools } from '@/app/chat/types/tooltypes';
+import { useRouter } from 'next/navigation';
 
 interface ChatProps {
-  currentChat?: Message[];
+  currentChat?: UIMessage[];
   chatId: string;
   initialModelType: string;
   initialSelectedOption: string;
+}
+
+function createChatTransport(apiEndpoint: string) {
+  return new DefaultChatTransport({
+    api: apiEndpoint
+  });
 }
 
 const ChatComponent: React.FC<ChatProps> = ({
@@ -41,7 +43,9 @@ const ChatComponent: React.FC<ChatProps> = ({
   initialSelectedOption
 }) => {
   const param = useParams();
+  const router = useRouter();
   const currentChatId = param.id as string;
+  const { mutate } = useSWRConfig();
 
   const [optimisticModelType, setOptimisticModelType] = useOptimistic<
     string,
@@ -72,8 +76,6 @@ const ChatComponent: React.FC<ChatProps> = ({
     switch (optimisticModelType) {
       case 'perplex':
         return '/api/perplexity';
-      case 'website':
-        return '/api/websitechat';
       default:
         return '/api/chat';
     }
@@ -81,24 +83,43 @@ const ChatComponent: React.FC<ChatProps> = ({
 
   const apiEndpoint = getApiEndpoint();
 
-  // Get messages from chat
-  const { messages, status } = useChat({
+  // SINGLE useChat hook here
+  const { messages, status, sendMessage, stop } = useChat({
     id: 'chat',
-    api: apiEndpoint,
+    transport: createChatTransport(apiEndpoint),
     experimental_throttle: 50,
-    initialMessages: currentChat,
+    messages: currentChat,
     onFinish: async () => {
-      if (chatId === currentChatId) return;
+      // Navigate to the new chat URL if we're not already there
+      if (chatId !== currentChatId) {
+        const currentSearchParams = new URLSearchParams(window.location.search);
+        let newUrl = `/chat/${chatId}`;
 
+        if (currentSearchParams.toString()) {
+          newUrl += `?${currentSearchParams.toString()}`;
+        }
+
+        router.push(newUrl, { scroll: false });
+      }
+
+      // Always mutate to refresh the chat list
       await mutate((key) => Array.isArray(key) && key[0] === 'chatPreviews');
+      router.refresh();
     },
-
     onError: (error) => {
-      toast.error(error.message || 'An error occurred'); // This could lead to sensitive information exposure. A general error message is safer.
+      toast.error(error.message || 'An error occurred');
     }
   });
 
-  const { mutate } = useSWRConfig();
+  // Helper function to get text content from message parts
+  const getMessageContent = (message: UIMessage) => {
+    return (
+      message.parts
+        ?.filter((part) => part.type === 'text')
+        ?.map((part) => part.text)
+        ?.join('') || ''
+    );
+  };
 
   return (
     <div className="flex h-[calc(100vh-48px)] w-full flex-col overflow-y-auto">
@@ -107,7 +128,6 @@ const ChatComponent: React.FC<ChatProps> = ({
           <h2 className="text-2xl font-semibold text-foreground/80 pb-2">
             Chat with our AI Assistant
           </h2>
-
           <p className="text-muted-foreground pb-2 max-w-2xl">
             Experience the power of AI-driven conversations with our chat
             template. Ask questions on any topic and get informative responses
@@ -143,22 +163,19 @@ const ChatComponent: React.FC<ChatProps> = ({
               setTimeout(() => setIsCopied(false), 1000);
             };
 
-            // First filter the tool invocation parts to check if we need the accordion
-            const toolInvocationParts = !isUserMessage
-              ? message.parts?.filter(
-                  (part) => part.type === 'tool-invocation'
-                ) || []
-              : [];
 
-            const hasToolInvocations = toolInvocationParts.length > 0;
-
-            // Group parts by type for ordered rendering
-            const textParts =
-              message.parts?.filter((part) => part.type === 'text') || [];
-            const reasoningParts =
-              message.parts?.filter((part) => part.type === 'reasoning') || [];
-            const sourceParts =
-              message.parts?.filter((part) => part.type === 'source') || [];
+            // Get created at time
+            const createdAtTime = message.id
+              ? new Date().toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false
+                })
+              : new Date().toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false
+                });
 
             return (
               <li key={`${message.id}-${index}`} className="my-4 mx-2">
@@ -185,20 +202,7 @@ const ChatComponent: React.FC<ChatProps> = ({
                           {isUserMessage ? 'You' : 'AI Assistant'}
                         </h3>
                         <p className="text-xs text-muted-foreground">
-                          {message.createdAt
-                            ? new Date(message.createdAt).toLocaleTimeString(
-                                [],
-                                {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                  hour12: false
-                                }
-                              )
-                            : new Date().toLocaleTimeString([], {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                                hour12: false
-                              })}
+                          {createdAtTime}
                         </p>
                       </div>
                       {!isUserMessage && (
@@ -206,7 +210,7 @@ const ChatComponent: React.FC<ChatProps> = ({
                           variant="ghost"
                           size="icon"
                           className="h-6 w-6"
-                          onClick={() => handleCopy(message.content)}
+                          onClick={() => handleCopy(getMessageContent(message))}
                         >
                           {isCopied ? (
                             <CheckCircle
@@ -222,115 +226,101 @@ const ChatComponent: React.FC<ChatProps> = ({
                   </CardHeader>
 
                   <CardContent className="py-0 px-4">
-                    {/* Render text parts first (main message content) */}
-                    {textParts.map((part, partIndex) => (
-                      <MemoizedMarkdown
-                        key={`text-${partIndex}`}
-                        content={part.text}
-                        id={`${isUserMessage ? 'user' : 'assistant'}-text-${
-                          message.id
-                        }-${partIndex}`}
-                      />
-                    ))}
-
-                    {/* Then render reasoning parts (only for assistant messages) */}
-                    {!isUserMessage &&
-                      reasoningParts.map((part, partIndex) => (
-                        <div key={`reasoning-${partIndex}`} className="mt-4">
-                          <ReasoningContent
-                            details={part.details}
-                            messageId={message.id}
+                    {/* Render ALL parts in the order they appear */}
+                    {message.parts?.map((part, partIndex) => {
+                      // Handle text parts
+                      if (part.type === 'text') {
+                        return (
+                          <MemoizedMarkdown
+                            key={`part-${partIndex}`}
+                            content={part.text}
+                            id={`${isUserMessage ? 'user' : 'assistant'}-text-${
+                              message.id
+                            }-${partIndex}`}
                           />
-                        </div>
-                      ))}
+                        );
+                      }
 
-                    {/* Then render source parts (only for assistant messages) */}
-                    {!isUserMessage && sourceParts.length > 0 && (
-                      <div className="mt-2">
-                        <SourceView
-                          sources={sourceParts.map((part) => part.source)}
-                        />
-                      </div>
-                    )}
-
-                    {/* Display attached files in user messages */}
-                    {isUserMessage &&
-                      message.experimental_attachments &&
-                      message.experimental_attachments.length > 0 && (
-                        <div className="mt-4 pt-4 border-t">
-                          <h4 className="text-sm font-medium mb-2">
-                            Attached Files:
-                          </h4>
-                          <div className="space-y-2">
-                            {message.experimental_attachments.map(
-                              (attachment, idx) => (
-                                <div
-                                  key={`attachment-${idx}`}
-                                  className="flex items-center gap-2 p-2 bg-background rounded border"
-                                >
-                                  <FileIcon className="h-4 w-4 text-blue-500" />
-                                  <Link
-                                    className="font-medium text-blue-600 dark:text-blue-400 hover:underline flex-1"
-                                    href={`?file=${attachment.name}`}
-                                  >
-                                    {attachment.name}
-                                  </Link>
-                                </div>
-                              )
-                            )}
+                      // Handle reasoning parts (assistant only)
+                      if (part.type === 'reasoning' && !isUserMessage) {
+                        return (
+                          <div key={`part-${partIndex}`} className="mt-4">
+                            <ReasoningContent
+                              details={part}
+                              messageId={message.id}
+                            />
                           </div>
-                        </div>
-                      )}
+                        );
+                      }
 
-                    {/* Render all tool invocations in a single accordion */}
-                    {hasToolInvocations && (
-                      <div className="mt-6">
-                        <Accordion
-                          type="single"
-                          defaultValue="tool-invocation"
-                          collapsible
-                          className="w-full border rounded-lg"
-                        >
-                          <AccordionItem
-                            value="tool-invocation"
-                            className="border-0"
-                          >
-                            <AccordionTrigger className="px-4 py-3 font-medium hover:no-underline">
-                              <div className="flex items-center gap-2">
-                                <Bot className="h-4 w-4" />
-                                <span>AI Tools Used</span>
-                              </div>
-                            </AccordionTrigger>
-                            <AccordionContent className="px-4 pb-4">
-                              <div className="space-y-4">
-                                {toolInvocationParts.map((part) => {
-                                  const toolName = part.toolInvocation.toolName;
-                                  const toolId = part.toolInvocation.toolCallId;
-                                  switch (toolName) {
-                                    case 'searchUserDocument':
-                                      return (
-                                        <DocumentSearchTool
-                                          key={toolId}
-                                          toolInvocation={part.toolInvocation}
-                                        />
-                                      );
-                                    case 'websiteSearchTool':
-                                      return (
-                                        <WebsiteSearchTool
-                                          key={toolId}
-                                          toolInvocation={part.toolInvocation}
-                                        />
-                                      );
-                                    default:
-                                      return null;
-                                  }
-                                })}
-                              </div>
-                            </AccordionContent>
-                          </AccordionItem>
-                        </Accordion>
-                      </div>
-                    )}
+                      // Handle source-url parts (assistant only)
+                      if (part.type === 'source-url' && !isUserMessage) {
+                        return (
+                          <div key={`part-${partIndex}`} className="mt-2">
+                            <SourceView sources={[part]} />
+                          </div>
+                        );
+                      }
+
+                      // Handle source-document parts (assistant only)
+                      if (part.type === 'source-document' && !isUserMessage) {
+                        return (
+                          <div key={`part-${partIndex}`} className="mt-2">
+                            <SourceView sources={[part]} />
+                          </div>
+                        );
+                      }
+
+                      // Handle file parts (user messages)
+                      if (part.type === 'file' && isUserMessage) {
+                        return (
+                          <div key={`part-${partIndex}`} className="mt-4">
+                            <div className="flex items-center gap-2 p-2 bg-background rounded border">
+                              <FileIcon className="h-4 w-4 text-blue-500" />
+                              <Link
+                                className="font-medium text-blue-600 dark:text-blue-400 hover:underline flex-1"
+                                href={`?file=${part.filename || 'file'}`}
+                              >
+                                {part.filename || 'Attached File'}
+                              </Link>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      // Handle tool invocation parts (assistant only)
+                      if (part.type === 'tool-searchUserDocument' && !isUserMessage) {
+                        return (
+                          <DocumentSearchTool
+                            key={`part-${partIndex}`}
+                            toolInvocation={
+                              part as Extract<
+                                ToolUIPart<UITools>,
+                                {
+                                  type: 'tool-searchUserDocument';
+                                }
+                              >
+                            }
+                          />
+                        );
+                      }
+
+                      if (part.type === 'tool-websiteSearchTool' && !isUserMessage) {
+                        return (
+                          <WebsiteSearchTool
+                            key={`part-${partIndex}`}
+                            toolInvocation={
+                              part as Extract<
+                                ToolUIPart<UITools>,
+                                { type: 'tool-websiteSearchTool' }
+                              >
+                            }
+                          />
+                        );
+                      }
+
+                      return null;
+                    })}
                   </CardContent>
                 </Card>
               </li>
@@ -341,17 +331,16 @@ const ChatComponent: React.FC<ChatProps> = ({
       )}
 
       <div className="sticky bottom-0 mt-auto max-w-[720px] mx-auto w-full z-5 pb-2">
-        {/*Separate message input component, to avoid re-rendering the chat messages when typing */}
+        {/* Pass chat functions as props to MessageInput */}
         <MessageInput
           chatId={chatId}
-          apiEndpoint={apiEndpoint}
-          currentChat={messages}
-          option={optimisticOption}
-          currentChatId={currentChatId}
           modelType={optimisticModelType}
           selectedOption={optimisticOption}
           handleModelTypeChange={handleModelTypeChange}
           handleOptionChange={handleOptionChange}
+          sendMessage={sendMessage}
+          status={status}
+          stop={stop}
         />
       </div>
     </div>

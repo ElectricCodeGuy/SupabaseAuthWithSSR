@@ -5,6 +5,7 @@ import DocumentViewer from './components/PDFViewer';
 import WebsiteWiever from './components/WebsiteWiever';
 import { v4 as uuidv4 } from 'uuid';
 import { getUserInfo } from '@/lib/server/supabase';
+import { createClient } from '@/lib/client/client';
 
 interface PageProps {
   searchParams: Promise<Record<string, string>>;
@@ -14,8 +15,7 @@ export default async function ChatPage(props: PageProps) {
   const searchParams = await props.searchParams;
   const cookieStore = await cookies();
   const modelType = cookieStore.get('modelType')?.value ?? 'standart';
-  const selectedOption =
-    cookieStore.get('selectedOption')?.value ?? 'gpt-3.5-turbo-1106';
+  const selectedOption = cookieStore.get('selectedOption')?.value ?? 'gpt-5';
   const createChatId = uuidv4();
 
   return (
@@ -40,5 +40,25 @@ async function DocumentComponent({ fileName }: { fileName: string }) {
   const session = await getUserInfo();
   const userId = session?.id;
 
-  return <DocumentViewer fileName={fileName} userId={userId} />;
+  let signedUrl = null;
+
+  if (userId) {
+    try {
+      const supabase = createClient();
+      const decodedFileName = decodeURIComponent(fileName);
+      const filePath = `${userId}/${decodedFileName}`;
+
+      const { data, error } = await supabase.storage
+        .from('userfiles')
+        .createSignedUrl(filePath, 3600); // 1 hour expiry
+
+      if (!error && data) {
+        signedUrl = data.signedUrl;
+      }
+    } catch (error) {
+      console.error('Error creating signed URL:', error);
+    }
+  }
+
+  return <DocumentViewer fileName={fileName} signedUrl={signedUrl} />;
 }

@@ -2,209 +2,282 @@ import 'server-only';
 
 import { createServerSupabaseClient } from '@/lib/server/server';
 import { unstable_noStore as noStore } from 'next/cache';
-import type { LanguageModelV1Source } from '@ai-sdk/provider';
-import { type Message } from '@ai-sdk/react';
-import type { Attachment, ToolInvocation } from '@ai-sdk/ui-utils';
+import type {
+  UIMessage,
+  UIMessagePart,
+  TextUIPart,
+  ReasoningUIPart,
+  FileUIPart,
+  SourceUrlUIPart,
+  SourceDocumentUIPart,
+  ToolUIPart
+} from 'ai';
 import type { Tables } from '@/types/database';
+import type {
+  UITools,
+  SearchDocumentsArgs,
+  SearchDocumentsResult,
+  WebsiteSearchArgs,
+  WebsiteSearchResult
+} from '@/app/chat/types/tooltypes';
 
-type ChatMessage = Pick<
-  Tables<'chat_messages'>,
-  | 'id'
-  | 'is_user_message'
-  | 'content'
-  | 'created_at'
-  | 'sources'
-  | 'reasoning'
-  | 'attachments'
-  | 'tool_invocations'
->;
+type MessagePart = Tables<'message_parts'>;
 
-function parseSources(sources: unknown): LanguageModelV1Source[] {
-  if (!sources) return [];
-  try {
-    if (typeof sources === 'string') {
-      return JSON.parse(sources) as LanguageModelV1Source[];
-    }
-    if (Array.isArray(sources)) {
-      return sources as LanguageModelV1Source[];
-    }
-    return [];
-  } catch (error) {
-    console.error('Error parsing sources:', error);
-    return [];
-  }
-}
-
-// Function to parse attachments from JSON string or object
-function parseAttachments(attachments: unknown): Attachment[] {
-  if (!attachments) return [];
-
-  try {
-    if (typeof attachments === 'string') {
-      return JSON.parse(attachments) as Attachment[];
-    }
-    if (Array.isArray(attachments)) {
-      return attachments as Attachment[];
-    }
-    return [];
-  } catch (error) {
-    console.error('Error parsing attachments:', error);
-    return [];
-  }
-}
-
-function parseToolInvocations(toolInvocations: unknown): ToolInvocation[] {
-  if (!toolInvocations) return [];
-
-  try {
-    let parsedData: any[] = [];
-
-    if (typeof toolInvocations === 'string') {
-      parsedData = JSON.parse(toolInvocations);
-    } else if (Array.isArray(toolInvocations)) {
-      parsedData = toolInvocations;
-    } else {
-      return [];
-    }
-
-    return parsedData.map((invocation: any) => {
-      if (invocation.state) {
-        return invocation;
-      }
-
-      if (invocation.type === 'tool-result') {
-        const { _type, ...rest } = invocation;
-        return {
-          ...rest,
-          state: 'result' as const
-        };
-      }
-
-      return {
-        ...invocation,
-        state: invocation.result ? ('result' as const) : ('call' as const)
+// Helper function to reconstruct parts from database rows
+function reconstructPart(
+  part: MessagePart
+): UIMessagePart<any, UITools> | null {
+  switch (part.type) {
+    case 'text': {
+      if (!part.text_text) return null;
+      const textPart: TextUIPart = {
+        type: 'text',
+        text: part.text_text
       };
-    });
-  } catch (error) {
-    console.error('Error parsing tool invocations:', error);
-    return [];
+      return textPart;
+    }
+
+    case 'reasoning': {
+      if (!part.reasoning_text) return null;
+      const reasoningPart: ReasoningUIPart = {
+        type: 'reasoning',
+        text: part.reasoning_text
+      };
+      return reasoningPart;
+    }
+
+    case 'file': {
+      if (!part.file_url) return null;
+      const filePart: FileUIPart = {
+        type: 'file',
+        mediaType: part.file_mediatype || '',
+        filename: part.file_filename || undefined,
+        url: part.file_url
+      };
+      return filePart;
+    }
+
+    case 'source-url': {
+      if (!part.source_url_url) return null;
+      const sourceUrlPart: SourceUrlUIPart = {
+        type: 'source-url',
+        sourceId: part.source_url_id || '',
+        url: part.source_url_url,
+        title: part.source_url_title || undefined
+      };
+      return sourceUrlPart;
+    }
+
+    case 'source-document': {
+      if (!part.source_document_title || !part.source_document_mediatype)
+        return null;
+      const sourceDocPart: SourceDocumentUIPart = {
+        type: 'source-document',
+        sourceId: part.source_document_id || '',
+        mediaType: part.source_document_mediatype,
+        title: part.source_document_title,
+        filename: part.source_document_filename || undefined
+      };
+      return sourceDocPart;
+    }
+
+    // Tool parts - handle our specific tools
+    case 'tool-searchUserDocument': {
+      const toolCallId =
+        part.tool_searchuserdocument_toolcallid || crypto.randomUUID();
+      const state = part.tool_searchuserdocument_state || 'output-available';
+
+      // Build tool part based on state
+      if (state === 'output-error') {
+        const toolPart: ToolUIPart<UITools> = {
+          type: 'tool-searchUserDocument',
+          toolCallId: toolCallId,
+          state: 'output-error',
+          input: part.tool_searchuserdocument_input as SearchDocumentsArgs,
+          errorText: part.tool_searchuserdocument_errortext || 'Error occurred',
+          providerExecuted:
+            part.tool_searchuserdocument_providerexecuted || undefined
+        };
+        return toolPart;
+      } else if (state === 'output-available') {
+        const toolPart: ToolUIPart<UITools> = {
+          type: 'tool-searchUserDocument',
+          toolCallId: toolCallId,
+          state: 'output-available',
+          input: part.tool_searchuserdocument_input as SearchDocumentsArgs,
+          output: part.tool_searchuserdocument_output as SearchDocumentsResult,
+          providerExecuted:
+            part.tool_searchuserdocument_providerexecuted || undefined
+        };
+        return toolPart;
+      } else {
+        // input-streaming or input-available states
+        const toolPart: ToolUIPart<UITools> = {
+          type: 'tool-searchUserDocument',
+          toolCallId: toolCallId,
+          state: state as any,
+          input: part.tool_searchuserdocument_input as SearchDocumentsArgs,
+          output: part.tool_searchuserdocument_output as SearchDocumentsResult,
+          providerExecuted:
+            part.tool_searchuserdocument_providerexecuted || undefined
+        };
+        return toolPart;
+      }
+    }
+
+    case 'tool-websiteSearchTool': {
+      const toolCallId =
+        part.tool_websitesearchtool_toolcallid || crypto.randomUUID();
+      const state = part.tool_websitesearchtool_state || 'output-available';
+
+      // Build tool part based on state
+      if (state === 'output-error') {
+        const toolPart: ToolUIPart<UITools> = {
+          type: 'tool-websiteSearchTool',
+          toolCallId: toolCallId,
+          state: 'output-error',
+          input: part.tool_websitesearchtool_input as WebsiteSearchArgs,
+          errorText: part.tool_websitesearchtool_errortext || 'Error occurred',
+          providerExecuted:
+            part.tool_websitesearchtool_providerexecuted || undefined
+        };
+        return toolPart;
+      } else if (state === 'output-available') {
+        const toolPart: ToolUIPart<UITools> = {
+          type: 'tool-websiteSearchTool',
+          toolCallId: toolCallId,
+          state: 'output-available',
+          input: part.tool_websitesearchtool_input as WebsiteSearchArgs,
+          output: part.tool_websitesearchtool_output as WebsiteSearchResult,
+          providerExecuted:
+            part.tool_websitesearchtool_providerexecuted || undefined
+        };
+        return toolPart;
+      } else {
+        // input-streaming or input-available states
+        const toolPart: ToolUIPart<UITools> = {
+          type: 'tool-websiteSearchTool',
+          toolCallId: toolCallId,
+          state: state as any,
+          input: part.tool_websitesearchtool_input as WebsiteSearchArgs,
+          output: part.tool_websitesearchtool_output as WebsiteSearchResult,
+          providerExecuted:
+            part.tool_websitesearchtool_providerexecuted || undefined
+        };
+        return toolPart;
+      }
+    }
+
+    default:
+      return null;
   }
 }
 
-export function formatMessages(messages: ChatMessage[]): Message[] {
-  return messages.map((message) => {
-    const messageParts = [];
+// Format messages from database parts - following the example structure
+export function formatMessages(messageParts: MessagePart[]): UIMessage[] {
+  const messages: UIMessage[] = [];
+  let currentMessage: UIMessage | null = null;
+  let currentMessageId: string | null = null;
 
-    // Add the text part
-    messageParts.push({
-      type: 'text' as const,
-      text: message.content ?? ''
-    });
-
-    // Add reasoning part if available (only for assistant messages)
-    if (!message.is_user_message && message.reasoning) {
-      messageParts.push({
-        type: 'reasoning' as const,
-        reasoning: message.reasoning,
-        details: [
-          {
-            type: 'text' as const,
-            text: message.reasoning
-          }
-        ]
-      });
-    }
-
-    // Add source parts if available - now including title
-    if (parseSources(message.sources).length > 0) {
-      messageParts.push(
-        ...parseSources(message.sources).map((source) => ({
-          type: 'source' as const,
-          source: {
-            sourceType: 'url' as const,
-            id: source.id,
-            url: source.url,
-            title: source.title
-          }
-        }))
-      );
-    }
-
-    // Add tool invocation parts if available
-    if (!message.is_user_message && message.tool_invocations) {
-      const toolInvocations = parseToolInvocations(message.tool_invocations);
-
-      if (toolInvocations.length > 0) {
-        messageParts.push(
-          ...toolInvocations.map((invocation: ToolInvocation) => ({
-            type: 'tool-invocation' as const,
-            toolInvocation: invocation
-          }))
-        );
+  // Process parts in order (they're already sorted by created_at and order from SQL)
+  for (const part of messageParts) {
+    // If we encounter a new message_id, save the current message and start a new one
+    if (part.message_id !== currentMessageId) {
+      // Save the current message if it exists
+      if (currentMessage) {
+        messages.push(currentMessage);
       }
+
+      // Start a new message
+      currentMessageId = part.message_id;
+      currentMessage = {
+        id: part.message_id,
+        role: part.role as 'user' | 'assistant' | 'system',
+        parts: []
+      };
     }
 
-    // Create the message object
-    const formattedMessage: Message = {
-      role: message.is_user_message ? 'user' : 'assistant',
-      id: message.id,
-      content: message.content ?? '',
-      parts: messageParts,
-      createdAt: new Date(message.created_at)
-    };
-
-    if (message.is_user_message && message.attachments) {
-      const attachments = parseAttachments(message.attachments);
-
-      if (attachments.length > 0) {
-        formattedMessage.experimental_attachments = attachments.map(
-          (attachment) => ({
-            name: attachment.name,
-            url: attachment.url,
-            contentType: attachment.contentType || 'application/pdf'
-          })
-        );
-      }
+    // Reconstruct the part and add it to the current message
+    const reconstructedPart = reconstructPart(part);
+    if (reconstructedPart && currentMessage) {
+      currentMessage.parts.push(reconstructedPart);
     }
+  }
 
-    return formattedMessage;
-  });
+  // Don't forget to add the last message
+  if (currentMessage) {
+    messages.push(currentMessage);
+  }
+
+  return messages;
 }
 
 export async function fetchChat(chatId: string) {
   noStore();
   const supabase = await createServerSupabaseClient();
 
+  // ONE QUERY - ALREADY SORTED
   const { data, error } = await supabase
     .from('chat_sessions')
     .select(
       `
+      id,
+      user_id,
+      created_at,
+      updated_at,
+      chat_title,
+      message_parts!inner (
         id,
-        user_id,
+        chat_session_id,
+        message_id,
+        role,
+        type,
+        order,
         created_at,
-        updated_at,
-        chat_messages!inner (
-          id,
-          is_user_message,
-          content,
-          created_at,
-          sources,
-          reasoning,
-          attachments,
-          tool_invocations
-        )
-      `
+        text_text,
+        text_state,
+        reasoning_text,
+        reasoning_state,
+        file_mediatype,
+        file_filename,
+        file_url,
+        source_url_id,
+        source_url_url,
+        source_url_title,
+        source_document_id,
+        source_document_mediatype,
+        source_document_title,
+        source_document_filename,
+        tool_searchuserdocument_toolcallid,
+        tool_searchuserdocument_state,
+        tool_searchuserdocument_input,
+        tool_searchuserdocument_output,
+        tool_searchuserdocument_errortext,
+        tool_searchuserdocument_providerexecuted,
+        tool_websitesearchtool_toolcallid,
+        tool_websitesearchtool_state,
+        tool_websitesearchtool_input,
+        tool_websitesearchtool_output,
+        tool_websitesearchtool_errortext,
+        tool_websitesearchtool_providerexecuted,
+        providermetadata
+      )
+    `
     )
     .eq('id', chatId)
-    .order('created_at', {
-      ascending: true,
-      referencedTable: 'chat_messages'
-    })
-    .maybeSingle();
+    .order('created_at', { ascending: true, referencedTable: 'message_parts' })
+    .order('order', { ascending: true, referencedTable: 'message_parts' })
+    .single();
 
   if (error) {
-    console.error('Error fetching chat:', error);
+    return null;
   }
 
-  return data;
+  // Format the messages from parts
+  const formattedMessages = formatMessages(data.message_parts);
+
+  return {
+    ...data,
+    messages: formattedMessages
+  };
 }

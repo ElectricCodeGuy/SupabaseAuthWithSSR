@@ -35,24 +35,31 @@ export async function fetchUserDataAndChatSessions(
         full_name,
         email,
         chat_sessions (
-                  id,
+          id,
           created_at,
           chat_title,
-          first_message:chat_messages!inner(content)
+          message_parts!inner (
+            text_text,
+            type,
+            role,
+            order
+          )
         )
       `
     )
     .order('created_at', { referencedTable: 'chat_sessions', ascending: false })
+    .order('created_at', { referencedTable: 'message_parts', ascending: true })
+    .order('order', { referencedTable: 'message_parts', ascending: true })
     .range(offset, offset + limit - 1, { foreignTable: 'chat_sessions' })
+    .limit(1, { foreignTable: 'message_parts' })
     .maybeSingle();
 
   if (queryError) {
-    // Error occurred during the query, re-throw it
-    console.error('Supabase Query Error:', queryError.message); // Keep minimal log?
+    console.error('Supabase Query Error:', queryError.message);
     throw queryError;
   }
+
   if (!data) {
-    // No data found, return null
     console.warn('No user data found');
     return { userInfo: null, chatSessions: [] };
   }
@@ -64,14 +71,19 @@ export async function fetchUserDataAndChatSessions(
   };
 
   const chatSessions: ChatSessionPreview[] = (data.chat_sessions || []).map(
-    (session) => ({
-      id: session.id,
-      firstMessage:
-        session.chat_title ??
-        session.first_message?.[0]?.content ??
-        'No messages yet',
-      created_at: session.created_at
-    })
+    (session) => {
+      // Get the first text part from the first user message
+      const firstTextPart = session.message_parts?.find(
+        (part) => part.type === 'text' && part.role === 'user'
+      );
+
+      return {
+        id: session.id,
+        firstMessage:
+          session.chat_title || firstTextPart?.text_text || 'No messages yet',
+        created_at: session.created_at
+      };
+    }
   );
 
   return { userInfo, chatSessions };

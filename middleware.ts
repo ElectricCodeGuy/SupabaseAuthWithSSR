@@ -8,8 +8,8 @@ export async function middleware(request: NextRequest) {
   });
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_ANON_KEY!,
     {
       cookies: {
         getAll() {
@@ -37,12 +37,6 @@ export async function middleware(request: NextRequest) {
   // Handle route-specific redirects
   const currentRoute = request.nextUrl.pathname;
   if (currentRoute.startsWith('/protected') && !session) {
-    const redirectUrl = new URL(request.url);
-    redirectUrl.pathname = '/signin';
-    return NextResponse.redirect(redirectUrl);
-  }
-
-  if (currentRoute.startsWith('/chat') && !session) {
     const redirectUrl = new URL(request.url);
     redirectUrl.pathname = '/signin';
     return NextResponse.redirect(redirectUrl);

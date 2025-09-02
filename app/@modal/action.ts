@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { createServerSupabaseClient } from '@/lib/server/server';
 
 const formDataSchemaSignin = z.object({
-  email: z.string().email(),
+  email: z.email(),
   password: z.string().min(6)
 });
 

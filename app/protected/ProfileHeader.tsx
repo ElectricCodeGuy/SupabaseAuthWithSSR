@@ -31,7 +31,7 @@ export default function ProfileHeader({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <Card className="rounded-3xl shadow-xl mb-8 overflow-visible backdrop-blur-sm bg-card/90 border-primary/10">
+      <Card className="rounded-3xl shadow-xl mb-8 overflow-visible backdrop-blur-sm bg-card/90 border-primary/10 pt-0">
         {/* Animated Background Header */}
         <div className="h-[240px] relative rounded-t-3xl overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/80 to-purple-600">

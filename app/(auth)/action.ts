@@ -11,7 +11,7 @@ interface AuthResponse {
 }
 
 const formDataSchemaSignin = z.object({
-  email: z.string().email(),
+  email: z.email(),
   password: z.string().min(6)
 });
 

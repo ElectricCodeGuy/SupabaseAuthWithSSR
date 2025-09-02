@@ -38,7 +38,7 @@ import UploadPage from './FileUpload';
 type UserInfo = Pick<Tables<'users'>, 'full_name' | 'email' | 'id'>;
 type UserDocument = Pick<
   Tables<'user_documents'>,
-  'id' | 'title' | 'created_at' | 'total_pages' | 'filter_tags'
+  'id' | 'title' | 'created_at' | 'total_pages' | 'file_path'
 >;
 interface ChatPreview {
   id: string;

@@ -5,6 +5,7 @@ import DocumentViewer from '../components/PDFViewer';
 import UserPdfViewer from '../components/UserPdfFiles';
 import { fetchChat, formatMessages } from './fetch';
 import { getUserInfo } from '@/lib/server/supabase';
+import { createClient } from '@/lib/client/client';
 
 export default async function ChatPage(props: {
   params: Promise<{ id: string }>;
@@ -25,22 +26,19 @@ export default async function ChatPage(props: {
   let attachmentUrl = undefined;
 
   if (chatData) {
-    formattedMessages = formatMessages(chatData.chat_messages);
+    formattedMessages = formatMessages(chatData.message_parts);
 
     if (searchParams.file && formattedMessages) {
       const fileName = decodeURIComponent(searchParams.file);
 
-      // Scan through all messages to find the attachment
       for (const message of formattedMessages) {
-        if (message.experimental_attachments) {
-          const attachment = message.experimental_attachments.find(
-            (att) => att.name === fileName
-          );
+        const filePart = message.parts?.find(
+          (part) => part.type === 'file' && part.filename === fileName
+        );
 
-          if (attachment) {
-            attachmentUrl = attachment.url;
-            break;
-          }
+        if (filePart && filePart.type === 'file') {
+          attachmentUrl = filePart.url;
+          break;
         }
       }
     }
@@ -76,7 +74,29 @@ export default async function ChatPage(props: {
 
 async function DocumentComponent({ fileName }: { fileName: string }) {
   const session = await getUserInfo();
+
   const userId = session?.id;
 
-  return <DocumentViewer fileName={fileName} userId={userId} />;
+  let signedUrl = null;
+
+  if (userId) {
+    try {
+      const supabase = createClient();
+      const decodedFileName = decodeURIComponent(fileName);
+
+      const filePath = `${userId}/${decodedFileName}`;
+
+      const { data, error } = await supabase.storage
+        .from('userfiles')
+        .createSignedUrl(filePath, 3600); // 1 hour expiry
+
+      if (!error && data) {
+        signedUrl = data.signedUrl;
+      }
+    } catch (error) {
+      console.error('Error creating signed URL:', error);
+    }
+  }
+
+  return <DocumentViewer fileName={fileName} signedUrl={signedUrl} />;
 }

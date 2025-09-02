@@ -1,25 +1,12 @@
-// app/api/chat/tools/DocumentChatTool.ts
+// app/api/chat/tools/documentChat.ts
 import { tool } from 'ai';
 import { z } from 'zod';
 import { embed } from 'ai';
 import { voyage } from 'voyage-ai-provider';
 import { createServerSupabaseClient } from '@/lib/server/server';
 
+const embeddingModel = voyage.textEmbeddingModel('voyage-3-large');
 // Embedding model for query
-const embeddingModel = voyage.textEmbeddingModel('voyage-3-large', {
-  inputType: 'query',
-  truncation: false,
-  outputDimension: 1024,
-  outputDtype: 'int8'
-});
-
-// Function to sanitize filenames
-function sanitizeFilename(filename: string): string {
-  return filename
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-zA-Z0-9._-]/g, '_');
-}
 
 interface ChatwithDocsProps {
   userId: string;
@@ -30,7 +17,15 @@ interface ChatwithDocsProps {
 async function embedQuery(text: string) {
   const { embedding } = await embed({
     model: embeddingModel,
-    value: text
+    value: text,
+    providerOptions: {
+      voyage: {
+        inputType: 'query',
+        truncation: false,
+        outputDimension: 1024,
+        outputDtype: 'int8'
+      }
+    }
   });
   return embedding;
 }
@@ -52,7 +47,7 @@ async function querySupabaseVectors(
     query_embedding: embeddingString,
     match_count: topK,
     filter_user_id: userId,
-    filter_files: selectedFiles,
+    file_ids: selectedFiles,
     similarity_threshold: similarityThreshold
   });
 
@@ -70,7 +65,6 @@ async function querySupabaseVectors(
     ai_description: match.ai_description,
     ai_maintopics: match.ai_maintopics,
     ai_keyentities: match.ai_keyentities,
-    filterTags: match.filter_tags,
     page: match.page_number,
     totalPages: match.total_pages,
     similarity: match.similarity
@@ -87,29 +81,22 @@ export const searchUserDocument = ({
     } uploaded documents to find relevant information based on the query. ALWAYS use this tool when documents have been uploaded by the user. Currently selected documents: ${selectedBlobs.join(
       ', '
     )}`,
-    parameters: z.object({
+    inputSchema: z.object({
+      // Changed from parameters to inputSchema
       query: z
         .string()
         .describe(
           'The query to search for relevant information in the documents'
         )
     }),
-    execute: async (args, { messages }) => {
+    outputSchema: z.object({
+      systemPrompt: z.string().describe('System prompt for the AI model')
+    }),
+    execute: async ({ query }, { messages }) => {
+      // Changed from (args, { messages })
       // Get both query sources
-      const toolQuery = args.query;
+      const toolQuery = query; // Changed from args.query
       const userMessage = messages[messages.length - 1].content;
-
-      // Sanitize filenames
-      const sanitizedFilenames = selectedBlobs.map((filename) => {
-        // Split the filename and timestamp
-        const [name, timestamp] = filename.split('[[');
-
-        // Sanitize only the filename part
-        const sanitizedName = sanitizeFilename(name);
-
-        // Reconstruct the filename with the original timestamp
-        return timestamp ? `${sanitizedName}[[${timestamp}` : sanitizedName;
-      });
 
       // Process both queries in parallel
       const [toolQueryEmbedding, userMessageEmbedding] = await Promise.all([
@@ -122,14 +109,14 @@ export const searchUserDocument = ({
         querySupabaseVectors(
           toolQueryEmbedding,
           userId,
-          sanitizedFilenames,
+          selectedBlobs,
           30,
           0.3
         ),
         querySupabaseVectors(
           userMessageEmbedding,
           userId,
-          sanitizedFilenames,
+          selectedBlobs,
           30,
           0.3
         )
@@ -202,9 +189,9 @@ export const searchUserDocument = ({
             .map(
               (doc) => `
           <page number="${doc.page}">
-            <reference_link>[${doc.title}, p.${doc.page}](<?pdf=${doc.title
-                .replace(/ /g, '_')
-                .trim()}&p=${doc.page}>)</reference_link>
+            <reference_link>[${doc.title}, p.${
+                doc.page
+              }](<?pdf=${doc.title.trim()}&p=${doc.page}>)</reference_link>
             <text>${doc.text}</text>
           </page>`
             )
@@ -291,7 +278,7 @@ export const searchUserDocument = ({
           (doc) =>
             `[View document: ${
               doc.aiTitle || doc.title.substring(0, 30)
-            }...](<?pdf=${doc.title.replace(/ /g, '_').trim()}&p=1>)`
+            }...](<?pdf=${doc.title.trim()}&p=1>)`
         )
         .join('\n');
 

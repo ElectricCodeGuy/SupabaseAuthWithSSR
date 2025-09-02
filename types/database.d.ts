@@ -7,6 +7,11 @@ export type Json =
   | Json[];
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: '12.2.3 (519615d)';
+  };
   graphql_public: {
     Tables: {
       [_ in never]: never;
@@ -17,10 +22,10 @@ export type Database = {
     Functions: {
       graphql: {
         Args: {
+          extensions?: Json;
           operationName?: string;
           query?: string;
           variables?: Json;
-          extensions?: Json;
         };
         Returns: Json;
       };
@@ -34,50 +39,6 @@ export type Database = {
   };
   public: {
     Tables: {
-      chat_messages: {
-        Row: {
-          attachments: Json | null;
-          chat_session_id: string;
-          content: string | null;
-          created_at: string;
-          id: string;
-          is_user_message: boolean;
-          reasoning: string | null;
-          sources: Json | null;
-          tool_invocations: Json | null;
-        };
-        Insert: {
-          attachments?: Json | null;
-          chat_session_id: string;
-          content?: string | null;
-          created_at?: string;
-          id?: string;
-          is_user_message: boolean;
-          reasoning?: string | null;
-          sources?: Json | null;
-          tool_invocations?: Json | null;
-        };
-        Update: {
-          attachments?: Json | null;
-          chat_session_id?: string;
-          content?: string | null;
-          created_at?: string;
-          id?: string;
-          is_user_message?: boolean;
-          reasoning?: string | null;
-          sources?: Json | null;
-          tool_invocations?: Json | null;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'chat_messages_chat_session_id_fkey';
-            columns: ['chat_session_id'];
-            isOneToOne: false;
-            referencedRelation: 'chat_sessions';
-            referencedColumns: ['id'];
-          }
-        ];
-      };
       chat_sessions: {
         Row: {
           chat_title: string | null;
@@ -137,6 +98,125 @@ export type Database = {
         };
         Relationships: [];
       };
+      message_parts: {
+        Row: {
+          chat_session_id: string;
+          created_at: string;
+          file_filename: string | null;
+          file_mediatype: string | null;
+          file_url: string | null;
+          id: string;
+          message_id: string;
+          order: number;
+          providermetadata: Json | null;
+          reasoning_state: string | null;
+          reasoning_text: string | null;
+          role: string;
+          source_document_filename: string | null;
+          source_document_id: string | null;
+          source_document_mediatype: string | null;
+          source_document_title: string | null;
+          source_url_id: string | null;
+          source_url_title: string | null;
+          source_url_url: string | null;
+          text_state: string | null;
+          text_text: string | null;
+          tool_searchuserdocument_errortext: string | null;
+          tool_searchuserdocument_input: Json | null;
+          tool_searchuserdocument_output: Json | null;
+          tool_searchuserdocument_providerexecuted: boolean | null;
+          tool_searchuserdocument_state: string | null;
+          tool_searchuserdocument_toolcallid: string | null;
+          tool_websitesearchtool_errortext: string | null;
+          tool_websitesearchtool_input: Json | null;
+          tool_websitesearchtool_output: Json | null;
+          tool_websitesearchtool_providerexecuted: boolean | null;
+          tool_websitesearchtool_state: string | null;
+          tool_websitesearchtool_toolcallid: string | null;
+          type: string;
+        };
+        Insert: {
+          chat_session_id: string;
+          created_at?: string;
+          file_filename?: string | null;
+          file_mediatype?: string | null;
+          file_url?: string | null;
+          id?: string;
+          message_id: string;
+          order?: number;
+          providermetadata?: Json | null;
+          reasoning_state?: string | null;
+          reasoning_text?: string | null;
+          role: string;
+          source_document_filename?: string | null;
+          source_document_id?: string | null;
+          source_document_mediatype?: string | null;
+          source_document_title?: string | null;
+          source_url_id?: string | null;
+          source_url_title?: string | null;
+          source_url_url?: string | null;
+          text_state?: string | null;
+          text_text?: string | null;
+          tool_searchuserdocument_errortext?: string | null;
+          tool_searchuserdocument_input?: Json | null;
+          tool_searchuserdocument_output?: Json | null;
+          tool_searchuserdocument_providerexecuted?: boolean | null;
+          tool_searchuserdocument_state?: string | null;
+          tool_searchuserdocument_toolcallid?: string | null;
+          tool_websitesearchtool_errortext?: string | null;
+          tool_websitesearchtool_input?: Json | null;
+          tool_websitesearchtool_output?: Json | null;
+          tool_websitesearchtool_providerexecuted?: boolean | null;
+          tool_websitesearchtool_state?: string | null;
+          tool_websitesearchtool_toolcallid?: string | null;
+          type: string;
+        };
+        Update: {
+          chat_session_id?: string;
+          created_at?: string;
+          file_filename?: string | null;
+          file_mediatype?: string | null;
+          file_url?: string | null;
+          id?: string;
+          message_id?: string;
+          order?: number;
+          providermetadata?: Json | null;
+          reasoning_state?: string | null;
+          reasoning_text?: string | null;
+          role?: string;
+          source_document_filename?: string | null;
+          source_document_id?: string | null;
+          source_document_mediatype?: string | null;
+          source_document_title?: string | null;
+          source_url_id?: string | null;
+          source_url_title?: string | null;
+          source_url_url?: string | null;
+          text_state?: string | null;
+          text_text?: string | null;
+          tool_searchuserdocument_errortext?: string | null;
+          tool_searchuserdocument_input?: Json | null;
+          tool_searchuserdocument_output?: Json | null;
+          tool_searchuserdocument_providerexecuted?: boolean | null;
+          tool_searchuserdocument_state?: string | null;
+          tool_searchuserdocument_toolcallid?: string | null;
+          tool_websitesearchtool_errortext?: string | null;
+          tool_websitesearchtool_input?: Json | null;
+          tool_websitesearchtool_output?: Json | null;
+          tool_websitesearchtool_providerexecuted?: boolean | null;
+          tool_websitesearchtool_state?: string | null;
+          tool_websitesearchtool_toolcallid?: string | null;
+          type?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'message_parts_chat_session_id_fkey';
+            columns: ['chat_session_id'];
+            isOneToOne: false;
+            referencedRelation: 'chat_sessions';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
       user_documents: {
         Row: {
           ai_description: string | null;
@@ -144,7 +224,7 @@ export type Database = {
           ai_maintopics: string[] | null;
           ai_title: string | null;
           created_at: string;
-          filter_tags: string;
+          file_path: string;
           id: string;
           title: string;
           total_pages: number;
@@ -156,7 +236,7 @@ export type Database = {
           ai_maintopics?: string[] | null;
           ai_title?: string | null;
           created_at?: string;
-          filter_tags: string;
+          file_path: string;
           id?: string;
           title: string;
           total_pages: number;
@@ -168,7 +248,7 @@ export type Database = {
           ai_maintopics?: string[] | null;
           ai_title?: string | null;
           created_at?: string;
-          filter_tags?: string;
+          file_path?: string;
           id?: string;
           title?: string;
           total_pages?: number;
@@ -241,25 +321,24 @@ export type Database = {
     Functions: {
       match_documents: {
         Args: {
-          query_embedding: string;
-          match_count: number;
+          file_ids: string[];
           filter_user_id: string;
-          filter_files: string[];
+          match_count: number;
+          query_embedding: string;
           similarity_threshold?: number;
         };
         Returns: {
+          ai_description: string;
+          ai_keyentities: string[];
+          ai_maintopics: string[];
+          ai_title: string;
+          doc_timestamp: string;
           id: string;
+          page_number: number;
+          similarity: number;
           text_content: string;
           title: string;
-          doc_timestamp: string;
-          ai_title: string;
-          ai_description: string;
-          ai_maintopics: string[];
-          ai_keyentities: string[];
-          filter_tags: string;
-          page_number: number;
           total_pages: number;
-          similarity: number;
         }[];
       };
     };
@@ -272,21 +351,28 @@ export type Database = {
   };
 };
 
-type DefaultSchema = Database[Extract<keyof Database, 'public'>];
+type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>;
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<
+  keyof Database,
+  'public'
+>];
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database;
+    schema: keyof DatabaseWithoutInternals;
   }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
-        Database[DefaultSchemaTableNameOrOptions['schema']]['Views'])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
     : never = never
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
-      Database[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
       Row: infer R;
     }
     ? R
@@ -304,14 +390,16 @@ export type Tables<
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema['Tables']
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database;
+    schema: keyof DatabaseWithoutInternals;
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never = never
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Insert: infer I;
     }
     ? I
@@ -327,14 +415,16 @@ export type TablesInsert<
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema['Tables']
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database;
+    schema: keyof DatabaseWithoutInternals;
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never = never
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Update: infer U;
     }
     ? U
@@ -350,14 +440,16 @@ export type TablesUpdate<
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema['Enums']
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database;
+    schema: keyof DatabaseWithoutInternals;
   }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
     : never = never
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
   ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
   : never;
@@ -365,14 +457,16 @@ export type Enums<
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema['CompositeTypes']
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database;
+    schema: keyof DatabaseWithoutInternals;
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
     : never = never
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
   ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
   : never;

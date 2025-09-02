@@ -55,10 +55,13 @@ interface TavilyAPIResponse {
 export const websiteSearchTool = tool({
   description:
     'Search the web for up-to-date information on any topic. This tool is effective for finding comprehensive information, recent developments, and practical implementation guides.',
-  parameters: z.object({
+  inputSchema: z.object({
+    // Changed from parameters to inputSchema
     query: z.string().describe('The query to search for on the web')
   }),
-  execute: async (args, { messages }) => {
+  // Note: tools don't support outputSchema, return value is passed to AI
+  execute: async ({ query }, { messages }) => {
+    // Changed from (args, { messages })
     // Generate improved search queries
     const currentDate = new Date().toISOString().split('T')[0];
 
@@ -96,7 +99,7 @@ export const websiteSearchTool = tool({
       } digital contracts e-signing updates"
       Variation 3: "Practical guide implementing digital contracts business examples"
       </example>
-      Query: "${args.query}"
+      Query: "${query}"
       
       `;
 
@@ -174,8 +177,6 @@ export const websiteSearchTool = tool({
       )
       .join('\n\n');
 
-    // Check token count and truncate if necessary
-
     // Create system prompt for AI response
     const systemPromptTemplate = `
       <search_results>
@@ -219,9 +220,16 @@ export const websiteSearchTool = tool({
       </instructions>
       `;
 
-    // Return results in consistent format with other tools
+    // Return both system prompt and tool output for UI
     return {
-      systemPrompt: systemPromptTemplate
+      systemPrompt: systemPromptTemplate,
+      toolOutput: {
+        sources: searchResults.map(result => ({
+          title: result.title,
+          url: result.url
+        })),
+        queriesUsed: websiteQueries
+      }
     };
   }
 });

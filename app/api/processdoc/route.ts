@@ -2,8 +2,6 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { embed } from 'ai';
 import { getSession } from '@/lib/server/supabase';
 import { createAdminClient } from '@/lib/server/admin';
-import { format } from 'date-fns';
-import { TZDate } from '@date-fns/tz';
 import {
   preliminaryAnswerChainAgent,
   generateDocumentMetadata
@@ -16,20 +14,7 @@ export const dynamic = 'force-dynamic';
 
 export const maxDuration = 800;
 
-const embeddingModel = voyage.textEmbeddingModel('voyage-3-large', {
-  inputType: 'document',
-  truncation: false,
-  outputDimension: 1024,
-  outputDtype: 'int8'
-});
-
-function sanitizeFilename(filename: string): string {
-  const sanitized = filename
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-zA-Z0-9._-]/g, '_');
-  return sanitized;
-}
+const embeddingModel = voyage('voyage-3-large');
 
 type DocumentVectorRecord = TablesInsert<'user_documents_vec'>;
 
@@ -45,10 +30,6 @@ async function processFile(pages: string[], fileName: string, userId: string) {
     userId
   );
 
-  const now = new TZDate(new Date(), 'Europe/Copenhagen');
-  const timestamp = format(now, 'yyyy-MM-dd');
-  const sanitizedFilename = sanitizeFilename(fileName);
-  const filterTags = `${sanitizedFilename}[[${timestamp}]]`;
   const totalPages = pages.length;
 
   const processingBatchSize = 100;
@@ -72,13 +53,13 @@ async function processFile(pages: string[], fileName: string, userId: string) {
     .upsert(
       {
         user_id: userId,
-        title: fileName.replace(/ /g, '_').trim(),
+        title: fileName.trim(),
         ai_title: object.descriptiveTitle,
         ai_description: object.shortDescription,
         ai_maintopics: object.mainTopics,
         ai_keyentities: object.keyEntities,
-        filter_tags: filterTags,
         total_pages: totalPages,
+        file_path: `${userId}/${fileName}`,
         created_at: new Date().toISOString()
       },
       {
@@ -141,7 +122,15 @@ async function processFile(pages: string[], fileName: string, userId: string) {
           try {
             const { embedding } = await embed({
               model: embeddingModel,
-              value: combinedContent
+              value: combinedContent,
+              providerOptions: {
+                voyage: {
+                  inputType: 'document',
+                  truncation: false,
+                  outputDimension: 1024,
+                  outputDtype: 'int8'
+                }
+              }
             });
 
             if (!embedding) {
@@ -190,8 +179,6 @@ async function processFile(pages: string[], fileName: string, userId: string) {
     // Clear batch records for next iteration
     vectorBatchRecords = [];
   }
-
-  return filterTags;
 }
 
 // Rest of your code remains unchanged...
@@ -260,7 +247,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const userId = session.id;
+    const userId = session.sub;
 
     const { jobId, fileName } = await req.json();
 
@@ -300,9 +287,9 @@ export async function POST(req: NextRequest) {
       .map((page) => page.trim())
       .filter((page) => page !== '');
 
-    const filterTags = await processFile(pages, fileName, userId);
+    await processFile(pages, fileName, userId);
     revalidatePath('/chat', 'layout');
-    return NextResponse.json({ status: 'SUCCESS', filterTags });
+    return NextResponse.json({ status: 'SUCCESS' });
   } catch (error) {
     console.error('Error in POST request:', error);
     return NextResponse.json(

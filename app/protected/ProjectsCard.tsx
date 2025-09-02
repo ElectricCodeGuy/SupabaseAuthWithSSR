@@ -25,7 +25,7 @@ export default function ProjectsCard({ projects }: ProjectsCardProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.3 }}
     >
-      <Card className="rounded-2xl shadow-lg overflow-hidden backdrop-blur-sm bg-card/90 border-primary/10">
+      <Card className="rounded-2xl shadow-lg overflow-hidden backdrop-blur-sm bg-card/90 border-primary/10 pt-0">
         <div className="p-4 bg-gradient-to-r from-green-500 to-emerald-600">
           <h6 className="text-white font-semibold flex items-center gap-2">
             <FolderSpecialIcon size={20} /> Featured Projects
@@ -43,7 +43,7 @@ export default function ProjectsCard({ projects }: ProjectsCardProps) {
                 whileHover={{ y: -5 }}
                 className="group"
               >
-                <Card className="rounded-2xl shadow-md h-full flex flex-col overflow-hidden border-2 border-border/50 hover:border-primary/50 transition-all duration-300">
+                <Card className="rounded-2xl shadow-md h-full flex flex-col overflow-hidden border-2 border-border/50 hover:border-primary/50 transition-all duration-300 pt-0">
                   <div
                     className="p-4 text-white relative overflow-hidden"
                     style={{ backgroundColor: project.color }}

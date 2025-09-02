@@ -1,8 +1,5 @@
 import type { KeyboardEvent } from 'react';
 import React, { useState, useRef } from 'react';
-import { useChat, type Message } from '@ai-sdk/react';
-import { useRouter } from 'next/navigation';
-import { useSWRConfig } from 'swr';
 import { useUpload } from '../context/uploadContext';
 import { toast } from 'sonner';
 // Shadcn UI components
@@ -21,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-
+import type { useChat } from '@ai-sdk/react';
 // Icons from Lucide React
 import {
   Send,
@@ -33,17 +30,14 @@ import {
   FileIcon
 } from 'lucide-react';
 
-// Memoized FilePreview component outside MessageInput (before MessageInput)
+// FilePreview component remains the same
 const FilePreview = React.memo(
   ({ file, onRemove }: { file: File; onRemove: () => void }) => {
     const [previewUrl, setPreviewUrl] = useState<string>('');
 
     React.useEffect(() => {
-      // Create a URL for the PDF file
       const url = URL.createObjectURL(file);
       setPreviewUrl(url);
-
-      // Cleanup: revoke the URL when component unmounts
       return () => {
         URL.revokeObjectURL(url);
       };
@@ -106,7 +100,6 @@ const FilePreview = React.memo(
   }
 );
 
-// Add display name for debugging
 FilePreview.displayName = 'FilePreview';
 
 const modelTypes = [
@@ -115,67 +108,45 @@ const modelTypes = [
   { value: 'website', label: 'Website' }
 ];
 
-const MessageInput = ({
-  chatId,
-  apiEndpoint,
-  currentChat,
-  option,
-  currentChatId,
-  modelType,
-  selectedOption,
-  handleModelTypeChange,
-  handleOptionChange
-}: {
+type ChatHelpers = ReturnType<typeof useChat>;
+
+interface MessageInputProps {
   chatId: string;
-  apiEndpoint: string;
-  currentChat: Message[];
-  option: string;
-  currentChatId: string;
   modelType: string;
   selectedOption: string;
   handleModelTypeChange: (value: string) => void;
   handleOptionChange: (value: string) => void;
+  sendMessage: ChatHelpers['sendMessage'];
+  status: ChatHelpers['status'];
+  stop: ChatHelpers['stop'];
+}
+
+const MessageInput: React.FC<MessageInputProps> = ({
+  chatId,
+  modelType,
+  selectedOption,
+  handleModelTypeChange,
+  handleOptionChange,
+  sendMessage,
+  status,
+  stop
 }) => {
   const { selectedBlobs } = useUpload();
-  const router = useRouter();
-  const { mutate } = useSWRConfig();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
-
-  const { input, handleInputChange, handleSubmit, status, stop } = useChat({
-    id: 'chat', // Use the same ID to share state
-    api: apiEndpoint,
-    initialMessages: currentChat,
-    body: {
-      chatId: chatId,
-      option: option,
-      selectedBlobs: selectedBlobs
-    },
-    onFinish: async () => {
-      await mutate((key) => Array.isArray(key) && key[0] === 'chatPreviews');
-      router.refresh();
-    },
-    onError: (error) => {
-      toast.error(error.message || 'An error occurred'); // This could lead to sensitive information exposure. A general error message is safer.
-    }
-  });
+  const [input, setInput] = useState('');
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+  };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && event.shiftKey) {
       // Allow newline on Shift + Enter
     } else if (event.key === 'Enter') {
-      // Prevent default behavior and submit form on Enter only
       event.preventDefault();
       handleFormSubmit(event);
     }
   };
-
-  // Create FileList from files
-  function createFileList(files: File[]): FileList {
-    const dataTransfer = new DataTransfer();
-    files.forEach((file) => dataTransfer.items.add(file));
-    return dataTransfer.files;
-  }
 
   const handleFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -189,9 +160,6 @@ const MessageInput = ({
     }
 
     if (file.size > 3 * 1024 * 1024) {
-      // This file limit is here due to Vercel serverless function impose a 4.5 MB limit.
-      // A better solution would be to upload the file to a storage service and send the URL.
-      // I'm to lazy to implement that right now.
       toast.error('File is too large (max 3MB)');
       return;
     }
@@ -206,33 +174,61 @@ const MessageInput = ({
     }
   };
 
-  // Handle form submission
+  const filesToBase64 = async (files: File[]): Promise<any[]> => {
+    const promises = files.map((file) => {
+      return new Promise<any>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const base64 = reader.result as string;
+          resolve({
+            type: 'file',
+            filename: file.name,
+            mediaType: file.type,
+            url: base64
+          });
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    });
+    return Promise.all(promises);
+  };
+
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() && attachedFiles.length === 0) return;
 
-    if (chatId !== currentChatId) {
-      const currentSearchParams = new URLSearchParams(window.location.search);
-      let newUrl = `/chat/${chatId}`;
+    // REMOVED the router.push logic from here
 
-      if (currentSearchParams.toString()) {
-        newUrl += `?${currentSearchParams.toString()}`;
-      }
+    // Prepare message parts
+    const parts: any[] = [{ type: 'text', text: input }];
 
-      router.push(newUrl, { scroll: false });
-    }
-    // Handle the submission with experimental attachments
+    // Add file parts if there are attachments
     if (attachedFiles.length > 0) {
-      handleSubmit(e, {
-        experimental_attachments: createFileList(attachedFiles)
-      });
+      const fileParts = await filesToBase64(attachedFiles);
+      parts.push(...fileParts);
+    }
 
-      setAttachedFiles([]);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+    // Send message
+    sendMessage(
+      {
+        role: 'user',
+        parts: parts
+      },
+      {
+        body: {
+          chatId: chatId,
+          option: selectedOption,
+          selectedBlobs: selectedBlobs
+        }
       }
-    } else {
-      handleSubmit(e);
+    );
+
+    // Clear input and files
+    setInput('');
+    setAttachedFiles([]);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -311,12 +307,12 @@ const MessageInput = ({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56">
                     {[
-                      { value: 'gpt-4.1', label: 'GPT-4.1' },
-                      { value: 'gpt-4.1-mini', label: 'GPT-4.1 Mini' },
+                      { value: 'gpt-5', label: 'GPT-5' },
+                      { value: 'gpt-5-mini', label: 'GPT-5 Mini' },
                       { value: 'o3', label: 'OpenAI O3' },
                       {
-                        value: 'claude-3.7-sonnet',
-                        label: 'Claude 3.7 Sonnet'
+                        value: 'claude-4-sonnet',
+                        label: 'Claude 4 Sonnet'
                       },
                       { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
                       { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' }
@@ -349,18 +345,15 @@ const MessageInput = ({
             )}
           </div>
 
-          {/* Send button or spinner with matched sizing */}
+          {/* Send button or spinner */}
           {status !== 'ready' && status !== 'error' ? (
             <div
               className="h-8 w-8 sm:h-10 sm:w-10 mr-2 flex items-center justify-center border border-primary/30 cursor-pointer relative group rounded-lg bg-background"
               onClick={stop}
             >
-              {/* Loading indicator (visible by default, hidden on hover) */}
               <div className="flex items-center justify-center transition-opacity group-hover:opacity-0">
                 <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 text-primary animate-spin" />
               </div>
-
-              {/* Stop button (hidden by default, visible on hover) */}
               <div className="absolute inset-0 hidden group-hover:flex items-center justify-center">
                 <Square size={14} className="text-red-500 sm:h-4 sm:w-4" />
               </div>
@@ -378,7 +371,7 @@ const MessageInput = ({
           )}
         </div>
 
-        {/* File previews section with clear visual separation */}
+        {/* File previews section */}
         {attachedFiles.length > 0 && (
           <div className="overflow-hidden border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 rounded-b-2xl">
             <div className="flex flex-row overflow-x-auto gap-3 px-3.5 py-2.5">

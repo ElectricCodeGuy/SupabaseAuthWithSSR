@@ -15,7 +15,7 @@ export default function SkillsCard({ skills }: SkillsCardProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.2 }}
     >
-      <Card className="rounded-2xl shadow-lg overflow-hidden backdrop-blur-sm bg-card/90 border-primary/10">
+      <Card className="rounded-2xl shadow-lg overflow-hidden backdrop-blur-sm bg-card/90 border-primary/10 pt-0">
         <div className="p-4 bg-gradient-to-r from-primary to-purple-600">
           <h6 className="text-white font-semibold flex items-center gap-2">
             <CodeIcon size={20} /> Technical Skills

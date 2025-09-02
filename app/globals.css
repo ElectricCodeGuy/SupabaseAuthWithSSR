@@ -14,6 +14,15 @@
   }
 }
 
+button,
+.button,
+[type='button'],
+[type='submit'],
+[type='reset'] {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
 @media (min-width: 2560px) {
   .width-4k-sidebar {
     width: min(400px, calc((100vw-1150px-48px) / 2)) !important;

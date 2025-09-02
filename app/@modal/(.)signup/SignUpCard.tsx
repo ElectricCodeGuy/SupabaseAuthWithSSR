@@ -8,10 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Check, X } from 'lucide-react';
 import ForgotPassword from '../ForgotPassword';
-import { GoogleIcon } from '../CustomIcons';
 import { signup } from '../action';
 import { useFormStatus } from 'react-dom';
-import { signInWithGoogle } from '../OAuth';
 import Link from 'next/link';
 import {
   Popover,
@@ -289,16 +287,6 @@ export default function SignInCard() {
                 or
               </span>
             </div>
-
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full"
-              onClick={() => signInWithGoogle()}
-            >
-              <GoogleIcon />
-              Sign up with Google
-            </Button>
 
             <ForgotPassword open={open} handleClose={handleClose} />
           </CardContent>

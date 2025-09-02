@@ -23,16 +23,24 @@ export async function resetPassword(formData: FormData) {
   });
 
   if (!result.success) {
-    const fieldErrors = result.error.formErrors.fieldErrors;
+    // Direct access to error issues - simplest approach
+    const errors = result.error.issues;
+
     let errorMessage = 'Invalid input';
-    if (fieldErrors.newPassword) {
-      const passwordErrors = fieldErrors.newPassword;
-      if (Array.isArray(passwordErrors)) {
-        errorMessage = passwordErrors[0];
-      } else {
-        errorMessage = passwordErrors;
-      }
+
+    // Get the first error message (usually the most relevant)
+    if (errors.length > 0) {
+      errorMessage = errors[0].message;
     }
+
+    // Or if you want to find errors for a specific field:
+    const passwordError = errors.find(
+      (issue) => issue.path[0] === 'newPassword'
+    );
+    if (passwordError) {
+      errorMessage = passwordError.message;
+    }
+
     redirect(
       '/redirect/auth-password-update?error=' + encodeURIComponent(errorMessage)
     );

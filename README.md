@@ -183,38 +183,83 @@ This SQL statement creates a trigger named `on_auth_user_created` that executes 
 
   create index if not exists chat_sessions_created_at_idx on public.chat_sessions using btree (created_at) tablespace pg_default;
 
-  -- Chat Messages Table
-  create table
-    public.chat_messages (
-      id uuid not null default extensions.uuid_generate_v4 (),
-      chat_session_id uuid not null,
-      content text null,
-      is_user_message boolean not null,
-      sources jsonb null,
-      attachments jsonb null,
-      tool_invocations null,
-      created_at timestamp with time zone not null default current_timestamp,
-      constraint chat_messages_pkey primary key (id),
-      constraint chat_messages_chat_session_id_fkey foreign key (chat_session_id) references chat_sessions (id) on delete cascade
-    ) tablespace pg_default;
+  -- Message Parts Table (NEW - Replaces chat_messages for incremental saving)
+  -- This table stores individual message parts (text, tools, reasoning, etc.)
+  -- allowing for incremental saving and proper ordering of AI responses
+  create table public.message_parts (
+    id uuid NOT NULL DEFAULT gen_random_uuid(),
+    chat_session_id uuid NOT NULL,
+    message_id uuid NOT NULL,
+    role text NOT NULL,
+    type text NOT NULL,
+    "order" integer NOT NULL DEFAULT 0,
+    created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-  create index if not exists idx_chat_messages_chat_session_id on public.chat_messages using btree (chat_session_id) tablespace pg_default;
-  -- Enable RLS for chat_messages
-  alter table public.chat_messages enable row level security;
+    -- Text part fields
+    text_text text NULL,
+    text_state text NULL DEFAULT 'done',
 
-  -- Chat messages RLS policy
-  create policy "Users can view messages from their sessions"
-  on public.chat_messages
-  as permissive
-  for all
-  to public
-  using (
-    chat_session_id IN (
-      SELECT chat_sessions.id
-      FROM chat_sessions
-      WHERE chat_sessions.user_id = auth.uid()
-    )
-  );
+    -- Reasoning part fields
+    reasoning_text text NULL,
+    reasoning_state text NULL DEFAULT 'done',
+
+    -- File part fields
+    file_mediatype text NULL,
+    file_filename text NULL,
+    file_url text NULL,
+
+    -- Source URL part fields
+    source_url_id text NULL,
+    source_url_url text NULL,
+    source_url_title text NULL,
+
+    -- Source Document part fields
+    source_document_id text NULL,
+    source_document_mediatype text NULL,
+    source_document_title text NULL,
+    source_document_filename text NULL,
+
+    -- Tool: searchUserDocument fields
+    tool_searchuserdocument_toolcallid uuid NULL,
+    tool_searchuserdocument_state text NULL,
+    tool_searchuserdocument_input jsonb NULL,
+    tool_searchuserdocument_output jsonb NULL,
+    tool_searchuserdocument_errortext text NULL,
+    tool_searchuserdocument_providerexecuted boolean NULL,
+
+    -- Tool: websiteSearchTool fields
+    tool_websitesearchtool_toolcallid uuid NULL,
+    tool_websitesearchtool_state text NULL,
+    tool_websitesearchtool_input jsonb NULL,
+    tool_websitesearchtool_output jsonb NULL,
+    tool_websitesearchtool_errortext text NULL,
+    tool_websitesearchtool_providerexecuted boolean NULL,
+
+    -- Provider metadata
+    providermetadata jsonb NULL,
+
+    -- Constraints
+    CONSTRAINT message_parts_pkey PRIMARY KEY (id),
+    CONSTRAINT message_parts_chat_session_id_fkey FOREIGN KEY (chat_session_id)
+      REFERENCES chat_sessions (id) ON DELETE CASCADE,
+    CONSTRAINT message_parts_role_check CHECK (
+      role = ANY (ARRAY['user'::text, 'assistant'::text, 'system'::text])
+    ),
+  ) TABLESPACE pg_default;
+
+  -- Create indexes for performance
+  CREATE INDEX idx_message_parts_chat_session_id
+    ON public.message_parts USING btree (chat_session_id) TABLESPACE pg_default;
+  CREATE INDEX idx_message_parts_message_id
+    ON public.message_parts USING btree (message_id) TABLESPACE pg_default;
+  CREATE INDEX idx_message_parts_chat_session_message_order
+    ON public.message_parts USING btree (chat_session_id, message_id, "order") TABLESPACE pg_default;
+  CREATE INDEX idx_message_parts_created_at
+    ON public.message_parts USING btree (created_at) TABLESPACE pg_default;
+  CREATE INDEX idx_message_parts_type
+    ON public.message_parts USING btree (type) TABLESPACE pg_default;
+  CREATE INDEX idx_message_parts_message_order
+    ON public.message_parts USING btree (message_id, "order") TABLESPACE pg_default;
 
 -- Enable the vector extension
 CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA extensions;
@@ -236,7 +281,7 @@ CREATE TABLE public.user_documents (
   ai_keyentities text[] NULL,
   ai_maintopics text[] NULL,
   ai_title text NULL,
-  filter_tags text NOT NULL,
+  file_path text NOT NULL,
   created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at timestamp with time zone NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT user_documents_pkey PRIMARY KEY (id),
@@ -281,8 +326,6 @@ CREATE POLICY "Users can only access their own document vectors" ON public.user_
 CREATE INDEX IF NOT EXISTS idx_user_documents_user_id
 ON public.user_documents USING btree (user_id) TABLESPACE pg_default;
 
-CREATE INDEX IF NOT EXISTS idx_user_documents_filter_tags
-ON public.user_documents USING btree (filter_tags) TABLESPACE pg_default;
 
 CREATE INDEX IF NOT EXISTS idx_user_documents_vec_document_id
 ON public.user_documents_vec USING btree (document_id) TABLESPACE pg_default;
@@ -371,7 +414,7 @@ CREATE OR REPLACE FUNCTION match_documents(
   query_embedding vector(1024),
   match_count int,
   filter_user_id uuid,
-  filter_files text[],
+  file_ids uuid[],
   similarity_threshold float DEFAULT 0.30
 )
 RETURNS TABLE (
@@ -383,7 +426,6 @@ RETURNS TABLE (
   ai_description text,
   ai_maintopics text[],
   ai_keyentities text[],
-  filter_tags text,
   page_number integer,
   total_pages integer,
   similarity float
@@ -401,7 +443,6 @@ BEGIN
     doc.ai_description,
     doc.ai_maintopics,
     doc.ai_keyentities,
-    doc.filter_tags,
     vec.page_number,
     doc.total_pages,
     1 - (vec.embedding <=> query_embedding) as similarity
@@ -411,7 +452,8 @@ BEGIN
     user_documents doc ON vec.document_id = doc.id
   WHERE
     doc.user_id = filter_user_id
-    AND doc.filter_tags = ANY(filter_files)
+    -- Use the renamed parameter in the filter condition
+    AND doc.id = ANY(file_ids)
     AND 1 - (vec.embedding <=> query_embedding) > similarity_threshold
   ORDER BY
     vec.embedding <=> query_embedding ASC

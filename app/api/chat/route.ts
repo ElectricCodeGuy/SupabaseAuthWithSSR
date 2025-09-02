@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import type { Message, Attachment } from 'ai';
-import { streamText, convertToCoreMessages } from 'ai';
-import { saveChatToSupbabase } from './SaveToDb';
+import type { UIMessage } from 'ai'; // Changed from Message
+import { streamText, convertToModelMessages } from 'ai'; // Changed from convertToCoreMessages
+import { saveMessagesToDB } from './SaveToDbIncremental';
 import { Ratelimit } from '@upstash/ratelimit';
 import type { OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
 import { openai } from '@ai-sdk/openai';
@@ -13,7 +13,8 @@ import { searchUserDocument } from './tools/documentChat';
 import { websiteSearchTool } from './tools/WebsiteSearchTool';
 import { google } from '@ai-sdk/google';
 import type { GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
-import type { LanguageModelV1ProviderMetadata } from '@ai-sdk/provider';
+import { stepCountIs } from 'ai'; // Import for stopWhen
+import type { SharedV2ProviderMetadata } from '@ai-sdk/provider';
 
 export const dynamic = 'force-dynamic';
 
@@ -64,12 +65,12 @@ function errorHandler(error: unknown) {
 
 const getModel = (selectedModel: string) => {
   switch (selectedModel) {
-    case 'claude-3.7-sonnet':
+    case 'claude-4-sonnet':
       return anthropic('claude-4-sonnet-20250514');
-    case 'gpt-4.1':
-      return openai('gpt-4.1-2025-04-14');
-    case 'gpt-4.1-mini':
-      return openai('gpt-4.1-mini');
+    case 'gpt-5':
+      return openai('gpt-5');
+    case 'gpt-5-mini':
+      return openai('gpt-5-mini');
     case 'o3':
       return openai('o3-2025-04-16');
     case 'gemini-2.5-pro':
@@ -78,7 +79,7 @@ const getModel = (selectedModel: string) => {
       return google('gemini-2.5-flash');
     default:
       console.error('Invalid model selected:', selectedModel);
-      return openai('gpt-4.1-2025-04-14');
+      return openai('gpt-5');
   }
 };
 
@@ -95,11 +96,11 @@ export async function POST(req: NextRequest) {
   }
   const ratelimit = new Ratelimit({
     redis,
-    limiter: Ratelimit.slidingWindow(30, '24h') // 30 msg per 24 hours
+    limiter: Ratelimit.slidingWindow(30, '24h')
   });
 
   const { success, limit, reset, remaining } = await ratelimit.limit(
-    `ratelimit_${session.id}`
+    `ratelimit_${session.sub}`
   );
   if (!success) {
     return new NextResponse('Rate limit exceeded. Please try again later.', {
@@ -114,7 +115,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const messages: Message[] = body.messages ?? [];
+  const messages: UIMessage[] = body.messages ?? []; // Changed from Message[]
   const chatSessionId = body.chatId;
   const signal = body.signal;
   const selectedFiles: string[] = body.selectedBlobs ?? [];
@@ -128,18 +129,10 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  let fileAttachments: Attachment[] = [];
-
-  // Check if the last message is from the user and contains attachments
-  const lastMessage = messages[messages.length - 1];
-  if (lastMessage?.role === 'user' && lastMessage?.experimental_attachments) {
-    fileAttachments = lastMessage.experimental_attachments;
-  }
-
   const selectedModel = body.option ?? 'gpt-3.5-turbo-1106';
-  const userId = session.id;
+  const userId = session.sub;
 
-  const providerOptions: LanguageModelV1ProviderMetadata = {};
+  const providerOptions: SharedV2ProviderMetadata = {};
   if (selectedModel === 'claude-3.7-sonnet') {
     providerOptions.anthropic = {
       thinking: { type: 'enabled', budgetTokens: 12000 }
@@ -165,12 +158,24 @@ export async function POST(req: NextRequest) {
     } satisfies OpenAIResponsesProviderOptions;
   }
 
+  if (selectedModel === 'gpt-5' || selectedModel === 'gpt-5-mini') {
+    providerOptions.openai = {
+      reasoningEffort: 'low',
+      reasoningSummary: 'auto',
+      textVerbosity: 'medium'
+    } satisfies OpenAIResponsesProviderOptions;
+  }
+  // Track step count and assistant message ID for incremental saves
+  let stepCount = 0;
+  let userMessageSaved = false;
+  const assistantMessageId = crypto.randomUUID();
+
   const result = streamText({
     model: getModel(selectedModel),
     system: getSystemPrompt(selectedFiles),
-    messages: convertToCoreMessages(messages),
+    messages: convertToModelMessages(messages), // Changed from convertToCoreMessages
     abortSignal: signal,
-    providerOptions,
+    providerOptions, // Changed from providerMetadata
     tools: {
       searchUserDocument: searchUserDocument({
         userId,
@@ -178,56 +183,139 @@ export async function POST(req: NextRequest) {
       }),
       websiteSearchTool: websiteSearchTool
     },
-    experimental_activeTools:
+    // Changed from experimental_activeTools
+    activeTools:
       selectedFiles.length > 0
         ? ['searchUserDocument', 'websiteSearchTool']
         : ['websiteSearchTool'],
-    maxSteps: 3,
+    stopWhen: stepCountIs(3), // Changed from maxSteps
     experimental_telemetry: {
       isEnabled: true,
       functionId: 'api_chat',
       metadata: {
-        userId: session.id,
+        userId: session.sub,
         chatId: chatSessionId
       },
       recordInputs: true,
       recordOutputs: true
     },
-    onFinish: async (event) => {
-      const { text, reasoning, steps, sources } = event;
-      const lastMessage = messages[messages.length - 1];
-      const lastMessageContent =
-        typeof lastMessage.content === 'string' ? lastMessage.content : '';
+    // NEW: Save each step as it completes
+    onStepFinish: async (stepResult) => {
+      try {
+        const messagesToSave: UIMessage[] = [];
 
-      const foundReasoningStep = event.steps.find((step) => step.reasoning);
-      const reasoningText =
-        reasoning ||
-        (foundReasoningStep?.reasoning
-          ? foundReasoningStep.reasoning
-          : undefined);
+        // On the first step, include the user message
+        if (stepCount === 0 && !userMessageSaved) {
+          const lastMessage = messages[messages.length - 1];
+          if (lastMessage) {
+            messagesToSave.push(lastMessage);
+            userMessageSaved = true;
+          }
+        }
 
-      await saveChatToSupbabase(
-        chatSessionId,
-        session.id,
-        lastMessageContent,
-        text,
-        fileAttachments,
-        reasoningText,
-        sources,
-        steps.map((step) => step.toolResults).flat()
-      );
-      console.log('Chat saved to Supabase:', chatSessionId);
+        // Build UIMessage from the step result content - use same message ID for all steps
+        const uiMessage: UIMessage = {
+          id: assistantMessageId, // USE THE SAME ID FOR ALL STEPS
+          role: 'assistant',
+          parts: []
+        };
+
+        // Add all content parts from the step
+        stepResult.content.forEach((content) => {
+          if (content.type === 'text') {
+            uiMessage.parts.push({
+              type: 'text',
+              text: content.text,
+              providerMetadata: content.providerMetadata
+            });
+          } else if (content.type === 'reasoning') {
+            uiMessage.parts.push({
+              type: 'reasoning',
+              text: content.text,
+              providerMetadata: content.providerMetadata
+            });
+          } else if (content.type === 'source') {
+            // Handle source parts - can be URL or document
+            if ('url' in content && 'title' in content) {
+              uiMessage.parts.push({
+                type: 'source-url',
+                sourceId: content.id,
+                url: content.url,
+                title: content.title,
+                providerMetadata: content.providerMetadata
+              });
+            } else if ('mediaType' in content && 'filename' in content) {
+              uiMessage.parts.push({
+                type: 'source-document',
+                sourceId: content.id,
+                mediaType: content.mediaType,
+                title: content.title || '',
+                filename: content.filename,
+                providerMetadata: content.providerMetadata
+              });
+            }
+          } else if (content.type === 'file') {
+            uiMessage.parts.push({
+              type: 'file',
+              url: content.file.base64
+                ? `data:${content.file.mediaType};base64,${content.file.base64}`
+                : '',
+              mediaType: content.file.mediaType,
+              filename: undefined, // GeneratedFile doesn't have filename
+              providerMetadata: content.providerMetadata
+            });
+          } else if (content.type === 'tool-result') {
+            uiMessage.parts.push({
+              type: `tool-${content.toolName}`,
+              toolCallId: content.toolCallId,
+              state: 'output-available',
+              input: content.input,
+              output: content.output,
+              providerExecuted: content.providerExecuted
+            });
+          } else if (content.type === 'tool-error') {
+            uiMessage.parts.push({
+              type: `tool-${content.toolName}`,
+              toolCallId: content.toolCallId,
+              state: 'output-error',
+              input: content.input,
+              errorText: content.error?.toString() || 'Tool error occurred',
+              providerExecuted: content.providerExecuted
+            });
+          }
+        });
+
+        if (uiMessage.parts.length > 0) {
+          messagesToSave.push(uiMessage);
+        }
+
+        // Save the messages from this step to the database
+        if (messagesToSave.length > 0) {
+          await saveMessagesToDB({
+            chatSessionId,
+            userId,
+            messages: messagesToSave,
+            isFirstStep: stepCount === 0,
+            assistantMessageId
+          });
+        }
+
+        // Increment step counter
+        stepCount++;
+      } catch (error) {
+        console.error(`Error saving step ${stepCount} to database:`, error);
+      }
     },
     onError: async (error) => {
       console.error('Error processing chat:', error);
     }
   });
 
-  result.consumeStream(); // We consume the stream if the server is discnnected from the client to ensure the onFinish callback is called
+  result.consumeStream();
 
-  return result.toDataStreamResponse({
+  return result.toUIMessageStreamResponse({
     sendReasoning: true,
     sendSources: true,
-    getErrorMessage: errorHandler
+    onError: errorHandler
   });
 }

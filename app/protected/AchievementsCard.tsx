@@ -18,7 +18,7 @@ export default function AchievementsCard({
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.5, delay: 0.3 }}
     >
-      <Card className="rounded-2xl shadow-lg overflow-hidden backdrop-blur-sm bg-card/90 border-primary/10">
+      <Card className="rounded-2xl shadow-lg overflow-hidden backdrop-blur-sm bg-card/90 border-primary/10 pt-0">
         <div className="p-4 bg-gradient-to-r from-yellow-500 to-orange-600">
           <h6 className="text-white font-semibold flex items-center gap-2">
             <EmojiEventsIcon size={20} /> Achievements & Awards

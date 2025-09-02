@@ -6,8 +6,6 @@ import React, {
   useMemo,
   useCallback
 } from 'react';
-import { createClient } from '@/lib/client/client';
-import { encodeBase64 } from '../utils/base64';
 import useSWR, { mutate } from 'swr';
 import { useRouter } from 'next/navigation';
 
@@ -26,9 +24,6 @@ interface UploadContextType {
 
 const UploadContext = createContext<UploadContextType | undefined>(undefined);
 
-const MAX_TOTAL_SIZE = 150 * 1024 * 1024;
-const supabase = createClient();
-
 export const useUpload = () => {
   const context = useContext(UploadContext);
   if (!context) {
@@ -39,8 +34,7 @@ export const useUpload = () => {
 
 export const UploadProvider: React.FC<{
   children: React.ReactNode;
-  userId: string;
-}> = ({ children, userId }) => {
+}> = ({ children }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState('');
@@ -167,137 +161,131 @@ export const UploadProvider: React.FC<{
     setSelectedFile(null);
   }, [currentJobId, currentFileName]);
 
-  const uploadFile = useCallback(
-    async (file: File) => {
-      // First reset all state
-      setIsUploading(true);
-      setUploadProgress(0);
-      setUploadStatus('Uploading file...');
-      setStatusSeverity('info');
+  const uploadFile = useCallback(async (file: File) => {
+    // First reset all state
+    setIsUploading(true);
+    setUploadProgress(0);
+    setUploadStatus('Checking storage limits...');
+    setStatusSeverity('info');
 
-      let uploadedFilePath: string | null = null;
-      async function getTotalUploadedSize(): Promise<number> {
-        const { data, error } = await supabase.storage
-          .from('userfiles')
-          .list(userId);
+    let uploadedFilePath: string | null = null;
 
-        if (error) {
-          console.error('Error fetching user files:', error);
-          return 0;
-        }
+    try {
+      // Step 1: Check storage limits and get presigned URL from server
+      const fileNameWithUnderscores = file.name.trim();
 
-        return data.reduce(
-          (total, file) => total + (file.metadata?.size || 0),
-          0
+      const presignedResponse = await fetch('/api/upload/presigned-url', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          fileName: fileNameWithUnderscores,
+          fileSize: file.size,
+          fileType: file.type
+        })
+      });
+
+      if (!presignedResponse.ok) {
+        const error = await presignedResponse.json();
+        throw new Error(error.message || 'Failed to get upload URL');
+      }
+
+      const { uploadUrl, filePath, totalSize, maxSize } =
+        await presignedResponse.json();
+
+      // Check if we're within limits
+      if (totalSize + file.size > maxSize) {
+        throw new Error(
+          `Upload would exceed the maximum allowed total size of ${
+            maxSize / (1024 * 1024)
+          } MB.`
         );
       }
-      try {
-        const currentTotalSize = await getTotalUploadedSize();
-        const newTotalSize = currentTotalSize + file.size;
 
-        if (newTotalSize > MAX_TOTAL_SIZE) {
-          throw new Error(
-            'Upload would exceed the maximum allowed total size of 150 MB.'
-          );
+      uploadedFilePath = filePath;
+      setUploadStatus('Uploading file...');
+      setUploadProgress(10);
+
+      // Step 2: Upload file directly to presigned URL
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': file.type || 'application/octet-stream'
         }
+      });
 
-        uploadedFilePath = await uploadToSupabase(file, userId);
-        const fileNameWithUnderscores = file.name.replace(/ /g, '_').trim();
-
-        setUploadProgress(25);
-        setUploadStatus('Preparing file for analysis...');
-
-        const response = await fetch('/api/uploaddoc', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            uploadedFiles: [
-              { name: fileNameWithUnderscores, path: uploadedFilePath }
-            ]
-          })
-        });
-
-        if (!response.ok) {
-          throw new Error(
-            `Error processing file on server: ${response.statusText}`
-          );
-        }
-
-        const result = await response.json();
-
-        setUploadProgress(50);
-        setUploadStatus('Analyzing file...');
-
-        if (result.results[0].jobId) {
-          setCurrentJobId(result.results[0].jobId);
-          setCurrentFileName(file.name);
-          // Activate the SWR for status checking
-          setShouldCheckStatus(true);
-        } else {
-          throw new Error('No job ID received from server.');
-        }
-      } catch (error) {
-        console.error('Error uploading file:', error);
-
-        if (uploadedFilePath) {
-          try {
-            const { error: deleteError } = await supabase.storage
-              .from('userfiles')
-              .remove([uploadedFilePath]);
-
-            if (deleteError) {
-              console.error(
-                `Error deleting file ${uploadedFilePath}:`,
-                deleteError
-              );
-            }
-          } catch (deleteError) {
-            console.error(
-              `Error deleting file ${uploadedFilePath}:`,
-              deleteError
-            );
-          }
-        }
-
-        if (error instanceof Error) {
-          setUploadStatus(error.message);
-        } else {
-          setUploadStatus(
-            'Error uploading or processing file. Please try again.'
-          );
-        }
-        setStatusSeverity('error');
-        setIsUploading(false);
+      if (!uploadResponse.ok) {
+        throw new Error('Failed to upload file to storage');
       }
-    },
-    [userId]
-  );
 
-  // Helper functions for uploadFile
+      setUploadProgress(25);
+      setUploadStatus('Preparing file for analysis...');
 
-  const uploadToSupabase = async (file: File, userId: string) => {
-    const fileNameWithUnderscores = file.name.replace(/ /g, '_').trim();
-    const encodedFileName = encodeBase64(fileNameWithUnderscores);
-    const filePath = `${userId}/${encodedFileName}`;
+      // Step 3: Notify server that upload is complete and start processing
+      const processResponse = await fetch('/api/uploaddoc', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          uploadedFiles: [
+            { name: fileNameWithUnderscores, path: uploadedFilePath }
+          ]
+        })
+      });
 
-    const { data, error } = await supabase.storage
-      .from('userfiles')
-      .upload(filePath, file, { upsert: true });
+      if (!processResponse.ok) {
+        throw new Error(
+          `Error processing file on server: ${processResponse.statusText}`
+        );
+      }
 
-    if (error) {
+      const result = await processResponse.json();
+
+      setUploadProgress(50);
+      setUploadStatus('Analyzing file...');
+
+      if (result.results[0].jobId) {
+        setCurrentJobId(result.results[0].jobId);
+        setCurrentFileName(file.name);
+        // Activate the SWR for status checking
+        setShouldCheckStatus(true);
+      } else {
+        throw new Error('No job ID received from server.');
+      }
+    } catch (error) {
       console.error('Error uploading file:', error);
-      throw new Error(`Failed to upload file: ${file.name}`);
-    }
 
-    if (!data?.path) {
-      console.error('Upload successful but path is missing');
-      throw new Error(`Failed to get path for uploaded file: ${file.name}`);
-    }
+      // If upload failed and we have a path, notify server to clean up
+      if (uploadedFilePath) {
+        try {
+          await fetch('/api/upload/cleanup', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              filePath: uploadedFilePath
+            })
+          });
+        } catch (cleanupError) {
+          console.error('Error cleaning up failed upload:', cleanupError);
+        }
+      }
 
-    return data.path;
-  };
+      if (error instanceof Error) {
+        setUploadStatus(error.message);
+      } else {
+        setUploadStatus(
+          'Error uploading or processing file. Please try again.'
+        );
+      }
+      setStatusSeverity('error');
+      setIsUploading(false);
+    }
+  }, []);
 
   const contextValue = useMemo(
     () => ({

@@ -1,9 +1,10 @@
+// app/chat/components/tools/SourceView.tsx
 'use client';
 
 import React from 'react';
 import Link from 'next/link';
 import { ExternalLink, Info, AlertCircle } from 'lucide-react';
-import type { LanguageModelV1Source } from '@ai-sdk/provider';
+import type { SourceUrlUIPart, SourceDocumentUIPart } from 'ai';
 import useSWR from 'swr';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -13,8 +14,10 @@ import {
   AccordionTrigger
 } from '@/components/ui/accordion';
 
+type SourceUIPart = SourceUrlUIPart | SourceDocumentUIPart;
+
 interface SourceViewProps {
-  sources: LanguageModelV1Source[];
+  sources: SourceUIPart[];
 }
 
 interface Metadata {
@@ -41,28 +44,43 @@ const SourceItem = ({
   source,
   index
 }: {
-  source: LanguageModelV1Source;
+  source: SourceUIPart;
   index: number;
 }) => {
+  // Get URL based on source type
+  const sourceUrl = source.type === 'source-url' ? source.url : undefined;
+  const sourceTitle =
+    source.type === 'source-url'
+      ? source.title
+      : source.type === 'source-document'
+      ? source.title
+      : undefined;
+
   // useSWR hook at the top level
   const { data, error, isLoading } = useSWR<Metadata>(
-    source.url
-      ? `/api/getmetadata?url=${encodeURIComponent(source.url)}`
-      : null,
+    sourceUrl ? `/api/getmetadata?url=${encodeURIComponent(sourceUrl)}` : null,
     fetcher,
     { revalidateOnFocus: false }
   );
 
-  if (!source.url) return null;
+  if (!sourceUrl && source.type !== 'source-document') return null;
 
   // Determine the link title with fallback logic
-  const linkTitle = source.title || data?.title || source.url;
+  const linkTitle = sourceTitle || data?.title || sourceUrl || 'Document';
 
-  // Get domain for favicon
-  const domain = getDomain(source.url);
+  // Get domain for favicon (only for URL sources)
+  const domain = sourceUrl ? getDomain(sourceUrl) : '';
   const faviconUrl = domain
     ? `https://www.google.com/s2/favicons?domain=${domain}&sz=32`
     : null;
+
+  // Create link href based on source type
+  const linkHref =
+    source.type === 'source-url' && sourceUrl
+      ? `?url=${encodeURIComponent(sourceUrl)}`
+      : source.type === 'source-document'
+      ? `?document=${encodeURIComponent(source.sourceId)}`
+      : '#';
 
   return (
     <li
@@ -92,7 +110,7 @@ const SourceItem = ({
               />
             )}
             <Link
-              href={`?url=${encodeURIComponent(source.url)}`}
+              href={linkHref}
               scroll={false}
               prefetch={false}
               className="text-sm text-primary hover:text-primary/80 underline decoration-primary/30 hover:decoration-primary/100 transition-colors inline-flex items-center gap-0.5 rounded-md hover:bg-primary/5"
@@ -133,7 +151,10 @@ const SourceItem = ({
 };
 
 const SourceView: React.FC<SourceViewProps> = ({ sources }) => {
-  const validSources = sources?.filter((s) => s.url) || [];
+  const validSources =
+    sources?.filter(
+      (s) => (s.type === 'source-url' && s.url) || s.type === 'source-document'
+    ) || [];
 
   if (validSources.length === 0) return null;
 

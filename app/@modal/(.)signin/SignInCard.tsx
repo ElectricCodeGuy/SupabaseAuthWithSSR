@@ -9,9 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import ForgotPassword from '../ForgotPassword';
-import { GoogleIcon } from '../CustomIcons';
 import { login } from '../action';
-import { signInWithGoogle } from '../OAuth';
 import { useRouter } from 'next/navigation';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
@@ -187,18 +185,6 @@ export default function SignInCard() {
         <div className="relative flex justify-center text-xs uppercase">
           <span className="bg-background px-2 text-muted-foreground">or</span>
         </div>
-      </div>
-
-      <div className="flex flex-col gap-4">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => signInWithGoogle()}
-          className="w-full"
-        >
-          <GoogleIcon />
-          Sign in with Google
-        </Button>
       </div>
     </Card>
   );

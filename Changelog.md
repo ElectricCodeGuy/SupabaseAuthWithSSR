@@ -1,5 +1,99 @@
 ## CHANGELOG
 
+## [v2.3.0] - 2025-08-24
+
+### Major Changes
+
+- **Incremental Message Saving System**: Completely redesigned how chat messages are saved to the database
+  - Messages are now saved incrementally as each AI step completes using `onStepFinish`
+  - Preserves exact order of tools, reasoning, and text as they are generated
+  - Uses a single assistant message ID across all steps for proper grouping
+  - Enables real-time persistence without waiting for full response completion
+
+- **New Message Parts Database Architecture**: Migrated from monolithic message storage to granular parts system
+  - New `message_parts` table replaces `chat_messages` for better data organization
+  - Each part (text, reasoning, tool, file, source) is stored as a separate row
+  - Maintains proper ordering with `order` field for accurate reconstruction
+  - Supports all part types: text, reasoning, files, sources, and tool invocations
+
+### Added
+
+- **SaveToDbIncremental.ts**: New incremental saving function with proper sanitization and type safety
+- **Tool Output Display**: Enhanced UI components for displaying tool results
+  - Collapsible sections using shadcn/ui components  
+  - Shows sources with clickable links and titles
+  - Displays search queries used by tools
+  - Accordion-style interface for better information hierarchy
+
+- **File Upload API**: New `/api/upload` endpoint for secure file uploads with presigned URLs
+- **Migration Script**: Comprehensive SQL migration file for database schema updates
+
+### Changed
+
+- **Chat Route Architecture**: 
+  - Removed `onFinish` database operations in favor of `onStepFinish`
+  - Added step counter and message tracking for incremental saves
+  - Improved error handling with detailed logging
+
+- **Frontend Components**:
+  - Chat component now renders all parts in chronological order
+  - Removed separate grouping of text, reasoning, and tools
+  - WebsiteChatTool and DocumentChatTool updated with collapsible UI
+  - Uses shadcn Collapsible component instead of custom implementations
+
+- **Tool Integration**:
+  - WebsiteSearchTool returns structured `toolOutput` with sources and queries
+  - Document search tool maintains output structure consistency
+  - Tool call IDs now properly generated as UUIDs
+
+### Fixed
+
+- **UUID Generation**: Tool call IDs are now properly converted to UUIDs for database storage
+- **Message Ordering**: Parts within messages are correctly sorted by `order` field
+- **Tool Output Preservation**: Full tool outputs including sources are now properly saved and retrieved
+- **TypeScript Types**: Fixed type mismatches between tool states and output fields
+
+### Database Schema Updates
+
+```sql
+-- New message_parts table structure
+CREATE TABLE public.message_parts (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  chat_session_id uuid NOT NULL,
+  message_id uuid NOT NULL,
+  role text NOT NULL,
+  type text NOT NULL,
+  "order" integer NOT NULL DEFAULT 0,
+  created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  -- Part-specific fields for each type
+  -- Includes text, reasoning, file, source, and tool fields
+  -- See migration_message_parts.sql for complete schema
+);
+```
+
+### Technical Improvements
+
+- **Performance**: Messages load faster with optimized indexing on message_parts table
+- **Data Integrity**: Proper foreign key constraints and type checking
+- **Maintainability**: Cleaner separation of concerns with modular part handling
+- **User Experience**: Real-time saving provides better feedback during long AI responses
+
+## [v2.2.0] - 2025-08-09
+
+### Changed
+
+- **Upgraded to Vercel AI SDK v5**: Migrated the core AI functionality to the latest major version of the Vercel AI SDK, leveraging its new features and performance enhancements.
+- **Reworked Document Handling Flow**: Overhauled the document upload and viewing process. The system no longer exposes the Supabase `anon` key on the client-side, improving security.
+
+### Added
+
+- **Server-Sent Events (SSE) for Real-Time Updates**: Implemented Server-Sent Events for handling real-time data streaming, providing a more robust and efficient communication channel between the server and client.
+
+### Improved
+
+- **Enhanced Security with Presigned URLs**: The document interaction flow now uses presigned URLs for both uploads and viewing. This ensures access is secure, authenticated, and time-limited.
+- **General Stability**: Addressed various minor bugs and made small improvements across the application to enhance overall performance and user experience.
+
 ## [v2.1.0] - 2025-06-07
 
 ### Added
