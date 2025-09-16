@@ -1,7 +1,7 @@
 import 'server-only';
 import React from 'react';
 import SignInCard from './SignInCard';
-import Content from '../Content';
+import Content from '@/app/components/auth/Content';
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/server/supabase';
 

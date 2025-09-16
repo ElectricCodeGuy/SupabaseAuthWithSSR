@@ -1,13 +1,12 @@
 'use client';
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Check, X } from 'lucide-react';
-import ForgotPassword from '../ForgotPassword';
+import ForgotPassword from '@/app/@modal/ForgotPassword';
 import { signup } from '../action';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
@@ -18,10 +17,6 @@ import {
 } from '@/components/ui/popover';
 
 export default function SignInCard() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [fullName, setFullName] = useState('');
   const [emailError, setEmailError] = useState(false);
   const [emailErrorMessage, setEmailErrorMessage] = useState('');
   const [passwordError, setPasswordError] = useState(false);
@@ -38,6 +33,7 @@ export default function SignInCard() {
     lowercase: false,
     number: false
   });
+  const [currentPassword, setCurrentPassword] = useState('');
   const passwordRef = useRef<HTMLInputElement>(null);
 
   const handleClose = () => {
@@ -50,7 +46,11 @@ export default function SignInCard() {
   }>({ type: null, message: '' });
 
   const handleSubmit = async (formData: FormData) => {
-    if (validateInputs()) {
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+    const confirmPassword = formData.get('confirmPassword') as string;
+
+    if (validateInputs(email, password, confirmPassword)) {
       const result = await signup(formData);
 
       setAlertMessage({
@@ -65,7 +65,11 @@ export default function SignInCard() {
     }
   };
 
-  const validateInputs = useCallback(() => {
+  const validateInputs = (
+    email: string,
+    password: string,
+    confirmPassword: string
+  ) => {
     let isValid = true;
 
     if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) {
@@ -94,7 +98,7 @@ export default function SignInCard() {
         isValid = false;
       }
 
-      if (!isValid) {
+      if (passwordErrorMessage) {
         setPasswordError(true);
         setPasswordErrorMessage(passwordErrorMessage.trim());
       } else {
@@ -113,7 +117,7 @@ export default function SignInCard() {
     }
 
     return isValid;
-  }, [email, password, confirmPassword]);
+  };
 
   const validatePassword = (password: string) => {
     const requirements = {
@@ -130,7 +134,7 @@ export default function SignInCard() {
     const handleFocus = () => setShowPasswordRequirements(true);
     const handleBlur = () => {
       // Only hide if password is empty
-      if (!password) {
+      if (!currentPassword) {
         setShowPasswordRequirements(false);
       }
     };
@@ -147,14 +151,14 @@ export default function SignInCard() {
         passwordInput.removeEventListener('blur', handleBlur);
       }
     };
-  }, [password]);
+  }, [currentPassword]);
 
   // Show password requirements when typing in password field
   useEffect(() => {
-    if (password && !showPasswordRequirements) {
+    if (currentPassword && !showPasswordRequirements) {
       setShowPasswordRequirements(true);
     }
-  }, [password, showPasswordRequirements]);
+  }, [currentPassword, showPasswordRequirements]);
 
   return (
     <div className="flex justify-center items-center">
@@ -174,8 +178,6 @@ export default function SignInCard() {
                   autoComplete="email"
                   required
                   className={emailError ? 'border-destructive' : ''}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
                 />
                 {emailError && (
                   <p className="text-sm text-destructive">
@@ -191,8 +193,6 @@ export default function SignInCard() {
                   name="fullName"
                   placeholder="John Doe"
                   autoComplete="name"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
                 />
               </div>
 
@@ -212,9 +212,8 @@ export default function SignInCard() {
                       required
                       ref={passwordRef}
                       className={passwordError ? 'border-destructive' : ''}
-                      value={password}
                       onChange={(e) => {
-                        setPassword(e.target.value);
+                        setCurrentPassword(e.target.value);
                         validatePassword(e.target.value);
                       }}
                     />
@@ -245,8 +244,6 @@ export default function SignInCard() {
                   autoComplete="new-password"
                   required
                   className={confirmPasswordError ? 'border-destructive' : ''}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
                 />
                 {confirmPasswordError && (
                   <p className="text-sm text-destructive">
@@ -280,13 +277,6 @@ export default function SignInCard() {
                 </Button>
               </div>
             </form>
-
-            <div className="relative py-2">
-              <Separator />
-              <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-background px-2 text-muted-foreground text-sm">
-                or
-              </span>
-            </div>
 
             <ForgotPassword open={open} handleClose={handleClose} />
           </CardContent>

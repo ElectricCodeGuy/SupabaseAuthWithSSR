@@ -1,6 +1,6 @@
 import React from 'react';
 import SignInCard from './SignInCard';
-import Content from '../Content';
+import Content from '@/app/components/auth/Content';
 import ModalWrapper from './ModalWrapper';
 import { getSession } from '@/lib/server/supabase';
 

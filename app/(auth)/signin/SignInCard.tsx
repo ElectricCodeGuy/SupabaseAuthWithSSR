@@ -1,14 +1,13 @@
 'use client';
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
-import ForgotPassword from '../ForgotPassword';
+import ForgotPassword from '@/app/@modal/ForgotPassword';
 import { login } from '../action';
 import { useRouter } from 'next/navigation';
 import { useFormStatus } from 'react-dom';
@@ -16,15 +15,7 @@ import Link from 'next/link';
 
 export default function SignInCard() {
   const router = useRouter();
-  const [email, setEmail] = useState(
-    typeof window !== 'undefined'
-      ? localStorage.getItem('rememberedEmail') ?? ''
-      : ''
-  );
-  const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(
-    typeof window !== 'undefined' && !!localStorage.getItem('rememberedEmail')
-  );
+  const [rememberMe, setRememberMe] = useState(false);
   const [emailError, setEmailError] = useState(false);
   const [emailErrorMessage, setEmailErrorMessage] = useState('');
   const [passwordError, setPasswordError] = useState(false);
@@ -45,7 +36,10 @@ export default function SignInCard() {
   });
 
   const handleSubmit = async (formData: FormData) => {
-    if (validateInputs()) {
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+
+    if (validateInputs(email, password)) {
       const result = await login(formData);
 
       setAlertMessage({
@@ -64,7 +58,7 @@ export default function SignInCard() {
     }
   };
 
-  const validateInputs = useCallback(() => {
+  const validateInputs = (email: string, password: string) => {
     let isValid = true;
     if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) {
       setEmailError(true);
@@ -83,7 +77,7 @@ export default function SignInCard() {
       setPasswordErrorMessage('');
     }
     return isValid;
-  }, [email, password]);
+  };
 
   return (
     <Card className="flex flex-col self-center w-full sm:w-[450px] p-4 sm:p-6 gap-4 shadow-[0px_5px_15px_rgba(0,0,0,0.05),0px_15px_35px_-5px_rgba(25,28,33,0.05),0px_0px_0px_1px_rgba(0,0,0,0.05)]">
@@ -105,8 +99,7 @@ export default function SignInCard() {
             required
             aria-label="email"
             className={emailError ? 'border-destructive' : ''}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            defaultValue={localStorage.getItem('rememberedEmail') || ''}
           />
           {emailError && (
             <p className="text-sm text-destructive">{emailErrorMessage}</p>
@@ -133,8 +126,6 @@ export default function SignInCard() {
             autoComplete="current-password"
             required
             className={passwordError ? 'border-destructive' : ''}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
           />
           {passwordError && (
             <p className="text-sm text-destructive">{passwordErrorMessage}</p>
@@ -177,15 +168,6 @@ export default function SignInCard() {
           </Link>
         </Button>
       </form>
-
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <Separator className="w-full" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">or</span>
-        </div>
-      </div>
     </Card>
   );
 }
