@@ -21,19 +21,18 @@ export default function ForgotPassword({
   open,
   handleClose
 }: ForgotPasswordProps) {
-  const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const currentPathname = usePathname();
 
   const handleSubmit = async (formData: FormData) => {
     formData.append('currentPathname', currentPathname);
+    const email = formData.get('email') as string;
     if (email.trim() === '') {
       setError('Email address is required');
       return;
     }
     await resetPasswordForEmail(formData);
     setError('');
-    setEmail('');
   };
 
   return (
@@ -60,8 +59,7 @@ export default function ForgotPassword({
             name="email"
             placeholder="Email address"
             type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
           />
 
           {error && <p className="text-sm text-destructive">{error}</p>}

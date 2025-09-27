@@ -19,8 +19,7 @@ export default async function ChatPage(props: {
 
   const cookieStore = await cookies();
 
-  const selectedOption =
-    cookieStore.get('selectedOption')?.value ?? 'gpt-3.5-turbo-1106';
+  const selectedOption = cookieStore.get('selectedOption')?.value ?? 'gpt-5';
 
   let formattedMessages = undefined;
   let attachmentUrl = undefined;
