@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const selectedModel = body.option ?? 'gpt-3.5-turbo-1106';
+  const selectedModel = body.option ?? 'gpt-5';
   const userId = session.sub;
 
   const providerOptions: SharedV2ProviderMetadata = {};

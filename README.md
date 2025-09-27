@@ -541,19 +541,13 @@ After setting up these policies:
 
 Configure your environment by renaming `.env.local.example` to `.env.local` and updating it with your Supabase project details:
 
-- `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase project URL.
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Your Supabase anon (public) key.
+- `SUPABASE_URL`: Your Supabase project URL.
+- `SUPABASE_ANON_KEY`: Your Supabase anon (public) key.
+- `SUPABASE_SERVICE_ROLE_KEY=`: Your Supabse Service key
 
 **Document Processing:**
 
 - `LLAMA_CLOUD_API_KEY`: Your LlamaIndex Cloud API key
-
-Optional variables for extended functionality:
-
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `SUPABASE_ACCESS_TOKEN`
-- `NEXT_PUBLIC_CLIENT_ID`
-- `CLIENT_SECRET`
 
 For Openai
 
