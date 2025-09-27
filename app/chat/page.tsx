@@ -14,7 +14,6 @@ interface PageProps {
 export default async function ChatPage(props: PageProps) {
   const searchParams = await props.searchParams;
   const cookieStore = await cookies();
-  const modelType = cookieStore.get('modelType')?.value ?? 'standart';
   const selectedOption = cookieStore.get('selectedOption')?.value ?? 'gpt-5';
   const createChatId = uuidv4();
 
@@ -23,7 +22,6 @@ export default async function ChatPage(props: PageProps) {
       <div className="flex-1">
         <ChatComponent
           chatId={createChatId}
-          initialModelType={modelType}
           initialSelectedOption={selectedOption}
         />
       </div>

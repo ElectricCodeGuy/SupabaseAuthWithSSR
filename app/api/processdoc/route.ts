@@ -25,10 +25,7 @@ async function processFile(pages: string[], fileName: string, userId: string) {
   }
 
   const combinedDocumentContent = selectedDocuments.join('\n\n');
-  const { object } = await generateDocumentMetadata(
-    combinedDocumentContent,
-    userId
-  );
+  const { object } = await generateDocumentMetadata(combinedDocumentContent);
 
   const totalPages = pages.length;
 
@@ -97,8 +94,7 @@ async function processFile(pages: string[], fileName: string, userId: string) {
               doc,
               object.descriptiveTitle,
               object.shortDescription,
-              object.mainTopics,
-              userId
+              object.mainTopics
             );
 
           const combinedContent = combinedPreliminaryAnswers
@@ -186,8 +182,7 @@ async function processDocumentWithAgentChains(
   doc: string,
   ai_title: string,
   ai_description: string,
-  ai_maintopics: string[],
-  userId: string
+  ai_maintopics: string[]
 ): Promise<{
   combinedPreliminaryAnswers: string;
 }> {
@@ -199,7 +194,7 @@ async function processDocumentWithAgentChains(
   `;
 
   try {
-    const result = await preliminaryAnswerChainAgent(prompt, userId);
+    const result = await preliminaryAnswerChainAgent(prompt);
 
     const { object } = result;
 

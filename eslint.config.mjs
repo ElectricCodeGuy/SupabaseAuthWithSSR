@@ -3,12 +3,13 @@ import js from '@eslint/js';
 import prettierConfig from 'eslint-config-prettier';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
+import { defineConfig } from 'eslint/config';
 
 const compat = new FlatCompat({
   baseDirectory: import.meta.dirname
 });
 
-const config = tseslint.config(
+export default defineConfig([
   {
     ignores: ['.next', 'node_modules', '**/*.d.ts', 'components/**/*']
   },
@@ -106,6 +107,4 @@ const config = tseslint.config(
   },
 
   prettierConfig
-);
-
-export default config;
+]);

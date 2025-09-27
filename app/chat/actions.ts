@@ -214,16 +214,8 @@ export async function updateChatTitle(formData: FormData) {
   return { success: true };
 }
 
-export async function setModelSettings(
-  modelType: string,
-  selectedOption: string
-) {
+export async function setModelSettings(selectedOption: string) {
   const cookie = await cookies();
-  cookie.set('modelType', modelType, {
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 30 // 30 days
-  });
 
   cookie.set('selectedOption', selectedOption, {
     secure: process.env.NODE_ENV === 'production',

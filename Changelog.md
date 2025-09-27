@@ -5,6 +5,7 @@
 ### Major Changes
 
 - **Incremental Message Saving System**: Completely redesigned how chat messages are saved to the database
+
   - Messages are now saved incrementally as each AI step completes using `onStepFinish`
   - Preserves exact order of tools, reasoning, and text as they are generated
   - Uses a single assistant message ID across all steps for proper grouping
@@ -20,7 +21,8 @@
 
 - **SaveToDbIncremental.ts**: New incremental saving function with proper sanitization and type safety
 - **Tool Output Display**: Enhanced UI components for displaying tool results
-  - Collapsible sections using shadcn/ui components  
+
+  - Collapsible sections using shadcn/ui components
   - Shows sources with clickable links and titles
   - Displays search queries used by tools
   - Accordion-style interface for better information hierarchy
@@ -30,12 +32,14 @@
 
 ### Changed
 
-- **Chat Route Architecture**: 
+- **Chat Route Architecture**:
+
   - Removed `onFinish` database operations in favor of `onStepFinish`
   - Added step counter and message tracking for incremental saves
   - Improved error handling with detailed logging
 
 - **Frontend Components**:
+
   - Chat component now renders all parts in chronological order
   - Removed separate grouping of text, reasoning, and tools
   - WebsiteChatTool and DocumentChatTool updated with collapsible UI
@@ -544,7 +548,6 @@ For more information about implementing vector similarity search with pgvector, 
 - **End-to-End Types**: Implemented types for `ServerMessage`, `ClientMessage`, `SubmitMessageResult`, and `ChatHistoryUpdateResult` to ensure type safety from client to server actions.
 - **Bug Fixes**: Fixed various bugs throughout the application.
 - **Chat History Improvement**: Enhanced the chat history feature in the server action chatbot to load the 30 newest messages initially, with a "load more" button to retrieve the next 30 messages.
-- **Perplexity Provider Integration**: Updated the integration of the Perplexity provider to use the `@ai-sdk/openai` module. This involved changing from the old OpenAI configuration to the new `createOpenAI` function from `@ai-sdk/openai`, ensuring compatibility with the Perplexity API. The updated code allows for seamless streaming of text responses and includes better error handling and rate limiting.
 
 ## [v1.4.0] - 2024-05-25
 

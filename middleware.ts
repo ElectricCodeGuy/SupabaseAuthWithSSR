@@ -1,5 +1,9 @@
 import { createServerClient } from '@supabase/ssr';
-import { NextResponse, type NextRequest } from 'next/server';
+import {
+  NextResponse,
+  type NextRequest,
+  type MiddlewareConfig
+} from 'next/server';
 
 export async function middleware(request: NextRequest) {
   // Initialize Supabase client and handle session
@@ -45,7 +49,7 @@ export async function middleware(request: NextRequest) {
   return response;
 }
 // Matcher to exclude certain paths from middleware
-export const config = {
+export const config: MiddlewareConfig = {
   matcher: [
     {
       source:

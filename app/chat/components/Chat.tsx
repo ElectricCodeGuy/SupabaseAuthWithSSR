@@ -26,20 +26,12 @@ import { useRouter } from 'next/navigation';
 interface ChatProps {
   currentChat?: UIMessage[];
   chatId: string;
-  initialModelType: string;
   initialSelectedOption: string;
-}
-
-function createChatTransport(apiEndpoint: string) {
-  return new DefaultChatTransport({
-    api: apiEndpoint
-  });
 }
 
 const ChatComponent: React.FC<ChatProps> = ({
   currentChat,
   chatId,
-  initialModelType,
   initialSelectedOption
 }) => {
   const param = useParams();
@@ -47,46 +39,23 @@ const ChatComponent: React.FC<ChatProps> = ({
   const currentChatId = param.id as string;
   const { mutate } = useSWRConfig();
 
-  const [optimisticModelType, setOptimisticModelType] = useOptimistic<
-    string,
-    string
-  >(initialModelType, (_, newValue) => newValue);
   const [isCopied, setIsCopied] = useState(false);
   const [optimisticOption, setOptimisticOption] = useOptimistic<string, string>(
     initialSelectedOption,
     (_, newValue) => newValue
   );
 
-  const handleModelTypeChange = async (newValue: string) => {
-    startTransition(async () => {
-      setOptimisticModelType(newValue);
-      await setModelSettings(newValue, optimisticOption);
-    });
-  };
-
   const handleOptionChange = async (newValue: string) => {
     startTransition(async () => {
       setOptimisticOption(newValue);
-      await setModelSettings(optimisticModelType, newValue);
+      await setModelSettings(newValue);
     });
   };
 
-  // Determine API endpoint based on model type
-  const getApiEndpoint = () => {
-    switch (optimisticModelType) {
-      case 'perplex':
-        return '/api/perplexity';
-      default:
-        return '/api/chat';
-    }
-  };
-
-  const apiEndpoint = getApiEndpoint();
-
-  // SINGLE useChat hook here
   const { messages, status, sendMessage, stop } = useChat({
-    id: 'chat',
-    transport: createChatTransport(apiEndpoint),
+    transport: new DefaultChatTransport({
+      api: '/api/chat'
+    }),
     experimental_throttle: 50,
     messages: currentChat,
     onFinish: async () => {
@@ -162,7 +131,6 @@ const ChatComponent: React.FC<ChatProps> = ({
               setIsCopied(true);
               setTimeout(() => setIsCopied(false), 1000);
             };
-
 
             // Get created at time
             const createdAtTime = message.id
@@ -289,7 +257,10 @@ const ChatComponent: React.FC<ChatProps> = ({
                       }
 
                       // Handle tool invocation parts (assistant only)
-                      if (part.type === 'tool-searchUserDocument' && !isUserMessage) {
+                      if (
+                        part.type === 'tool-searchUserDocument' &&
+                        !isUserMessage
+                      ) {
                         return (
                           <DocumentSearchTool
                             key={`part-${partIndex}`}
@@ -305,7 +276,10 @@ const ChatComponent: React.FC<ChatProps> = ({
                         );
                       }
 
-                      if (part.type === 'tool-websiteSearchTool' && !isUserMessage) {
+                      if (
+                        part.type === 'tool-websiteSearchTool' &&
+                        !isUserMessage
+                      ) {
                         return (
                           <WebsiteSearchTool
                             key={`part-${partIndex}`}
@@ -334,9 +308,7 @@ const ChatComponent: React.FC<ChatProps> = ({
         {/* Pass chat functions as props to MessageInput */}
         <MessageInput
           chatId={chatId}
-          modelType={optimisticModelType}
           selectedOption={optimisticOption}
-          handleModelTypeChange={handleModelTypeChange}
           handleOptionChange={handleOptionChange}
           sendMessage={sendMessage}
           status={status}

@@ -2,12 +2,10 @@ import { type NextRequest, NextResponse } from 'next/server';
 import type { UIMessage } from 'ai'; // Changed from Message
 import { streamText, convertToModelMessages } from 'ai'; // Changed from convertToCoreMessages
 import { saveMessagesToDB } from './SaveToDbIncremental';
-import { Ratelimit } from '@upstash/ratelimit';
 import type { OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
 import { openai } from '@ai-sdk/openai';
 import type { AnthropicProviderOptions } from '@ai-sdk/anthropic';
 import { anthropic } from '@ai-sdk/anthropic';
-import { redis } from '@/lib/server/server';
 import { getSession } from '@/lib/server/supabase';
 import { searchUserDocument } from './tools/documentChat';
 import { websiteSearchTool } from './tools/WebsiteSearchTool';
@@ -94,25 +92,6 @@ export async function POST(req: NextRequest) {
       }
     });
   }
-  const ratelimit = new Ratelimit({
-    redis,
-    limiter: Ratelimit.slidingWindow(30, '24h')
-  });
-
-  const { success, limit, reset, remaining } = await ratelimit.limit(
-    `ratelimit_${session.sub}`
-  );
-  if (!success) {
-    return new NextResponse('Rate limit exceeded. Please try again later.', {
-      status: 429,
-      headers: {
-        'Content-Type': 'application/json',
-        'X-RateLimit-Limit': limit.toString(),
-        'X-RateLimit-Remaining': remaining.toString(),
-        'X-RateLimit-Reset': new Date(reset * 1000).toISOString()
-      }
-    });
-  }
 
   const body = await req.json();
   const messages: UIMessage[] = body.messages ?? []; // Changed from Message[]
@@ -188,18 +167,7 @@ export async function POST(req: NextRequest) {
       selectedFiles.length > 0
         ? ['searchUserDocument', 'websiteSearchTool']
         : ['websiteSearchTool'],
-    stopWhen: stepCountIs(3), // Changed from maxSteps
-    experimental_telemetry: {
-      isEnabled: true,
-      functionId: 'api_chat',
-      metadata: {
-        userId: session.sub,
-        chatId: chatSessionId
-      },
-      recordInputs: true,
-      recordOutputs: true
-    },
-    // NEW: Save each step as it completes
+    stopWhen: stepCountIs(3),
     onStepFinish: async (stepResult) => {
       try {
         const messagesToSave: UIMessage[] = [];

@@ -18,7 +18,7 @@ export default async function ChatPage(props: {
   const chatData = await fetchChat(id);
 
   const cookieStore = await cookies();
-  const modelType = cookieStore.get('modelType')?.value ?? 'standart';
+
   const selectedOption =
     cookieStore.get('selectedOption')?.value ?? 'gpt-3.5-turbo-1106';
 
@@ -50,7 +50,6 @@ export default async function ChatPage(props: {
         <ChatComponent
           currentChat={formattedMessages}
           chatId={id}
-          initialModelType={modelType}
           initialSelectedOption={selectedOption}
         />
       </div>
@@ -77,7 +76,7 @@ async function DocumentComponent({ fileName }: { fileName: string }) {
 
   const userId = session?.id;
 
-  let signedUrl = null;
+  let signedUrl: string | null = null;
 
   if (userId) {
     try {

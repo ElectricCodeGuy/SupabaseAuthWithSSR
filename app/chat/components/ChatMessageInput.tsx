@@ -11,13 +11,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
 import type { useChat } from '@ai-sdk/react';
 // Icons from Lucide React
 import {
@@ -102,19 +95,11 @@ const FilePreview = React.memo(
 
 FilePreview.displayName = 'FilePreview';
 
-const modelTypes = [
-  { value: 'standart', label: 'Standard' },
-  { value: 'perplex', label: 'Perplexity' },
-  { value: 'website', label: 'Website' }
-];
-
 type ChatHelpers = ReturnType<typeof useChat>;
 
 interface MessageInputProps {
   chatId: string;
-  modelType: string;
   selectedOption: string;
-  handleModelTypeChange: (value: string) => void;
   handleOptionChange: (value: string) => void;
   sendMessage: ChatHelpers['sendMessage'];
   status: ChatHelpers['status'];
@@ -123,9 +108,7 @@ interface MessageInputProps {
 
 const MessageInput: React.FC<MessageInputProps> = ({
   chatId,
-  modelType,
   selectedOption,
-  handleModelTypeChange,
   handleOptionChange,
   sendMessage,
   status,
@@ -273,66 +256,45 @@ const MessageInput: React.FC<MessageInputProps> = ({
               </Button>
             )}
 
-            <div className="flex-1 max-w-[160px]">
-              <Select value={modelType} onValueChange={handleModelTypeChange}>
-                <SelectTrigger className="w-full h-8 text-xs">
-                  <SelectValue placeholder="Select model" />
-                </SelectTrigger>
-                <SelectContent>
-                  {modelTypes.map((model) => (
-                    <SelectItem
-                      key={model.value}
-                      value={model.value}
-                      className="text-xs"
+            <div className="flex-1 ml-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full h-8 justify-between text-xs"
+                  >
+                    <span className="truncate">{selectedOption}</span>
+                    <ChevronDown className="h-3 w-3 ml-2 flex-shrink-0 opacity-70" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56">
+                  {[
+                    { value: 'gpt-5', label: 'GPT-5' },
+                    { value: 'gpt-5-mini', label: 'GPT-5 Mini' },
+                    { value: 'o3', label: 'OpenAI O3' },
+                    {
+                      value: 'claude-4-sonnet',
+                      label: 'Claude 4 Sonnet'
+                    },
+                    { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
+                    { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' }
+                  ].map((option) => (
+                    <DropdownMenuItem
+                      key={option.value}
+                      onClick={() => handleOptionChange(option.value)}
+                      className={`text-xs ${
+                        selectedOption === option.value
+                          ? 'bg-primary/20 dark:bg-primary/30 text-primary dark:text-primary-foreground'
+                          : ''
+                      }`}
                     >
-                      {model.label}
-                    </SelectItem>
+                      {option.label}
+                    </DropdownMenuItem>
                   ))}
-                </SelectContent>
-              </Select>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
-
-            {modelType === 'standart' && (
-              <div className="flex-1 ml-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full h-8 justify-between text-xs"
-                    >
-                      <span className="truncate">{selectedOption}</span>
-                      <ChevronDown className="h-3 w-3 ml-2 flex-shrink-0 opacity-70" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56">
-                    {[
-                      { value: 'gpt-5', label: 'GPT-5' },
-                      { value: 'gpt-5-mini', label: 'GPT-5 Mini' },
-                      { value: 'o3', label: 'OpenAI O3' },
-                      {
-                        value: 'claude-4-sonnet',
-                        label: 'Claude 4 Sonnet'
-                      },
-                      { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
-                      { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' }
-                    ].map((option) => (
-                      <DropdownMenuItem
-                        key={option.value}
-                        onClick={() => handleOptionChange(option.value)}
-                        className={`text-xs ${
-                          selectedOption === option.value
-                            ? 'bg-primary/20 dark:bg-primary/30 text-primary dark:text-primary-foreground'
-                            : ''
-                        }`}
-                      >
-                        {option.label}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            )}
 
             {selectedBlobs.length > 0 && (
               <div className="hidden sm:flex items-center rounded-full text-xs px-2 h-8 bg-primary/10 border border-primary/30">

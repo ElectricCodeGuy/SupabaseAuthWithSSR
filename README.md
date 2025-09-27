@@ -9,7 +9,6 @@
   <img src="public/images/image2.png" alt="Front Page 2" style="width: 45%; margin: 10px;">
   <img src="public/images/image3.png" alt="Front Page 3" style="width: 45%; margin: 10px;">
   <img src="public/images/image4.png" alt="Protected Page 1" style="width: 45%; margin: 10px;">
-  <img src="public/images/image5.png" alt="Sign In Page" style="width: 45%; margin: 10px;">
   <img src="public/images/image6.png" alt="Sign In Page Password" style="width: 45%; margin: 10px;">
   <img src="public/images/image7.png" alt="AI Chat Page" style="width: 45%; margin: 10px;">
   <img src="public/images/image8.png" alt="RAG Chat" style="width: 45%; margin: 10px;">
@@ -56,12 +55,9 @@ You can find the videos located inside the public folder!
 **If you want to use the AI features the following keys are needed**
 
 - A Llarma Cloud account [LlamaCloud](https://cloud.llamaindex.ai/) (for parsing pdf files into markdown)
-- An Upstash redis account [Upstash](https://upstash.com/) (for ratelimiting and caching)
 - A Tavily account for searching the internet using the AI [Tavily](https://tavily.com/)
 - A Openai API key [OpenaiAPI](https://platform.openai.com/docs/overview)
 - A Anthripic API key [Antropic](https://console.anthropic.com/dashboard)
-- A perplexity API key [Perplexity](https://docs.perplexity.ai/home)
-- A Langfuse API key [Langfuse](https://cloud.langfuse.com/) (for telemetry for the AI chat, https://sdk.vercel.ai/providers/observability/langfuse)
 
 ### Installation
 
@@ -559,19 +555,9 @@ Optional variables for extended functionality:
 - `NEXT_PUBLIC_CLIENT_ID`
 - `CLIENT_SECRET`
 
-For third-party auth configurations, include:
+For Openai
 
-- `GITHUB_CLIENT_ID`
-- `GITHUB_SECRET_ID`
-- `GOOGLE_CLIENT_ID`
-- `GOOGLE_SECRET_ID`
-
-For Openai, Perplexity and Upstash/Redis
-
-- `PERPLEXITY_API_KEY=`
 - `OPENAI_API_KEY=`
-- `UPSTASH_REDIS_REST_URL=`
-- `UPSTASH_REDIS_REST_TOKEN=`
 
 ## 📧 Email Templates
 
