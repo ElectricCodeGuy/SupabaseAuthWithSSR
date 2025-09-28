@@ -1,12 +1,12 @@
 // app/chat/components/tools/WebsiteChatTool.tsx
 import React, { useState } from 'react';
-import { Globe, CheckCircle, ExternalLink, Search, ChevronDown } from 'lucide-react';
+import { Globe, CheckCircle, ExternalLink, ChevronDown } from 'lucide-react';
 import type { ToolUIPart } from 'ai';
 import type { UITools } from '@/app/chat/types/tooltypes';
 import {
   Collapsible,
   CollapsibleContent,
-  CollapsibleTrigger,
+  CollapsibleTrigger
 } from '@/components/ui/collapsible';
 
 interface WebsiteSearchToolProps {
@@ -86,68 +86,41 @@ const WebsiteSearchTool: React.FC<WebsiteSearchToolProps> = ({
               <CollapsibleTrigger className="flex items-center gap-2 text-xs font-medium text-foreground/70 hover:text-foreground transition-colors">
                 <ChevronDown
                   size={14}
-                  className={`transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                  className={`transition-transform ${
+                    isOpen ? 'rotate-180' : ''
+                  }`}
                 />
                 {toolOutput.sources.length} source
                 {toolOutput.sources.length > 1 ? 's' : ''} found
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <div className="mt-2 space-y-2">
-                  {/* Show queries used */}
-                  {toolOutput.queriesUsed &&
-                    toolOutput.queriesUsed.length > 0 && (
-                      <div className="p-2 bg-muted/20 rounded-md">
-                        <div className="flex items-center gap-1 mb-1">
-                          <Search
-                            size={12}
-                            className="text-muted-foreground"
-                          />
-                          <span className="text-xs font-medium text-muted-foreground">
-                            Search queries:
-                          </span>
-                        </div>
-                        <ul className="list-disc list-inside">
-                          {toolOutput.queriesUsed.map((q, idx) => (
-                            <li
-                              key={idx}
-                              className="text-xs text-foreground/60 ml-2"
-                            >
-                              {q}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-
-                  {/* Show sources */}
-                  <div className="space-y-1">
-                    {toolOutput.sources.map((source, idx) => (
-                      <div
-                        key={idx}
-                        className="p-2 bg-background/50 rounded-md border border-border/50 hover:bg-background/70 transition-colors"
+                <div className="space-y-1">
+                  {toolOutput.sources.map((source, idx) => (
+                    <div
+                      key={idx}
+                      className="p-2 bg-background/50 rounded-md border border-border/50 hover:bg-background/70 transition-colors"
+                    >
+                      <a
+                        href={source.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-start gap-2 text-xs"
                       >
-                        <a
-                          href={source.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-start gap-2 text-xs"
-                        >
-                          <ExternalLink
-                            size={12}
-                            className="text-primary mt-0.5 flex-shrink-0"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-foreground/80 line-clamp-2">
-                              {source.title}
-                            </div>
-                            <div className="text-muted-foreground truncate mt-0.5">
-                              {source.url}
-                            </div>
+                        <ExternalLink
+                          size={12}
+                          className="text-primary mt-0.5 flex-shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-foreground/80 line-clamp-2">
+                            {source.title}
                           </div>
-                        </a>
-                      </div>
-                    ))}
-                  </div>
+                          <div className="text-muted-foreground truncate mt-0.5">
+                            {source.url}
+                          </div>
+                        </div>
+                      </a>
+                    </div>
+                  ))}
                 </div>
               </CollapsibleContent>
             </Collapsible>

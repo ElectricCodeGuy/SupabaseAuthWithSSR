@@ -224,11 +224,10 @@ export const websiteSearchTool = tool({
     return {
       systemPrompt: systemPromptTemplate,
       toolOutput: {
-        sources: searchResults.map(result => ({
+        sources: searchResults.map((result) => ({
           title: result.title,
           url: result.url
-        })),
-        queriesUsed: websiteQueries
+        }))
       }
     };
   }

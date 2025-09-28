@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import type { UIMessage } from 'ai'; // Changed from Message
-import { streamText, convertToModelMessages } from 'ai'; // Changed from convertToCoreMessages
+import { streamText, convertToModelMessages, stepCountIs } from 'ai'; // Changed from convertToCoreMessages
 import { saveMessagesToDB } from './SaveToDbIncremental';
 import type { OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
 import { openai } from '@ai-sdk/openai';
@@ -11,7 +11,6 @@ import { searchUserDocument } from './tools/documentChat';
 import { websiteSearchTool } from './tools/WebsiteSearchTool';
 import { google } from '@ai-sdk/google';
 import type { GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
-import { stepCountIs } from 'ai'; // Import for stopWhen
 import type { SharedV2ProviderMetadata } from '@ai-sdk/provider';
 
 export const dynamic = 'force-dynamic';
