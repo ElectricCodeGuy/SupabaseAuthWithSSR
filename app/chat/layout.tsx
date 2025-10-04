@@ -1,29 +1,13 @@
 // app/chat/[chatId]/layout.tsx
-import React from 'react';
+import React, { Suspense } from 'react';
 import { createServerSupabaseClient } from '@/lib/server/server';
-import ChatHistoryDrawer from './components/chat_history/ChatHistorySidebar';
 import { unstable_noStore as noStore } from 'next/cache';
 import { UploadProvider } from './context/uploadContext';
-import { isToday, isYesterday, subDays } from 'date-fns';
-import { TZDate } from '@date-fns/tz';
 import { SidebarProvider } from '@/components/ui/sidebar';
+import ChatHistoryDrawer from './components/chat_history/ChatHistorySidebar';
+import { ChatLayoutSkeleton } from './components/ChatLayoutSkeleton';
 
 export const maxDuration = 60;
-
-interface ChatPreview {
-  id: string;
-  firstMessage: string;
-  created_at: string;
-}
-
-interface CategorizedChats {
-  today: ChatPreview[];
-  yesterday: ChatPreview[];
-  last7Days: ChatPreview[];
-  last30Days: ChatPreview[];
-  last2Months: ChatPreview[];
-  older: ChatPreview[];
-}
 
 const fetchUserData = async () => {
   noStore();
@@ -85,7 +69,7 @@ const fetchUserData = async () => {
     }
 
     // Transform chat data
-    const chatPreviews = (userData.chat_sessions || []).map((session) => {
+    const chatPreviews = userData.chat_sessions.map((session) => {
       // Get the first text part from the first user message
       const firstTextPart = session.message_parts?.find(
         (part) => part.type === 'text' && part.role === 'user'
@@ -100,7 +84,7 @@ const fetchUserData = async () => {
     });
 
     // Transform documents data
-    const documents = (userData.user_documents || []).map((doc) => ({
+    const documents = userData.user_documents.map((doc) => ({
       id: doc.id,
       title: doc.title,
       created_at: doc.created_at,
@@ -121,65 +105,16 @@ const fetchUserData = async () => {
   }
 };
 
-function categorizeChats(chatPreviews: ChatPreview[]): CategorizedChats {
-  const getZonedDate = (date: string) =>
-    new TZDate(new Date(date), 'Europe/Copenhagen');
-
-  const today = chatPreviews.filter((chat) =>
-    isToday(getZonedDate(chat.created_at))
-  );
-
-  const yesterday = chatPreviews.filter((chat) =>
-    isYesterday(getZonedDate(chat.created_at))
-  );
-
-  const last7Days = chatPreviews.filter((chat) => {
-    const chatDate = getZonedDate(chat.created_at);
-    const sevenDaysAgo = subDays(new Date(), 7);
-    return (
-      chatDate > sevenDaysAgo && !isToday(chatDate) && !isYesterday(chatDate)
-    );
-  });
-
-  const last30Days = chatPreviews.filter((chat) => {
-    const chatDate = getZonedDate(chat.created_at);
-    const thirtyDaysAgo = subDays(new Date(), 30);
-    const sevenDaysAgo = subDays(new Date(), 7);
-    return chatDate > thirtyDaysAgo && chatDate <= sevenDaysAgo;
-  });
-
-  const last2Months = chatPreviews.filter((chat) => {
-    const chatDate = getZonedDate(chat.created_at);
-    const sixtyDaysAgo = subDays(new Date(), 60);
-    const thirtyDaysAgo = subDays(new Date(), 30);
-    return chatDate > sixtyDaysAgo && chatDate <= thirtyDaysAgo;
-  });
-
-  const older = chatPreviews.filter((chat) => {
-    const sixtyDaysAgo = subDays(new Date(), 60);
-    return getZonedDate(chat.created_at) <= sixtyDaysAgo;
-  });
-
-  return { today, yesterday, last7Days, last30Days, last2Months, older };
-}
-
-export default async function Layout(props: { children: React.ReactNode }) {
-  const userData = await fetchUserData();
+export default function Layout({ children }: { children: React.ReactNode }) {
+  const userDataPromise = fetchUserData();
 
   return (
     <SidebarProvider>
       <UploadProvider>
-        <ChatHistoryDrawer
-          userInfo={{
-            id: userData?.id || '',
-            full_name: userData?.full_name || '',
-            email: userData?.email || ''
-          }}
-          initialChatPreviews={userData?.chatPreviews || []}
-          categorizedChats={categorizeChats(userData?.chatPreviews || [])}
-          documents={userData?.documents || []}
-        />
-        {props.children}
+        <Suspense fallback={<ChatLayoutSkeleton />}>
+          <ChatHistoryDrawer userDataPromise={userDataPromise} />
+        </Suspense>
+        {children}
       </UploadProvider>
     </SidebarProvider>
   );

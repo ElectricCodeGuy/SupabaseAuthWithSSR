@@ -70,7 +70,7 @@ export async function fetchUserDataAndChatSessions(
     email: data.email
   };
 
-  const chatSessions: ChatSessionPreview[] = (data.chat_sessions || []).map(
+  const chatSessions: ChatSessionPreview[] = data.chat_sessions.map(
     (session) => {
       // Get the first text part from the first user message
       const firstTextPart = session.message_parts?.find(

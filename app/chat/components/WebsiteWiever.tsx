@@ -18,9 +18,9 @@ interface WebsiteViewerProps {
 const WebsiteViewer: React.FC<WebsiteViewerProps> = ({ url }) => {
   const getProxiedUrl = (url: string) => {
     if (url.toLowerCase().includes('pdf')) {
-      return `/api/proxy-pdf?url=${encodeURIComponent(url)}`;
+      return `/api/pdf?url=${encodeURIComponent(url)}`;
     }
-    return `/api/proxy-website?url=${encodeURIComponent(url)}`;
+    return `/api/website?url=${encodeURIComponent(url)}`;
   };
   const pathname = usePathname();
 

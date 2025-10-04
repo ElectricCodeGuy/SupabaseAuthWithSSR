@@ -1,5 +1,5 @@
 'use client';
-import React, { type FC, useState, useCallback } from 'react';
+import React, { type FC, useState, useCallback, use } from 'react';
 import { fetchMoreChatPreviews } from '../../actions';
 import { useParams, useSearchParams } from 'next/navigation';
 import useSWRInfinite from 'swr/infinite';
@@ -34,8 +34,9 @@ import type { Tables } from '@/types/database';
 import ChatHistorySection from './ChatHistorySection';
 import FilesSection from './FilesSection';
 import UploadPage from './FileUpload';
+import { isToday, isYesterday, subDays } from 'date-fns';
+import { TZDate } from '@date-fns/tz';
 
-type UserInfo = Pick<Tables<'users'>, 'full_name' | 'email' | 'id'>;
 type UserDocument = Pick<
   Tables<'user_documents'>,
   'id' | 'title' | 'created_at' | 'total_pages' | 'file_path'
@@ -55,19 +56,71 @@ interface CategorizedChats {
   older: ChatPreview[];
 }
 
-interface CombinedDrawerProps {
-  userInfo: UserInfo;
-  initialChatPreviews: ChatPreview[];
-  categorizedChats: CategorizedChats;
+interface UserData {
+  id: string;
+  full_name: string;
+  email: string;
+  chatPreviews: ChatPreview[];
   documents: UserDocument[];
 }
 
-const CombinedDrawer: FC<CombinedDrawerProps> = ({
-  userInfo,
-  initialChatPreviews,
-  categorizedChats,
-  documents
-}) => {
+interface CombinedDrawerProps {
+  userDataPromise: Promise<UserData | null>;
+}
+
+function categorizeChats(chatPreviews: ChatPreview[]): CategorizedChats {
+  const getZonedDate = (date: string) =>
+    new TZDate(new Date(date), 'Europe/Copenhagen');
+
+  const today = chatPreviews.filter((chat) =>
+    isToday(getZonedDate(chat.created_at))
+  );
+
+  const yesterday = chatPreviews.filter((chat) =>
+    isYesterday(getZonedDate(chat.created_at))
+  );
+
+  const last7Days = chatPreviews.filter((chat) => {
+    const chatDate = getZonedDate(chat.created_at);
+    const sevenDaysAgo = subDays(new Date(), 7);
+    return (
+      chatDate > sevenDaysAgo && !isToday(chatDate) && !isYesterday(chatDate)
+    );
+  });
+
+  const last30Days = chatPreviews.filter((chat) => {
+    const chatDate = getZonedDate(chat.created_at);
+    const thirtyDaysAgo = subDays(new Date(), 30);
+    const sevenDaysAgo = subDays(new Date(), 7);
+    return chatDate > thirtyDaysAgo && chatDate <= sevenDaysAgo;
+  });
+
+  const last2Months = chatPreviews.filter((chat) => {
+    const chatDate = getZonedDate(chat.created_at);
+    const sixtyDaysAgo = subDays(new Date(), 60);
+    const thirtyDaysAgo = subDays(new Date(), 30);
+    return chatDate > sixtyDaysAgo && chatDate <= thirtyDaysAgo;
+  });
+
+  const older = chatPreviews.filter((chat) => {
+    const sixtyDaysAgo = subDays(new Date(), 60);
+    return getZonedDate(chat.created_at) <= sixtyDaysAgo;
+  });
+
+  return { today, yesterday, last7Days, last30Days, last2Months, older };
+}
+
+const CombinedDrawer: FC<CombinedDrawerProps> = ({ userDataPromise }) => {
+  const userData = use(userDataPromise);
+
+  const userInfo = {
+    id: userData?.id || '',
+    full_name: userData?.full_name || '',
+    email: userData?.email || ''
+  };
+  const initialChatPreviews = userData?.chatPreviews || [];
+  const categorizedChats = categorizeChats(initialChatPreviews);
+  const documents = userData?.documents || [];
   const [activeMode, setActiveMode] = useState<'chat' | 'files'>('chat');
   const [sidebarOpen, setSidebarOpen] = useState(true);
 

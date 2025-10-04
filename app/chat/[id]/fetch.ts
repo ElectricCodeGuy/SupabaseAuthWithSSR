@@ -20,6 +20,7 @@ import type {
   WebsiteSearchArgs,
   WebsiteSearchResult
 } from '@/app/chat/types/tooltypes';
+import { notFound } from 'next/navigation';
 
 type MessagePart = Tables<'message_parts'>;
 
@@ -270,7 +271,10 @@ export async function fetchChat(chatId: string) {
     .single();
 
   if (error) {
-    return null;
+    notFound();
+  }
+  if (!data) {
+    notFound();
   }
 
   // Format the messages from parts

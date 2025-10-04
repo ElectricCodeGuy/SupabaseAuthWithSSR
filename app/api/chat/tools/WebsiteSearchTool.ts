@@ -104,7 +104,7 @@ export const websiteSearchTool = tool({
       `;
 
     const { object } = await generateObject({
-      model: google('gemini-2.0-flash-001'),
+      model: google('gemini-2.5-flash'),
       system: queryOptimizationPrompt,
       schema: websiteSearchSchema,
       temperature: 0,
@@ -119,23 +119,21 @@ export const websiteSearchTool = tool({
 
     // Execute searches for each query variation
     const searchPromises = websiteQueries.map(async (query) => {
-      const body = {
-        api_key: process.env.TAVILY_API_KEY,
-        search_depth: 'advanced',
-        include_answer: false,
-        include_images: false,
-        include_raw_content: true,
-        max_results: 2,
-        query: query
-      };
-
       const response = await fetch('https://api.tavily.com/search', {
         cache: 'no-store',
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(body)
+        body: JSON.stringify({
+          api_key: process.env.TAVILY_API_KEY,
+          search_depth: 'advanced',
+          include_answer: false,
+          include_images: false,
+          include_raw_content: true,
+          max_results: 2,
+          query: query
+        })
       });
 
       const data: TavilyAPIResponse = await response.json();

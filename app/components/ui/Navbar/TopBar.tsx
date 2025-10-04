@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useState, useCallback, use } from 'react';
+import React, { useState, useCallback } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Menu, ChevronDown } from 'lucide-react';
-import { type JwtPayload } from '@supabase/supabase-js';
 
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -20,12 +19,10 @@ import SignOut from './SignOut';
 import { ModeToggle } from '@/components/ui/toggleButton';
 
 interface HeaderProps {
-  session: Promise<JwtPayload | null | undefined>;
+  session: boolean;
 }
 
 const Header: React.FC<HeaderProps> = ({ session }) => {
-  const userData = use(session);
-  const isLoggedIn = !!userData;
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const pathname = usePathname();
@@ -38,10 +35,7 @@ const Header: React.FC<HeaderProps> = ({ session }) => {
     [pathname]
   );
 
-  const navigationItems = [
-    { href: '/protected', text: 'Protected' },
-    { href: '/chat', text: 'AI Chat' }
-  ];
+  const navigationItems = [{ href: '/chat', text: 'AI Chat' }];
 
   return (
     <>
@@ -49,7 +43,7 @@ const Header: React.FC<HeaderProps> = ({ session }) => {
       <header className="sticky top-0 z-50 w-full bg-background/80 backdrop-blur-xl border-b border-border h-12 hidden md:flex shadow-sm">
         <div className="flex items-center w-full h-full px-8 mx-auto">
           <div className="flex items-center mr-8">
-            <Link href="/" passHref>
+            <Link href="/" prefetch={false}>
               <Sitemark />
             </Link>
           </div>
@@ -65,15 +59,18 @@ const Header: React.FC<HeaderProps> = ({ session }) => {
                     : 'text-foreground hover:bg-muted'
                 }`}
                 asChild
-                onMouseEnter={() => router.prefetch(item.href)}
               >
-                <Link href={item.href} prefetch={false}>
+                <Link
+                  href={item.href}
+                  prefetch={false}
+                  onMouseEnter={() => router.prefetch(item.href)}
+                >
                   {item.text}
                 </Link>
               </Button>
             ))}
 
-            {isLoggedIn ? (
+            {session ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -138,7 +135,7 @@ const Header: React.FC<HeaderProps> = ({ session }) => {
         <SheetContent side="left" className="w-[300px] sm:w-[400px] p-0">
           <div className="flex flex-col h-full">
             <div className="flex justify-between items-center p-6">
-              <Link href="/" className="cursor-pointer">
+              <Link href="/" className="cursor-pointer" prefetch={false}>
                 <Sitemark />
               </Link>
               {/* Theme Toggle Button - Mobile */}
@@ -169,7 +166,7 @@ const Header: React.FC<HeaderProps> = ({ session }) => {
                   </React.Fragment>
                 ))}
 
-                {isLoggedIn && (
+                {session && (
                   <>
                     <Separator />
                     <li className="py-4 px-6">
@@ -178,7 +175,7 @@ const Header: React.FC<HeaderProps> = ({ session }) => {
                   </>
                 )}
 
-                {!isLoggedIn && (
+                {!session && (
                   <>
                     <Separator />
                     <li>

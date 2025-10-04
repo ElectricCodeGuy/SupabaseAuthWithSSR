@@ -22,16 +22,18 @@ export const metadata: Metadata = {
     'An example demonstrating server-side rendering with authentication using Supabase.'
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
   modal
 }: {
   children: ReactNode;
   modal: ReactNode;
 }) {
+  const userSession = await getSession();
+  const isLoggedIn = !!userSession;
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+    <html lang="en" suppressHydrationWarning className={inter.className}>
+      <body>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -39,7 +41,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {/* We pass the promise here and resolve it with react.use in the child to prevent the async request from blocking the UI */}
-          <NavBar session={getSession()} />
+          <NavBar session={isLoggedIn} />
           <main>{children}</main>
           <Toaster />
           {modal}
