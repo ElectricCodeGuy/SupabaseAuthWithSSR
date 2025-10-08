@@ -20,15 +20,6 @@ export default function SignInCard() {
   const [emailErrorMessage, setEmailErrorMessage] = useState('');
   const [passwordError, setPasswordError] = useState(false);
   const [passwordErrorMessage, setPasswordErrorMessage] = useState('');
-  const [open, setOpen] = useState(false);
-
-  const handleClickOpen = () => {
-    setOpen(true);
-  };
-
-  const handleClose = () => {
-    setOpen(false);
-  };
 
   const [alertMessage, setAlertMessage] = useState({
     type: '',
@@ -109,14 +100,7 @@ export default function SignInCard() {
         <div className="space-y-2">
           <div className="flex justify-between">
             <Label htmlFor="password">Password</Label>
-            <Button
-              type="button"
-              variant="link"
-              onClick={handleClickOpen}
-              className="p-0 h-auto"
-            >
-              Forgot your password?
-            </Button>
+            <ForgotPassword />
           </div>
           <Input
             id="password"
@@ -145,8 +129,6 @@ export default function SignInCard() {
             Remember me
           </Label>
         </div>
-
-        <ForgotPassword open={open} handleClose={handleClose} />
 
         <SubmitButton />
 

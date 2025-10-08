@@ -6,7 +6,6 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Check, X } from 'lucide-react';
-import ForgotPassword from '../ForgotPassword';
 import { signup } from '../action';
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
@@ -24,7 +23,6 @@ export default function SignInCard() {
   const [confirmPasswordError, setConfirmPasswordError] = useState(false);
   const [confirmPasswordErrorMessage, setConfirmPasswordErrorMessage] =
     useState('');
-  const [open, setOpen] = useState(false);
   const [showPasswordRequirements, setShowPasswordRequirements] =
     useState(false);
   const [passwordRequirements, setPasswordRequirements] = useState({
@@ -35,10 +33,6 @@ export default function SignInCard() {
   });
   const [currentPassword, setCurrentPassword] = useState('');
   const passwordRef = useRef<HTMLInputElement>(null);
-
-  const handleClose = () => {
-    setOpen(false);
-  };
 
   const [alertMessage, setAlertMessage] = useState<{
     type: 'error' | 'success' | null;
@@ -277,8 +271,6 @@ export default function SignInCard() {
                 </Button>
               </div>
             </form>
-
-            <ForgotPassword open={open} handleClose={handleClose} />
           </CardContent>
         </Card>
       </div>

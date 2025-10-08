@@ -1,3 +1,4 @@
+'use client';
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,17 +13,19 @@ import { resetPasswordForEmail } from './action';
 import { usePathname } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 
-interface ForgotPasswordProps {
-  open: boolean;
-  handleClose: () => void;
-}
-
-export default function ForgotPassword({
-  open,
-  handleClose
-}: ForgotPasswordProps) {
+export default function ForgotPassword() {
+  const [open, setOpen] = useState(false);
   const [error, setError] = useState('');
   const currentPathname = usePathname();
+
+  const handleClickOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+    setError('');
+  };
 
   const handleSubmit = async (formData: FormData) => {
     formData.append('currentPathname', currentPathname);
@@ -36,44 +39,55 @@ export default function ForgotPassword({
   };
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(isOpen) => {
-        if (!isOpen) handleClose();
-      }}
-    >
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Reset Password</DialogTitle>
-        </DialogHeader>
+    <>
+      <Button
+        type="button"
+        variant="link"
+        onClick={handleClickOpen}
+        className="p-0 h-auto"
+      >
+        Forgot your password?
+      </Button>
 
-        <form action={handleSubmit} noValidate className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Enter your account&apos;s email address, and we&apos;ll send you a
-            link to reset your password.
-          </p>
+      <Dialog
+        open={open}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) handleClose();
+        }}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+          </DialogHeader>
 
-          <Input
-            required
-            id="email"
-            name="email"
-            placeholder="Email address"
-            type="email"
-            autoComplete="email"
-          />
+          <form action={handleSubmit} noValidate className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Enter your account&apos;s email address, and we&apos;ll send you a
+              link to reset your password.
+            </p>
 
-          {error && <p className="text-sm text-destructive">{error}</p>}
+            <Input
+              required
+              id="email"
+              name="email"
+              placeholder="Email address"
+              type="email"
+              autoComplete="email"
+            />
 
-          <SubmitButton />
+            {error && <p className="text-sm text-destructive">{error}</p>}
 
-          <div className="flex justify-end mt-2">
-            <Button type="button" variant="ghost" onClick={handleClose}>
-              Cancel
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+            <SubmitButton />
+
+            <div className="flex justify-end mt-2">
+              <Button type="button" variant="ghost" onClick={handleClose}>
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
