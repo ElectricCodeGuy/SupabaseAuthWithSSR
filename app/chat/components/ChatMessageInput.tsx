@@ -118,6 +118,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [input, setInput] = useState('');
+  
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
   };
@@ -275,7 +276,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
                     { value: 'o3', label: 'OpenAI O3' },
                     {
                       value: 'claude-4-sonnet',
-                      label: 'Claude 4 Sonnet'
+                      label: 'Claude 4.5 Sonnet'
                     },
                     { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro' },
                     { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash' }

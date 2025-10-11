@@ -210,31 +210,6 @@ export const saveMessagesToDB = async ({
             break;
           }
 
-          case 'tool-websiteSearchTool': {
-            const toolPart = part;
-            // Generate a deterministic UUID from the toolCallId string
-            const toolCallUuid =
-              toolPart.toolCallId?.includes('-') &&
-              toolPart.toolCallId.length === 36
-                ? toolPart.toolCallId
-                : crypto.randomUUID();
-
-            allParts.push({
-              ...basePart,
-              type: 'tool-websiteSearchTool',
-              tool_websitesearchtool_toolcallid: toolCallUuid,
-              tool_websitesearchtool_state: toolPart.state,
-              tool_websitesearchtool_input: sanitizeForPostgres(toolPart.input),
-              tool_websitesearchtool_output: sanitizeForPostgres(
-                toolPart.output
-              ),
-              tool_websitesearchtool_errortext:
-                sanitizeForPostgres(toolPart.errorText) || null,
-              tool_websitesearchtool_providerexecuted:
-                toolPart.providerExecuted || null
-            });
-            break;
-          }
 
           case 'step-start': {
             // Skip step-start parts - these are UI-only

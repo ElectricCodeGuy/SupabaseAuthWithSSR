@@ -17,8 +17,7 @@ import type {
   UITools,
   SearchDocumentsArgs,
   SearchDocumentsResult,
-  WebsiteSearchArgs,
-  WebsiteSearchResult
+
 } from '@/app/chat/types/tooltypes';
 import { notFound } from 'next/navigation';
 
@@ -126,48 +125,7 @@ function reconstructPart(
       }
     }
 
-    case 'tool-websiteSearchTool': {
-      const toolCallId =
-        part.tool_websitesearchtool_toolcallid || crypto.randomUUID();
-      const state = part.tool_websitesearchtool_state || 'output-available';
 
-      // Build tool part based on state
-      if (state === 'output-error') {
-        const toolPart: ToolUIPart<UITools> = {
-          type: 'tool-websiteSearchTool',
-          toolCallId: toolCallId,
-          state: 'output-error',
-          input: part.tool_websitesearchtool_input as WebsiteSearchArgs,
-          errorText: part.tool_websitesearchtool_errortext || 'Error occurred',
-          providerExecuted:
-            part.tool_websitesearchtool_providerexecuted || undefined
-        };
-        return toolPart;
-      } else if (state === 'output-available') {
-        const toolPart: ToolUIPart<UITools> = {
-          type: 'tool-websiteSearchTool',
-          toolCallId: toolCallId,
-          state: 'output-available',
-          input: part.tool_websitesearchtool_input as WebsiteSearchArgs,
-          output: part.tool_websitesearchtool_output as WebsiteSearchResult,
-          providerExecuted:
-            part.tool_websitesearchtool_providerexecuted || undefined
-        };
-        return toolPart;
-      } else {
-        // input-streaming or input-available states
-        const toolPart: ToolUIPart<UITools> = {
-          type: 'tool-websiteSearchTool',
-          toolCallId: toolCallId,
-          state: state as any,
-          input: part.tool_websitesearchtool_input as WebsiteSearchArgs,
-          output: part.tool_websitesearchtool_output as WebsiteSearchResult,
-          providerExecuted:
-            part.tool_websitesearchtool_providerexecuted || undefined
-        };
-        return toolPart;
-      }
-    }
 
     default:
       return null;

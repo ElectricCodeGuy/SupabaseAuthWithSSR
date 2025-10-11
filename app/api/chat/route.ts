@@ -8,7 +8,6 @@ import type { AnthropicProviderOptions } from '@ai-sdk/anthropic';
 import { anthropic } from '@ai-sdk/anthropic';
 import { getSession } from '@/lib/server/supabase';
 import { searchUserDocument } from './tools/documentChat';
-import { websiteSearchTool } from './tools/WebsiteSearchTool';
 import { google } from '@ai-sdk/google';
 import type { GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
 import type { SharedV2ProviderMetadata } from '@ai-sdk/provider';
@@ -63,7 +62,7 @@ function errorHandler(error: unknown) {
 const getModel = (selectedModel: string) => {
   switch (selectedModel) {
     case 'claude-4-sonnet':
-      return anthropic('claude-4-sonnet-20250514');
+      return anthropic('claude-sonnet-4-5');
     case 'gpt-5':
       return openai('gpt-5');
     case 'gpt-5-mini':
@@ -148,25 +147,73 @@ export async function POST(req: NextRequest) {
   let userMessageSaved = false;
   const assistantMessageId = crypto.randomUUID();
 
+  // Build tools object conditionally based on selected model
+  type ToolType =
+    | ReturnType<typeof searchUserDocument>
+    | ReturnType<typeof anthropic.tools.webSearch_20250305>
+    | ReturnType<typeof anthropic.tools.webFetch_20250910>
+    | ReturnType<typeof openai.tools.webSearch>
+    | ReturnType<typeof google.tools.googleSearch>;
+
+  const tools: Record<string, ToolType> = {
+    searchUserDocument: searchUserDocument({
+      userId,
+      selectedBlobs: selectedFiles
+    })
+  };
+
+  // Add Anthropic-specific tools if Anthropic model is selected
+  if (selectedModel === 'claude-4-sonnet') {
+    tools.web_search = anthropic.tools.webSearch_20250305({
+      maxUses: 5
+    });
+    tools.web_fetch = anthropic.tools.webFetch_20250910({
+      maxUses: 3
+    });
+  }
+
+  // Add OpenAI-specific tools if OpenAI model is selected
+  if (selectedModel === 'gpt-5' || selectedModel === 'gpt-5-mini' || selectedModel === 'o3') {
+    tools.web_search = openai.tools.webSearch({
+      searchContextSize: 'high'
+    });
+  }
+
+  // Add Google-specific tools if Google model is selected
+  if (selectedModel === 'gemini-2.5-pro' || selectedModel === 'gemini-2.5-flash') {
+    tools.google_search = google.tools.googleSearch({});
+  }
+
+  // Build activeTools array - type as string[] to allow dynamic tool names
+  const activeToolsList: string[] = selectedFiles.length > 0
+    ? ['searchUserDocument']
+    : [];
+
+  // Add Anthropic tools to active tools if available
+  if (selectedModel === 'claude-4-sonnet') {
+    activeToolsList.push('web_search', 'web_fetch');
+  }
+
+  // Add OpenAI tools to active tools if available
+  if (selectedModel === 'gpt-5' || selectedModel === 'gpt-5-mini' || selectedModel === 'o3') {
+    activeToolsList.push('web_search');
+  }
+
+  // Add Google tools to active tools if available
+  if (selectedModel === 'gemini-2.5-pro' || selectedModel === 'gemini-2.5-flash') {
+    activeToolsList.push('google_search');
+  }
+
   const result = streamText({
     model: getModel(selectedModel),
     system: getSystemPrompt(selectedFiles),
     messages: convertToModelMessages(messages), // Changed from convertToCoreMessages
     abortSignal: signal,
     providerOptions, // Changed from providerMetadata
-    tools: {
-      searchUserDocument: searchUserDocument({
-        userId,
-        selectedBlobs: selectedFiles
-      }),
-      websiteSearchTool: websiteSearchTool
-    },
+    tools,
     // Changed from experimental_activeTools
-    activeTools:
-      selectedFiles.length > 0
-        ? ['searchUserDocument', 'websiteSearchTool']
-        : ['websiteSearchTool'],
-    stopWhen: stepCountIs(3),
+    activeTools: activeToolsList,
+    stopWhen: stepCountIs(5),
     onStepFinish: async (stepResult) => {
       try {
         const messagesToSave: UIMessage[] = [];

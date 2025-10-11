@@ -1,4 +1,4 @@
-# Supabase Auth with SSR + RAG + Tavily AI Web Search 🔍
+# Supabase Auth with SSR + RAG +  AI Web Search 🔍
 
 ## Project Showcase
 
@@ -55,7 +55,6 @@ You can find the videos located inside the public folder!
 **If you want to use the AI features the following keys are needed**
 
 - A Llarma Cloud account [LlamaCloud](https://cloud.llamaindex.ai/) (for parsing pdf files into markdown)
-- A Tavily account for searching the internet using the AI [Tavily](https://tavily.com/)
 - A Openai API key [OpenaiAPI](https://platform.openai.com/docs/overview)
 - A Anthripic API key [Antropic](https://console.anthropic.com/dashboard)
 

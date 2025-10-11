@@ -14,7 +14,6 @@ import MemoizedMarkdown from './tools/MemoizedMarkdown';
 import ReasoningContent from './tools/Reasoning';
 import SourceView from './tools/SourceView';
 import DocumentSearchTool from './tools/DocumentChatTool';
-import WebsiteSearchTool from './tools/WebsiteChatTool';
 import MessageInput from './ChatMessageInput';
 import { toast } from 'sonner';
 // Icons from Lucide React
@@ -194,107 +193,105 @@ const ChatComponent: React.FC<ChatProps> = ({
                   </CardHeader>
 
                   <CardContent className="py-0 px-4">
-                    {/* Render ALL parts in the order they appear */}
-                    {message.parts?.map((part, partIndex) => {
-                      // Handle text parts
-                      if (part.type === 'text') {
-                        return (
-                          <MemoizedMarkdown
-                            key={`part-${partIndex}`}
-                            content={part.text}
-                            id={`${isUserMessage ? 'user' : 'assistant'}-text-${
-                              message.id
-                            }-${partIndex}`}
-                          />
-                        );
-                      }
+                    {(() => {
+                      // Collect all sources for this message
+                      const sources = message.parts?.filter(
+                        (part) =>
+                          (part.type === 'source-url' ||
+                            part.type === 'source-document') &&
+                          !isUserMessage
+                      ) as Extract<
+                        typeof message.parts[number],
+                        { type: 'source-url' | 'source-document' }
+                      >[];
 
-                      // Handle reasoning parts (assistant only)
-                      if (part.type === 'reasoning' && !isUserMessage) {
-                        return (
-                          <div key={`part-${partIndex}`} className="mt-4">
-                            <ReasoningContent
-                              details={part}
-                              messageId={message.id}
-                            />
-                          </div>
-                        );
-                      }
+                      return (
+                        <>
+                          {/* Render ALL parts in the order they appear */}
+                          {message.parts?.map((part, partIndex) => {
+                            // Handle text parts
+                            if (part.type === 'text') {
+                              return (
+                                <MemoizedMarkdown
+                                  key={`part-${partIndex}`}
+                                  content={part.text}
+                                  id={`${
+                                    isUserMessage ? 'user' : 'assistant'
+                                  }-text-${message.id}-${partIndex}`}
+                                />
+                              );
+                            }
 
-                      // Handle source-url parts (assistant only)
-                      if (part.type === 'source-url' && !isUserMessage) {
-                        return (
-                          <div key={`part-${partIndex}`} className="mt-2">
-                            <SourceView sources={[part]} />
-                          </div>
-                        );
-                      }
+                            // Handle reasoning parts (assistant only)
+                            if (part.type === 'reasoning' && !isUserMessage) {
+                              return (
+                                <div key={`part-${partIndex}`} className="mt-4">
+                                  <ReasoningContent
+                                    details={part}
+                                    messageId={message.id}
+                                  />
+                                </div>
+                              );
+                            }
 
-                      // Handle source-document parts (assistant only)
-                      if (part.type === 'source-document' && !isUserMessage) {
-                        return (
-                          <div key={`part-${partIndex}`} className="mt-2">
-                            <SourceView sources={[part]} />
-                          </div>
-                        );
-                      }
+                            // Skip source parts - they'll be rendered together below
+                            if (
+                              (part.type === 'source-url' ||
+                                part.type === 'source-document') &&
+                              !isUserMessage
+                            ) {
+                              return null;
+                            }
 
-                      // Handle file parts (user messages)
-                      if (part.type === 'file' && isUserMessage) {
-                        return (
-                          <div key={`part-${partIndex}`} className="mt-4">
-                            <div className="flex items-center gap-2 p-2 bg-background rounded border">
-                              <FileIcon className="h-4 w-4 text-blue-500" />
-                              <Link
-                                className="font-medium text-blue-600 dark:text-blue-400 hover:underline flex-1"
-                                href={`?file=${part.filename || 'file'}`}
-                              >
-                                {part.filename || 'Attached File'}
-                              </Link>
+                            // Handle file parts (user messages)
+                            if (part.type === 'file' && isUserMessage) {
+                              return (
+                                <div key={`part-${partIndex}`} className="mt-4">
+                                  <div className="flex items-center gap-2 p-2 bg-background rounded border">
+                                    <FileIcon className="h-4 w-4 text-blue-500" />
+                                    <Link
+                                      className="font-medium text-blue-600 dark:text-blue-400 hover:underline flex-1"
+                                      href={`?file=${part.filename || 'file'}`}
+                                    >
+                                      {part.filename || 'Attached File'}
+                                    </Link>
+                                  </div>
+                                </div>
+                              );
+                            }
+
+                            // Handle tool invocation parts (assistant only)
+                            if (
+                              part.type === 'tool-searchUserDocument' &&
+                              !isUserMessage
+                            ) {
+                              return (
+                                <DocumentSearchTool
+                                  key={`part-${partIndex}`}
+                                  toolInvocation={
+                                    part as Extract<
+                                      ToolUIPart<UITools>,
+                                      {
+                                        type: 'tool-searchUserDocument';
+                                      }
+                                    >
+                                  }
+                                />
+                              );
+                            }
+
+                            return null;
+                          })}
+
+                          {/* Render all sources together in a single dropdown */}
+                          {sources && sources.length > 0 && (
+                            <div className="mt-2">
+                              <SourceView sources={sources} />
                             </div>
-                          </div>
-                        );
-                      }
-
-                      // Handle tool invocation parts (assistant only)
-                      if (
-                        part.type === 'tool-searchUserDocument' &&
-                        !isUserMessage
-                      ) {
-                        return (
-                          <DocumentSearchTool
-                            key={`part-${partIndex}`}
-                            toolInvocation={
-                              part as Extract<
-                                ToolUIPart<UITools>,
-                                {
-                                  type: 'tool-searchUserDocument';
-                                }
-                              >
-                            }
-                          />
-                        );
-                      }
-
-                      if (
-                        part.type === 'tool-websiteSearchTool' &&
-                        !isUserMessage
-                      ) {
-                        return (
-                          <WebsiteSearchTool
-                            key={`part-${partIndex}`}
-                            toolInvocation={
-                              part as Extract<
-                                ToolUIPart<UITools>,
-                                { type: 'tool-websiteSearchTool' }
-                              >
-                            }
-                          />
-                        );
-                      }
-
-                      return null;
-                    })}
+                          )}
+                        </>
+                      );
+                    })()}
                   </CardContent>
                 </Card>
               </li>

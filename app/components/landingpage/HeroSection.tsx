@@ -1,17 +1,16 @@
 'use client';
-import React, { use } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Sparkles, Zap } from 'lucide-react';
-import { type JwtPayload } from '@supabase/supabase-js';
 
 interface HeroSectionProps {
-  session: Promise<JwtPayload | null | undefined>;
+  session: boolean
 }
 
 export const HeroSection: React.FC<HeroSectionProps> = ({ session }) => {
-  const userSession = use(session);
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Animated Background */}
@@ -89,7 +88,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ session }) => {
           transition={{ duration: 0.6, delay: 0.1 }}
           className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent"
         >
-          {userSession ? `Welcome back!` : 'Build Amazing Apps'}
+          {session ? `Welcome back!` : 'Build Amazing Apps'}
         </motion.h1>
 
         <motion.p
@@ -98,7 +97,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ session }) => {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto"
         >
-          {userSession
+          {session
             ? 'Your powerful development platform awaits. Continue building amazing experiences.'
             : 'Experience the future of web development with our cutting-edge authentication and real-time features.'}
         </motion.p>
@@ -114,8 +113,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ session }) => {
             size="lg"
             className="group bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90"
           >
-            <Link href={userSession ? '/dashboard' : '/auth/signup'}>
-              {userSession ? 'Go to Dashboard' : 'Get Started Free'}
+            <Link href={session ? '/dashboard' : '/auth/signup'}>
+              {session ? 'Go to Dashboard' : 'Get Started Free'}
               <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
             </Link>
           </Button>

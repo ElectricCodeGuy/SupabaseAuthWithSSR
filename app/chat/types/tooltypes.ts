@@ -6,15 +6,13 @@ import type {
   UIMessage
 } from 'ai';
 import { searchUserDocument } from '@/app/api/chat/tools/documentChat';
-import { websiteSearchTool } from '@/app/api/chat/tools/WebsiteSearchTool';
 
 // Define the toolset with just the document search tool
 export const toolSet = {
   searchUserDocument: searchUserDocument({
     userId: '123', // This will be replaced with actual userId
     selectedBlobs: []
-  }),
-  websiteSearchTool: websiteSearchTool
+  })
 };
 
 // Generate tool call and result types using v5 helpers
@@ -32,16 +30,7 @@ export type SearchDocumentsResult = Extract<
   { toolName: 'searchUserDocument' }
 >['output']; // Changed from 'result' to 'output'
 
-// Helper types for website search tool
-export type WebsiteSearchCall = Extract<
-  ToolCall,
-  { toolName: 'websiteSearchTool' }
->;
-export type WebsiteSearchArgs = WebsiteSearchCall['input']; // Changed from 'args' to 'input'
-export type WebsiteSearchResult = Extract<
-  ToolResult,
-  { toolName: 'websiteSearchTool' }
->['output']; // Changed from 'result' to 'output'
+
 
 // Define UI tools type for client-side type safety
 export type UITools = InferUITools<typeof toolSet>;

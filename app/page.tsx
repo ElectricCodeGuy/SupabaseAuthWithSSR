@@ -7,11 +7,13 @@ import { TestimonialsSection } from './components/landingpage/TestimonialsSectio
 import { CTASection } from './components/landingpage/CTASection';
 import { getSession } from '@/lib/server/supabase';
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const session = await getSession()
+  const isLoggedIn = !!session?.sub;
   return (
     <>
       {/* We pass the promise here and resolve it with react.use in the child to prevent the async request from blocking the UI */}
-      <HeroSection session={getSession()} />
+      <HeroSection session={isLoggedIn} />
       <FeaturesSection />
       <BentoGrid />
       <TestimonialsSection />
