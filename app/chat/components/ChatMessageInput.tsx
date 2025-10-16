@@ -12,6 +12,8 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
 import type { useChat } from '@ai-sdk/react';
+import type { UIMessagePart} from 'ai'
+import type { UITools } from '../types/tooltypes';
 // Icons from Lucide React
 import {
   Send,
@@ -158,7 +160,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
     }
   };
 
-  const filesToBase64 = async (files: File[]): Promise<any[]> => {
+  const filesToBase64 = async (files: File[]) => {
     const promises = files.map((file) => {
       return new Promise<any>((resolve, reject) => {
         const reader = new FileReader();
@@ -185,7 +187,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
     // REMOVED the router.push logic from here
 
     // Prepare message parts
-    const parts: any[] = [{ type: 'text', text: input }];
+    const parts: UIMessagePart<ChatHelpers,UITools> [] = [{ type: 'text', text: input }];
 
     // Add file parts if there are attachments
     if (attachedFiles.length > 0) {
