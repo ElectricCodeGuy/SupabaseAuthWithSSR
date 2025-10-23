@@ -5,7 +5,7 @@ import {
   type MiddlewareConfig
 } from 'next/server';
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   // Initialize Supabase client and handle session
   let response = NextResponse.next({
     request

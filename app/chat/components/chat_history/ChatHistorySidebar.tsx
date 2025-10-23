@@ -113,11 +113,6 @@ function categorizeChats(chatPreviews: ChatPreview[]): CategorizedChats {
 const CombinedDrawer: FC<CombinedDrawerProps> = ({ userDataPromise }) => {
   const userData = use(userDataPromise);
 
-  const userInfo = {
-    id: userData?.id || '',
-    full_name: userData?.full_name || '',
-    email: userData?.email || ''
-  };
   const initialChatPreviews = userData?.chatPreviews || [];
   const categorizedChats = categorizeChats(initialChatPreviews);
   const documents = userData?.documents || [];
@@ -315,7 +310,7 @@ const CombinedDrawer: FC<CombinedDrawerProps> = ({ userDataPromise }) => {
       </SidebarHeader>
 
       <SidebarContent className="border-t border-gray-200">
-        {!userInfo.email ? (
+        {userData && !userData.email ? (
           <div className="flex flex-col items-center justify-center h-[90vh] text-center p-4 space-y-4">
             <h3 className="text-lg font-semibold text-foreground">
               Sign in to save and view your chats

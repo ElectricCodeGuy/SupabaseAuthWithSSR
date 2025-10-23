@@ -4,7 +4,7 @@ import { getSession } from '@/lib/server/supabase';
 import { z } from 'zod';
 import { createServerSupabaseClient } from '@/lib/server/server';
 import { createAdminClient } from '@/lib/server/admin';
-import { revalidatePath } from 'next/cache';
+import { refresh } from 'next/cache';
 import { cookies } from 'next/headers';
 
 export interface ChatPreview {
@@ -86,7 +86,7 @@ export async function deleteChatData(chatId: string) {
       .eq('id', chatId);
 
     if (sessionError) throw sessionError;
-    revalidatePath(`/chat/[id]`, 'layout');
+    refresh()
     return { message: 'Chat data and references deleted successfully' };
   } catch (error) {
     console.error('Error during deletion:', error);
@@ -155,8 +155,9 @@ export async function deleteFilterTagAndDocumentChunks(formData: FormData) {
     }
 
     const deletedCount = deletedData?.length || 0;
-    revalidatePath('/', 'layout');
-    revalidatePath('/chat', 'layout');
+    
+    refresh()
+
     return {
       success: true,
       message: `Successfully deleted file and ${deletedCount} associated documents`
@@ -209,7 +210,7 @@ export async function updateChatTitle(formData: FormData) {
     throw new Error(`Failed to update chat title: ${updateError.message}`);
   }
 
-  revalidatePath(`/chat/[id]`, 'layout');
+   refresh()
 
   return { success: true };
 }
