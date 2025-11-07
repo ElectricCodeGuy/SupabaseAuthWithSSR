@@ -31,7 +31,6 @@ export default function SignInCard() {
     lowercase: false,
     number: false
   });
-  const [currentPassword, setCurrentPassword] = useState('');
   const passwordRef = useRef<HTMLInputElement>(null);
 
   const [alertMessage, setAlertMessage] = useState<{
@@ -128,7 +127,8 @@ export default function SignInCard() {
     const handleFocus = () => setShowPasswordRequirements(true);
     const handleBlur = () => {
       // Only hide if password is empty
-      if (!currentPassword) {
+      const passwordInput = passwordRef.current;
+      if (passwordInput && !passwordInput.value) {
         setShowPasswordRequirements(false);
       }
     };
@@ -145,14 +145,7 @@ export default function SignInCard() {
         passwordInput.removeEventListener('blur', handleBlur);
       }
     };
-  }, [currentPassword]);
-
-  // Show password requirements when typing in password field
-  useEffect(() => {
-    if (currentPassword && !showPasswordRequirements) {
-      setShowPasswordRequirements(true);
-    }
-  }, [currentPassword, showPasswordRequirements]);
+  }, []);
 
   return (
     <div className="flex justify-center items-center">
@@ -206,10 +199,7 @@ export default function SignInCard() {
                       required
                       ref={passwordRef}
                       className={passwordError ? 'border-destructive' : ''}
-                      onChange={(e) => {
-                        setCurrentPassword(e.target.value);
-                        validatePassword(e.target.value);
-                      }}
+                      onChange={(e) => validatePassword(e.target.value)}
                     />
                   </PopoverTrigger>
                   <PopoverContent
