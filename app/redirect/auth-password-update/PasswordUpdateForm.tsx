@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, type FC, Suspense } from 'react';
 import { resetPassword } from './action';
-import { Lock, Loader2 } from 'lucide-react';
+import { Lock, Loader2, AlertTriangle } from 'lucide-react';
 import { useFormStatus } from 'react-dom';
 import Message from './messages';
 
@@ -9,10 +9,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const PasswordUpdateForm: FC = () => {
-  const [newPassword, setNewPassword] = useState<string>('');
-  const [confirmPassword, setConfirmPassword] = useState<string>('');
+  const [error, setError] = useState<string>('');
   const [passwordRequirements, setPasswordRequirements] = useState({
     length: false,
     uppercase: false,
@@ -31,9 +31,15 @@ const PasswordUpdateForm: FC = () => {
   };
 
   const handleSubmit = async (formData: FormData) => {
+    const newPassword = formData.get('newPassword') as string;
+    const confirmPassword = formData.get('confirmPassword') as string;
+
+    // Clear any previous errors
+    setError('');
+
     // Check if the passwords match
     if (newPassword !== confirmPassword) {
-      alert('Passwords must match.');
+      setError('Passwords must match.');
       return;
     }
     await resetPassword(formData);
@@ -61,10 +67,9 @@ const PasswordUpdateForm: FC = () => {
                   id="newPassword"
                   name="newPassword"
                   type="password"
-                  value={newPassword}
                   onChange={(e) => {
-                    setNewPassword(e.target.value);
                     validatePassword(e.target.value);
+                    if (error) setError('');
                   }}
                   autoComplete="new-password"
                   className="pl-10 py-5"
@@ -82,13 +87,21 @@ const PasswordUpdateForm: FC = () => {
                   id="confirmPassword"
                   name="confirmPassword"
                   type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  onChange={() => {
+                    if (error) setError('');
+                  }}
                   autoComplete="new-password"
                   className="pl-10 py-5"
                 />
               </div>
             </div>
+
+            {error && (
+              <Alert variant="destructive" className="flex gap-2">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
 
             <Suspense fallback={null}>
               <Message />
