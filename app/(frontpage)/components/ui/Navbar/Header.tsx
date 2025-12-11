@@ -89,7 +89,9 @@ const profileMenuItems = [
 ];
 
 export default function Header() {
-  // Use SWR to fetch user data client-side
+  // Use SWR to fetch user data client-side.
+  // We could also pass this data from a parent layout via props, but this would force every single children of the layout to become dynamicly rendered at run time.
+  // We do this so the children of the layout can be statically optimized.
   const { data: userData, isLoading } = useSWR<{
     isLoggedIn: boolean;
     hasActiveSubscription: boolean;

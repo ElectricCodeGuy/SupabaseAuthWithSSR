@@ -213,12 +213,7 @@ export default function SnakeGame() {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.4 }}
-    >
-      <Card className="rounded-2xl shadow-lg overflow-hidden backdrop-blur-sm bg-card/90 border-primary/10 pt-0">
+    <Card className="rounded-2xl shadow-lg overflow-hidden backdrop-blur-sm bg-card/90 border-primary/10 pt-0">
         <div className="p-4 bg-gradient-to-r from-green-500 to-emerald-600">
           <h6 className="text-white font-semibold flex items-center gap-2">
             <Gamepad2 size={20} /> Snake Game
@@ -429,7 +424,6 @@ export default function SnakeGame() {
             </div>
           )}
         </CardContent>
-      </Card>
-    </motion.div>
+    </Card>
   );
 }

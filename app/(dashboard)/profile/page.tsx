@@ -4,12 +4,13 @@ import { format } from 'date-fns';
 import { redirect } from 'next/navigation';
 
 // Import components
-import ProfileHeader from './ProfileHeader';
-import PersonalInfoCard from './PersonalInfoCard';
-import AchievementsCard from './AchievementsCard';
-import SkillsCard from './SkillsCard';
-import ProjectsCard from './ProjectsCard';
-import ReactionGame from './ReactionGame';
+import ProfileHeader from './components/ProfileHeader';
+import PersonalInfoCard from './components/PersonalInfoCard';
+import AchievementsCard from './components/AchievementsCard';
+import SkillsCard from './components/SkillsCard';
+import ProjectsCard from './components/ProjectsCard';
+import ReactionGame from './components/ReactionGame';
+import { AnimatedSection } from './components/ProfilePageWrapper';
 
 export default async function ProtectedPage() {
   const userInfo = await getUserInfo();
@@ -71,26 +72,38 @@ export default async function ProtectedPage() {
     <div className="min-h-screen py-6 bg-gradient-to-br from-background via-background to-primary/5">
       <div className="container mx-auto px-4">
         {/* Profile Header */}
-        <ProfileHeader userInfo={userInfo} userAttributes={userAttributes} />
+        <AnimatedSection delay={0}>
+          <ProfileHeader userInfo={userInfo} userAttributes={userAttributes} />
+        </AnimatedSection>
 
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Left Column */}
           <div className="lg:col-span-4 space-y-6">
-            <PersonalInfoCard
-              userInfo={userInfo}
-              userAttributes={userAttributes}
-            />
-            <AchievementsCard achievements={userAttributes.achievements} />
+            <AnimatedSection delay={0.1} direction="left">
+              <PersonalInfoCard
+                userInfo={userInfo}
+                userAttributes={userAttributes}
+              />
+            </AnimatedSection>
+            <AnimatedSection delay={0.2} direction="left">
+              <AchievementsCard achievements={userAttributes.achievements} />
+            </AnimatedSection>
 
             {/* Mini Game */}
-            <ReactionGame />
+            <AnimatedSection delay={0.3} direction="left">
+              <ReactionGame />
+            </AnimatedSection>
           </div>
 
           {/* Right Column */}
           <div className="lg:col-span-8 space-y-6">
-            <SkillsCard skills={userAttributes.skills} />
-            <ProjectsCard projects={userAttributes.projects} />
+            <AnimatedSection delay={0.1}>
+              <SkillsCard skills={userAttributes.skills} />
+            </AnimatedSection>
+            <AnimatedSection delay={0.2}>
+              <ProjectsCard projects={userAttributes.projects} />
+            </AnimatedSection>
           </div>
         </div>
       </div>
