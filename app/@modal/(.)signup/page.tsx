@@ -1,6 +1,5 @@
-import React from 'react';
 import SignUpCard from './SignUpCard';
-import Content from '@/app/components/auth/Content';
+import Content from '@/app/(frontpage)/components/auth/Content';
 import ModalWrapper from './ModalWrapper';
 import { getSession } from '@/lib/server/supabase';
 

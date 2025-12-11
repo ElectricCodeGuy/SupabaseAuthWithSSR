@@ -1,4 +1,16 @@
-# Supabase Auth with SSR + RAG +  AI Web Search 🔍
+# Supabase Auth with SSR + RAG + AI Web Search + Autonomous Document Search
+
+## Version 3.0.0
+
+This project provides a complete authentication system with Supabase SSR, featuring an AI chat interface with autonomous document search and web search capabilities. The AI decides when to search your uploaded documents or the web based on the context of your questions.
+
+### Key Features in v3.0.0
+
+- **Autonomous Document Search**: AI automatically decides when to search through your uploaded documents - no manual file selection needed
+- **Web Search Integration**: Real-time web search using Tavily AI for up-to-date information
+- **Dashboard Route Groups**: Clean separation between public pages and authenticated dashboard (`/chat`, `/filer`)
+- **Incremental Message Saving**: Messages saved in real-time as AI responds
+- **Modern Navigation**: shadcn NavigationMenu with dropdown menus
 
 ## Project Showcase
 
@@ -46,6 +58,36 @@ You can find the videos located inside the public folder!
 - **Performance**: Leverage server-side rendering for faster load times and improved user experience.
 - **Next.js Integration**: Specifically designed for easy integration with Next.js 15 projects.
 
+### AI Chat Features
+
+- **Autonomous Document Search Tool**: The AI automatically searches through your uploaded documents when relevant to your question. No need to manually select files - the tool fetches all user documents from the database and performs semantic search using Voyage AI embeddings.
+
+- **Website Search Tool**: Real-time web search powered by Tavily AI. The AI decides when to search the web for current information, returning sources with titles, URLs, and publication dates.
+
+- **Multi-Model Support**: Switch between GPT-5, GPT-5 Mini, OpenAI O3, Claude 4.5 Sonnet, Gemini 2.5 Pro, and Gemini 2.5 Flash.
+
+- **Incremental Message Saving**: Messages are saved to the database incrementally as each AI step completes, preserving the exact order of tools, reasoning, and text.
+
+- **Tool Output Display**: Collapsible accordion UI showing search results with clickable links to documents and web sources.
+
+### Application Structure
+
+The application uses Next.js route groups for clean separation:
+
+```
+app/
+├── (dashboard)/          # Authenticated routes
+│   ├── chat/            # AI chat interface
+│   │   ├── [id]/        # Individual chat sessions
+│   │   └── components/  # Chat UI components
+│   └── filer/           # File management
+├── (frontpage)/         # Public routes
+│   └── components/      # Landing page components
+└── api/
+    └── chat/
+        └── tools/       # AI tools (documentChat, websiteSearch)
+```
+
 ## Getting Started
 
 ### Prerequisites
@@ -54,9 +96,11 @@ You can find the videos located inside the public folder!
 
 **If you want to use the AI features the following keys are needed**
 
-- A Llarma Cloud account [LlamaCloud](https://cloud.llamaindex.ai/) (for parsing pdf files into markdown)
-- A Openai API key [OpenaiAPI](https://platform.openai.com/docs/overview)
-- A Anthripic API key [Antropic](https://console.anthropic.com/dashboard)
+- A LlamaCloud account [LlamaCloud](https://cloud.llamaindex.ai/) (for parsing pdf files into markdown)
+- An OpenAI API key [OpenAI API](https://platform.openai.com/docs/overview)
+- An Anthropic API key [Anthropic](https://console.anthropic.com/dashboard)
+- A Voyage AI API key [Voyage AI](https://www.voyageai.com/) (for document embeddings with voyage-3-large model)
+- A Tavily API key [Tavily](https://tavily.com/) (for web search functionality)
 
 ### Installation
 
@@ -80,7 +124,20 @@ You can find the videos located inside the public folder!
 
 ### Database Setup
 
-Before launching your application, you must configure the database schema within Supabase. Navigate to supabase SQL editor and use the following SQL queries to setup the schemas
+Before launching your application, you must configure the database schema within Supabase.
+
+#### Quick Setup (Recommended)
+
+Run the complete setup SQL file located at `database/setup.sql` in the Supabase SQL Editor. This file contains all tables, indexes, RLS policies, and functions needed for the application.
+
+```bash
+# The setup file is located at:
+database/setup.sql
+```
+
+#### Manual Setup (Step by Step)
+
+If you prefer to set up tables individually, follow these steps:
 
 1. **Create the Users Table**
 
@@ -548,9 +605,16 @@ Configure your environment by renaming `.env.local.example` to `.env.local` and 
 
 - `LLAMA_CLOUD_API_KEY`: Your LlamaIndex Cloud API key
 
-For Openai
+**AI Model API Keys:**
 
-- `OPENAI_API_KEY=`
+- `OPENAI_API_KEY`: Your OpenAI API key
+- `ANTHROPIC_API_KEY`: Your Anthropic API key
+- `GOOGLE_GENERATIVE_AI_API_KEY`: Your Google AI API key
+
+**Embeddings & Search:**
+
+- `VOYAGE_API_KEY`: Your Voyage AI API key (for document embeddings)
+- `TAVILY_API_KEY`: Your Tavily API key (for web search)
 
 ## 📧 Email Templates
 

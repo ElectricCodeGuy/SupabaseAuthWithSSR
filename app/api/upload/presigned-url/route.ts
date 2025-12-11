@@ -2,7 +2,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/server/admin';
-import { encodeBase64 } from '@/app/chat/utils/base64';
+import { encodeBase64 } from '@/utils/base64';
 import { getSession } from '@/lib/server/supabase';
 
 const MAX_TOTAL_SIZE = 150 * 1024 * 1024; // 150 MB

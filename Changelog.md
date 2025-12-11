@@ -1,5 +1,71 @@
 ## CHANGELOG
 
+## [v3.0.0] - 2025-12-11
+
+### Major Changes
+
+- **Dashboard Route Group Architecture**: Reorganized application structure with route groups
+  - Migrated chat functionality from `/app/chat` to `/app/(dashboard)/chat`
+  - Migrated file management from `/app/protected` to `/app/(dashboard)/filer`
+  - Cleaner separation between public frontpage and authenticated dashboard areas
+
+- **Autonomous Document Search Tool**: Completely redesigned how document search works
+  - AI now autonomously decides when to search user documents based on the question
+  - Removed client-side file selection - the tool fetches user's documents directly from the database
+  - More intelligent context gathering with dual-query approach (tool query + user message)
+
+- **Navigation Overhaul**: Implemented new header navigation using shadcn NavigationMenu
+  - Added dropdown menus for documentation and profile sections
+  - Consistent styling across all navigation items
+  - Improved mobile responsiveness
+
+### Added
+
+- **Enhanced Document Search Tool UI**: New accordion-based display for document search results
+  - Shows grouped documents with page links
+  - Displays search query used
+  - Status indicators for loading, success, and error states
+  - Base64 encoded URLs for proper handling of special characters in document names
+
+- **Website Search Tool**: New tool for searching web sources
+  - Returns structured context with source URLs and titles
+  - Collapsible UI with source attribution
+  - Published date display for search results
+
+### Changed
+
+- **Chat API Route**:
+  - Removed `selectedFiles` from request body
+  - Document search is now a tool the AI decides to use, not a client-controlled feature
+  - Updated system prompt to guide AI on tool usage
+
+- **Tool Output Structure**: Standardized output format across tools
+  - Both document and website search tools now return `{ instructions, context }` format
+  - Context arrays contain structured metadata for client-side display
+  - Instructions guide the AI on how to use and cite the search results
+
+- **Token Estimation**: Removed tiktoken dependency from WebsiteSearchTool
+  - Now uses character-based estimation (~4 chars per token)
+  - Simplified dependency tree and reduced bundle size
+
+- **Upload Context**: Removed upload context entirely
+  - File selection state no longer needed as AI autonomously searches documents
+
+### Fixed
+
+- **Type Safety in fetch.ts**: Fixed type casting for tool parts reconstructed from database
+  - Proper handling of `Json` database types with `as unknown as Type` pattern
+  - Correct column name mapping for tool fields
+
+- **URL Encoding**: Document links now use base64 encoding for document titles
+  - Fixes issues with special characters and unicode in filenames
+  - Consistent with PDF viewer URL parsing
+
+### Database
+
+- Tool columns in `message_parts` table now properly support the new output format
+- Document search tool uses `getUserDocumentIds()` to fetch user's document IDs directly
+
 ## [v2.3.0] - 2025-08-24
 
 ### Major Changes

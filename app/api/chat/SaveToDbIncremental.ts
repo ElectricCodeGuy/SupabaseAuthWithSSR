@@ -210,6 +210,24 @@ export const saveMessagesToDB = async ({
             break;
           }
 
+          case 'tool-searchWebsite': {
+            const toolPart = part;
+            allParts.push({
+              ...basePart,
+              type: 'tool-searchWebsite',
+              tool_websitesearchtool_toolcallid: toolPart.toolCallId,
+              tool_websitesearchtool_state: toolPart.state,
+              tool_websitesearchtool_input: sanitizeForPostgres(toolPart.input),
+              tool_websitesearchtool_output: sanitizeForPostgres(
+                toolPart.output
+              ),
+              tool_websitesearchtool_errortext:
+                sanitizeForPostgres(toolPart.errorText) || null,
+              tool_websitesearchtool_providerexecuted:
+                toolPart.providerExecuted || null
+            });
+            break;
+          }
 
           case 'step-start': {
             // Skip step-start parts - these are UI-only

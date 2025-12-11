@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, type FC, Suspense } from 'react';
+import { useState, type FC, Suspense } from 'react';
 import { resetPassword } from './action';
 import { Lock, Loader2, AlertTriangle } from 'lucide-react';
 import { useFormStatus } from 'react-dom';

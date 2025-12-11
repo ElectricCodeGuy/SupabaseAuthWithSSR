@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import { Inter } from 'next/font/google';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';

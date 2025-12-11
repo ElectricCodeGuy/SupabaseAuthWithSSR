@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
       static: 180
     },
     browserDebugInfoInTerminal: true,
-
+    globalNotFound: true
   },
   poweredByHeader: false
 };
