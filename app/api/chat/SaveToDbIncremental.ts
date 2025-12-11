@@ -210,11 +210,11 @@ export const saveMessagesToDB = async ({
             break;
           }
 
-          case 'tool-searchWebsite': {
+          case 'tool-websiteSearchTool': {
             const toolPart = part;
             allParts.push({
               ...basePart,
-              type: 'tool-searchWebsite',
+              type: 'tool-websiteSearchTool',
               tool_websitesearchtool_toolcallid: toolPart.toolCallId,
               tool_websitesearchtool_state: toolPart.state,
               tool_websitesearchtool_input: sanitizeForPostgres(toolPart.input),

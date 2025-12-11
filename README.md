@@ -62,7 +62,7 @@ You can find the videos located inside the public folder!
 
 - **Autonomous Document Search Tool**: The AI automatically searches through your uploaded documents when relevant to your question. No need to manually select files - the tool fetches all user documents from the database and performs semantic search using Voyage AI embeddings.
 
-- **Website Search Tool**: Real-time web search powered by Tavily AI. The AI decides when to search the web for current information, returning sources with titles, URLs, and publication dates.
+- **Website Search Tool**: Real-time web search powered by Exa AI. The AI decides when to search the web for current information, returning sources with titles, URLs, and publication dates.
 
 - **Multi-Model Support**: Switch between GPT-5, GPT-5 Mini, OpenAI O3, Claude 4.5 Sonnet, Gemini 2.5 Pro, and Gemini 2.5 Flash.
 
@@ -100,7 +100,7 @@ app/
 - An OpenAI API key [OpenAI API](https://platform.openai.com/docs/overview)
 - An Anthropic API key [Anthropic](https://console.anthropic.com/dashboard)
 - A Voyage AI API key [Voyage AI](https://www.voyageai.com/) (for document embeddings with voyage-3-large model)
-- A Tavily API key [Tavily](https://tavily.com/) (for web search functionality)
+- An Exa API key [Exa AI](https://exa.ai/) (for web search functionality)
 
 ### Installation
 
@@ -614,7 +614,7 @@ Configure your environment by renaming `.env.local.example` to `.env.local` and 
 **Embeddings & Search:**
 
 - `VOYAGE_API_KEY`: Your Voyage AI API key (for document embeddings)
-- `TAVILY_API_KEY`: Your Tavily API key (for web search)
+- `EXA_API_KEY`: Your Exa AI API key (for web search)
 
 ## 📧 Email Templates
 

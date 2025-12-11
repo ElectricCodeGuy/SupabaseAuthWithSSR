@@ -6,7 +6,6 @@ import {
   NavigationMenu,
   NavigationMenuContent,
   NavigationMenuItem,
-  NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuTrigger,
   navigationMenuTriggerStyle
@@ -25,7 +24,7 @@ import {
   Settings,
   CreditCard,
   FolderOpen,
-  LogOut
+  BotMessageSquare
 } from 'lucide-react';
 import Sitemark from './SitemarkIcon';
 import { ModeToggle } from '@/components/ui/toggleButton';
@@ -36,27 +35,27 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 // Docs navigation links
 const docsLinks = [
   {
-    title: 'Kom i gang',
+    title: 'Getting Started',
     href: '/docs/getting-started',
-    description: 'Lær hvordan du kommer i gang med AI-chatten.',
+    description: 'Learn how to get started with the AI chat.',
     icon: Rocket
   },
   {
-    title: 'Oversigt',
+    title: 'Overview',
     href: '/docs/overview',
-    description: 'Forstå AI SDK arkitekturen og koncepterne.',
+    description: 'Understand the AI SDK architecture and concepts.',
     icon: Layers
   },
   {
     title: 'useChat Hook',
     href: '/docs/usechat',
-    description: 'Lær om useChat hook til chat-funktionalitet.',
+    description: 'Learn about the useChat hook for chat functionality.',
     icon: MessageSquare
   },
   {
     title: 'Core Functions',
     href: '/docs/core-functions',
-    description: 'Udforsk de vigtigste AI SDK funktioner.',
+    description: 'Explore the key AI SDK functions.',
     icon: Code2
   }
 ];
@@ -65,26 +64,26 @@ const docsLinks = [
 const profileMenuItems = [
   {
     href: '/profile',
-    text: 'Min profil',
-    description: 'Se og rediger dine profiloplysninger',
+    text: 'My Profile',
+    description: 'View and edit your profile information',
     icon: User
   },
   {
     href: '/filer',
-    text: 'Mine filer',
-    description: 'Se dine uploadede dokumenter',
+    text: 'My Files',
+    description: 'View your uploaded documents',
     icon: FolderOpen
   },
   {
     href: '/settings',
-    text: 'Indstillinger',
-    description: 'Administrer dine indstillinger',
+    text: 'Settings',
+    description: 'Manage your settings',
     icon: Settings
   },
   {
     href: '/subscription',
-    text: 'Abonnement',
-    description: 'Administrer dit abonnement og betalinger',
+    text: 'Subscription',
+    description: 'Manage your subscription and payments',
     icon: CreditCard
   }
 ];
@@ -107,7 +106,7 @@ export default function Header() {
       icon: MessageSquare
     },
     {
-      text: 'Dokumentation',
+      text: 'Documentation',
       icon: BookOpen,
       subItems: docsLinks.map((link) => ({
         href: link.href,
@@ -119,7 +118,7 @@ export default function Header() {
     ...(isLoggedIn
       ? [
           {
-            text: 'Min Konto',
+            text: 'My Account',
             icon: User,
             subItems: profileMenuItems.map((item) => ({
               href: item.href,
@@ -132,7 +131,7 @@ export default function Header() {
       : [
           {
             href: '/signin',
-            text: 'Log ind',
+            text: 'Sign In',
             icon: LogIn
           }
         ])
@@ -155,19 +154,20 @@ export default function Header() {
             <NavigationMenuList>
               {/* AI Chat link */}
               <NavigationMenuItem>
-                <NavigationMenuLink asChild>
-                  <Link href="/chat" className={navigationMenuTriggerStyle()}>
-                    <MessageSquare className="w-4 h-4 mr-2" />
-                    AI Chat
-                  </Link>
-                </NavigationMenuLink>
+                <Link
+                  href="/chat"
+                  className={`${navigationMenuTriggerStyle()} flex items-center`}
+                >
+                  <BotMessageSquare className="w-4 h-4 mr-2" />
+                  AI Chat
+                </Link>
               </NavigationMenuItem>
 
               {/* Docs dropdown */}
               <NavigationMenuItem>
-                <NavigationMenuTrigger>
+                <NavigationMenuTrigger triggerMode="click">
                   <BookOpen className="w-4 h-4 mr-2" />
-                  Dokumentation
+                  Documentation
                 </NavigationMenuTrigger>
                 <NavigationMenuContent className="right-0 left-auto">
                   <ul className="grid w-[400px] gap-1 p-2 md:w-[500px] md:grid-cols-2">
@@ -188,7 +188,7 @@ export default function Header() {
                       className="flex items-center justify-center gap-2 text-sm font-medium text-primary hover:underline py-1"
                     >
                       <BookOpen className="h-4 w-4" />
-                      Se al dokumentation
+                      View all documentation
                     </Link>
                   </div>
                 </NavigationMenuContent>
@@ -203,9 +203,9 @@ export default function Header() {
                 </NavigationMenuItem>
               ) : isLoggedIn ? (
                 <NavigationMenuItem>
-                  <NavigationMenuTrigger className="w-[100px]">
+                  <NavigationMenuTrigger triggerMode="click">
                     <User className="w-4 h-4 mr-2" />
-                    Profil
+                    Profile
                   </NavigationMenuTrigger>
                   <NavigationMenuContent className="right-0 left-auto">
                     <ul className="grid w-[300px] gap-1 p-2 md:w-[400px] md:grid-cols-2">
@@ -222,7 +222,6 @@ export default function Header() {
                     </ul>
                     <div className="border-t p-2">
                       <div className="flex items-center justify-center gap-2 text-sm font-medium text-destructive py-1">
-                        <LogOut className="h-4 w-4" />
                         <SignOut />
                       </div>
                     </div>
@@ -230,12 +229,13 @@ export default function Header() {
                 </NavigationMenuItem>
               ) : (
                 <NavigationMenuItem>
-                  <NavigationMenuLink asChild>
-                    <Link href="/signin" className={navigationMenuTriggerStyle()}>
-                      <LogIn className="w-4 h-4 mr-2" />
-                      Log ind
-                    </Link>
-                  </NavigationMenuLink>
+                  <Link
+                    href="/signin"
+                    className={`${navigationMenuTriggerStyle()} flex items-center`}
+                  >
+                    <LogIn className="w-4 h-4 mr-2" />
+                    Sign In
+                  </Link>
                 </NavigationMenuItem>
               )}
             </NavigationMenuList>

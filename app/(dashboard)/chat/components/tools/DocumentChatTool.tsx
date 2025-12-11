@@ -109,14 +109,14 @@ const DocumentChatTool: React.FC<DocumentChatToolProps> = ({
               <FileText className="text-primary h-5 w-5" />
             </div>
             <span className="text-sm font-medium flex-grow text-left">
-              Søgning i dokumenter
+              Document Search
             </span>
             {sources.length > 0 &&
               toolInvocation.state === 'output-available' && (
                 <span className="text-xs mr-2">
                   {groupedSources.length}{' '}
-                  {groupedSources.length === 1 ? 'dokument' : 'dokumenter'},{' '}
-                  {sources.length} {sources.length === 1 ? 'side' : 'sider'}
+                  {groupedSources.length === 1 ? 'document' : 'documents'},{' '}
+                  {sources.length} {sources.length === 1 ? 'page' : 'pages'}
                 </span>
               )}
             <div className="flex-shrink-0">{getStatusIcon()}</div>
@@ -128,7 +128,7 @@ const DocumentChatTool: React.FC<DocumentChatToolProps> = ({
             {query && (
               <div className="text-xs">
                 <span className="font-bold text-gray-700 dark:text-gray-300">
-                  Søgeord:
+                  Search query:
                 </span>{' '}
                 <span className="dark:text-gray-400">{query}</span>
               </div>
@@ -139,7 +139,7 @@ const DocumentChatTool: React.FC<DocumentChatToolProps> = ({
               groupedSources.length > 0 && (
                 <div className="space-y-2">
                   <div className="text-xs font-bold text-gray-700 dark:text-gray-300">
-                    Fundne dokumenter:
+                    Found documents:
                   </div>
                   <div className="space-y-2">
                     {groupedSources.map((doc, idx) => (
@@ -166,12 +166,12 @@ const DocumentChatTool: React.FC<DocumentChatToolProps> = ({
                                   className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
                                   prefetch={false}
                                 >
-                                  s. {page.page}
+                                  p. {page.page}
                                 </Link>
                               ))}
                               {doc.pages.length > 10 && (
                                 <span className="text-xs text-gray-500 dark:text-gray-400 px-1">
-                                  +{doc.pages.length - 10} flere
+                                  +{doc.pages.length - 10} more
                                 </span>
                               )}
                             </div>
@@ -187,7 +187,7 @@ const DocumentChatTool: React.FC<DocumentChatToolProps> = ({
             {toolInvocation.state === 'output-available' &&
               sources.length === 0 && (
                 <div className="text-xs text-gray-600 dark:text-gray-400 italic">
-                  Ingen relevante dokumenter fundet
+                  No relevant documents found
                 </div>
               )}
 
@@ -195,15 +195,15 @@ const DocumentChatTool: React.FC<DocumentChatToolProps> = ({
             {(toolInvocation.state === 'input-streaming' ||
               toolInvocation.state === 'input-available') && (
               <div className="text-xs dark:text-gray-400 italic">
-                Søger i dine dokumenter...
+                Searching your documents...
               </div>
             )}
 
             {/* Error */}
             {toolInvocation.state === 'output-error' && (
               <div className="text-xs text-red-600 dark:text-red-400">
-                <span className="font-bold">Fejl:</span>{' '}
-                {toolInvocation.errorText || 'Søgning fejlede'}
+                <span className="font-bold">Error:</span>{' '}
+                {toolInvocation.errorText || 'Search failed'}
               </div>
             )}
           </div>

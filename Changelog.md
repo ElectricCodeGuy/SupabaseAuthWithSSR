@@ -27,7 +27,7 @@
   - Status indicators for loading, success, and error states
   - Base64 encoded URLs for proper handling of special characters in document names
 
-- **Website Search Tool**: New tool for searching web sources
+- **Website Search Tool**: New tool for searching web sources using Exa AI
   - Returns structured context with source URLs and titles
   - Collapsible UI with source attribution
   - Published date display for search results

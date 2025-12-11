@@ -1,7 +1,7 @@
 import { useState, useCallback, Fragment } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Menu, LucideIcon, ChevronDown, LogOut } from 'lucide-react';
+import { Menu, LucideIcon, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -176,7 +176,6 @@ export function ClientMobileNav({
                 <>
                   <Separator className="my-1" />
                   <div className="px-4 py-3 flex items-center gap-3 text-destructive">
-                    <LogOut className="w-5 h-5 shrink-0" />
                     <SignOut />
                   </div>
                 </>

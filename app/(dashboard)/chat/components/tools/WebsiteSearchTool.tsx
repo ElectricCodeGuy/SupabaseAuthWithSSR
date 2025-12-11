@@ -18,7 +18,7 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
-import { da } from 'date-fns/locale';
+import { enUS } from 'date-fns/locale';
 
 interface WebsiteSearchToolProps {
   toolInvocation: Extract<
@@ -86,14 +86,14 @@ export const WebsiteSearchTool: React.FC<WebsiteSearchToolProps> = ({
             <div className="flex-shrink-0">
               <Globe className="text-primary h-5 w-5" />
             </div>
-            <span className="text-sm font-medium  flex-grow text-left">
-              Søgning på websider
+            <span className="text-sm font-medium flex-grow text-left">
+              Web Search
             </span>
             {sources.length > 0 &&
               toolInvocation.state === 'output-available' && (
-                <span className="text-xs  mr-2">
-                  {sources.length} {sources.length === 1 ? 'kilde' : 'kilder'}{' '}
-                  fundet
+                <span className="text-xs mr-2">
+                  {sources.length} {sources.length === 1 ? 'source' : 'sources'}{' '}
+                  found
                 </span>
               )}
             <div className="flex-shrink-0">{getStatusIcon()}</div>
@@ -107,9 +107,9 @@ export const WebsiteSearchTool: React.FC<WebsiteSearchToolProps> = ({
             {query && (
               <div className="text-xs">
                 <span className="font-bold text-gray-700 dark:text-gray-300">
-                  Søgeord:
+                  Search query:
                 </span>{' '}
-                <span className=" dark:text-gray-400">{query}</span>
+                <span className="dark:text-gray-400">{query}</span>
               </div>
             )}
 
@@ -118,7 +118,7 @@ export const WebsiteSearchTool: React.FC<WebsiteSearchToolProps> = ({
               sources.length > 0 && (
                 <div className="space-y-2">
                   <div className="text-xs font-bold text-gray-700 dark:text-gray-300">
-                    Fundne kilder:
+                    Found sources:
                   </div>
                   <div className="space-y-2">
                     {sources.map((source, idx) => (
@@ -145,7 +145,7 @@ export const WebsiteSearchTool: React.FC<WebsiteSearchToolProps> = ({
                                   {format(
                                     new Date(source.publishedDate),
                                     'PPP',
-                                    { locale: da }
+                                    { locale: enUS }
                                   )}
                                 </div>
                               )}
@@ -164,16 +164,16 @@ export const WebsiteSearchTool: React.FC<WebsiteSearchToolProps> = ({
             {/* Loading state */}
             {(toolInvocation.state === 'input-streaming' ||
               toolInvocation.state === 'input-available') && (
-              <div className="text-xs  dark:text-gray-400 italic">
-                Søger efter relevante kilder...
+              <div className="text-xs dark:text-gray-400 italic">
+                Searching for relevant sources...
               </div>
             )}
 
             {/* Error */}
             {toolInvocation.state === 'output-error' && (
               <div className="text-xs text-red-600 dark:text-red-400">
-                <span className="font-bold">Fejl:</span>{' '}
-                {toolInvocation.errorText || 'Søgning fejlede'}
+                <span className="font-bold">Error:</span>{' '}
+                {toolInvocation.errorText || 'Search failed'}
               </div>
             )}
           </div>
