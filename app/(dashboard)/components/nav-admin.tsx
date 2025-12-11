@@ -59,7 +59,7 @@ export function NavAdmin() {
                 isActive={isAdminActive}
                 className="flex-1"
               >
-                <Link href="/profil/admin" prefetch={false}>
+                <Link href="/profil/admin">
                   <Shield />
                   <span>Admin Panel</span>
                 </Link>
@@ -77,7 +77,7 @@ export function NavAdmin() {
                   return (
                     <SidebarMenuSubItem key={index}>
                       <SidebarMenuSubButton asChild isActive={isActive}>
-                        <Link href={item.url} prefetch={false}>
+                        <Link href={item.url}>
                           <span>{item.title}</span>
                         </Link>
                       </SidebarMenuSubButton>

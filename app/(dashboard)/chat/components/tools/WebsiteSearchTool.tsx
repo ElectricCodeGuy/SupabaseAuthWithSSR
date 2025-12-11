@@ -16,7 +16,6 @@ import {
   AccordionTrigger
 } from '@/components/ui/accordion';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 
@@ -34,7 +33,6 @@ export const WebsiteSearchTool: React.FC<WebsiteSearchToolProps> = ({
 }) => {
   const query = toolInvocation.input?.query || '';
   const output = toolInvocation.output;
-  const router = useRouter();
   // Determine status icon based on state
   const getStatusIcon = () => {
     switch (toolInvocation.state) {
@@ -130,9 +128,6 @@ export const WebsiteSearchTool: React.FC<WebsiteSearchToolProps> = ({
                           href={`?url=${source.url}`}
                           className="group flex items-start gap-2 hover:no-underline"
                           prefetch={false}
-                          onMouseEnter={() =>
-                            router.prefetch(`?url=${source.url}`)
-                          }
                         >
                           <ExternalLink className="h-3 w-3 mt-0.5 text-gray-400 group-hover:text-primary flex-shrink-0" />
                           <div className="flex-grow min-w-0">

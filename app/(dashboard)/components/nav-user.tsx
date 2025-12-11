@@ -119,7 +119,7 @@ export function NavUser({
             <DropdownMenuGroup>
               {!hasActiveSubscription && (
                 <DropdownMenuItem asChild>
-                  <Link title="Køb abonnement" prefetch={false} href="/kob">
+                  <Link title="Køb abonnement" href="/kob">
                     <CreditCard />
                     Køb Abonnement
                   </Link>

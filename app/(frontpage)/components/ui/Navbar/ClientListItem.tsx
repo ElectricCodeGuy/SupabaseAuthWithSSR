@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { NavigationMenuLink } from '@/components/ui/navigation-menu';
 import { cn } from '@/lib/utils';
@@ -23,7 +23,6 @@ export function ClientListItem({
   icon: Icon
 }: ClientListItemProps) {
   const pathname = usePathname();
-  const router = useRouter();
 
   const isActive = useCallback(() => {
     if (!href) return false;
@@ -41,8 +40,6 @@ export function ClientListItem({
       <NavigationMenuLink asChild>
         <Link
           href={href}
-          onMouseEnter={() => router.prefetch(href)}
-          prefetch={false}
           className={cn(
             'block select-none p-2 rounded-md leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground',
             isActive() ? 'font-semibold text-primary bg-accent' : ''

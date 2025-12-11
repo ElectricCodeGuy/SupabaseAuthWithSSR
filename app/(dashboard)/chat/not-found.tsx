@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 
 export default function ChatNotFound() {
   return (
-    <div className="flex h-[calc(100vh-48px)] w-full items-center justify-center bg-gradient-to-b from-background to-muted/20">
+    <div className="flex h-screen w-full items-center justify-center bg-gradient-to-b from-background to-muted/20">
       <div className="flex flex-col items-center space-y-8 text-center px-4 max-w-lg">
         <div className="relative">
           <div className="absolute inset-0 rounded-full bg-primary/10 blur-2xl" />

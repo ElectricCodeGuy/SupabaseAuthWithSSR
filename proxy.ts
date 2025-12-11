@@ -35,16 +35,7 @@ export async function proxy(request: NextRequest) {
   );
 
   // Get user session
-  const { data } = await supabase.auth.getClaims();
-  const session = data?.claims || null;
-
-  // Handle route-specific redirects
-  const currentRoute = request.nextUrl.pathname;
-  if (currentRoute.startsWith('/protected') && !session) {
-    const redirectUrl = new URL(request.url);
-    redirectUrl.pathname = '/signin';
-    return NextResponse.redirect(redirectUrl);
-  }
+  await supabase.auth.getClaims();
 
   return response;
 }

@@ -104,7 +104,6 @@ export function ClientMobileNav({
                                   <SheetClose asChild>
                                     <Link
                                       href={subItem.href}
-                                      prefetch={false}
                                       title={subItem.text}
                                       target={
                                         subItem.external ? '_blank' : undefined
@@ -146,7 +145,6 @@ export function ClientMobileNav({
                       <SheetClose asChild>
                         <Link
                           href={item.href!}
-                          prefetch={false}
                           title={item.text}
                           target={item.external ? '_blank' : undefined}
                           rel={

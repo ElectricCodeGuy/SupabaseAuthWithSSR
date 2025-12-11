@@ -41,7 +41,7 @@ const WebsiteViewer: React.FC<WebsiteViewerProps> = ({ url }) => {
                 className="m-0.5 rounded-md p-1 h-7 w-7 bg-background text-foreground transition-all duration-200 
                          hover:-translate-y-[1px] hover:bg-background hover:shadow-md hover:text-primary hover:border-primary"
               >
-                <Link href={pathname} replace prefetch={false}>
+                <Link href={pathname} replace>
                   <X className="h-4 w-4 font-bold" />
                 </Link>
               </Button>
