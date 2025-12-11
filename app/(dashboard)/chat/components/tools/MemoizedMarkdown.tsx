@@ -6,7 +6,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import type { Options as HighlightOptions } from 'rehype-highlight';
 import Link from 'next/link';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, Copy, Check } from 'lucide-react';
 import { encodeBase64 } from '@/utils/base64';
 import Image from 'next/image';
 import useSWRImmutable from 'swr/immutable';
@@ -148,6 +148,80 @@ const ExternalLinkWithHovercard = ({
     </HoverCard>
   );
 };
+
+// Code Block Component with copy button and line numbers
+const CodeBlock = ({
+  language,
+  code,
+  className,
+  children
+}: {
+  language: string;
+  code: string;
+  className?: string;
+  children: React.ReactNode;
+}) => {
+  const [copied, setCopied] = useState(false);
+  const lines = code.split('\n');
+  const lineCount = lines.length;
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="rounded-lg overflow-hidden border border-zinc-800 bg-zinc-950 my-3">
+      <div className="flex items-center justify-between px-4 py-2 bg-zinc-900 border-b border-zinc-800">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-red-500" />
+          <div className="w-3 h-3 rounded-full bg-yellow-500" />
+          <div className="w-3 h-3 rounded-full bg-green-500" />
+          {language && (
+            <span className="ml-2 text-xs text-zinc-400 uppercase">
+              {language}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleCopy}
+            className="flex items-center gap-1 text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
+            title="Copy code"
+          >
+            {copied ? (
+              <>
+                <Check className="w-3.5 h-3.5" />
+                <span>Copied!</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-3.5 h-3.5" />
+                <span>Copy</span>
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+      <div className="flex overflow-x-auto text-sm">
+        {/* Line numbers */}
+        <div className="flex-shrink-0 py-4 pl-4 pr-3 text-right select-none border-r border-zinc-800">
+          {Array.from({ length: lineCount }, (_, i) => (
+            <div key={i} className="text-zinc-600 leading-relaxed text-xs">
+              {i + 1}
+            </div>
+          ))}
+        </div>
+        {/* Code content */}
+        <pre className="m-0 flex-1 overflow-x-auto">
+          <code className={className}>{children}</code>
+        </pre>
+      </div>
+    </div>
+  );
+};
+
 // Memoized component for rendering a single markdown block
 const MemoizedMarkdownBlock = memo(
   ({ content }: { content: string }) => {
@@ -310,7 +384,7 @@ const MemoizedMarkdownBlock = memo(
             if (inline) {
               return (
                 <code
-                  className={`bg-muted px-1 py-0.5 rounded ${className}`}
+                  className={`bg-zinc-800 dark:bg-zinc-800 text-zinc-100 px-1.5 py-0.5 rounded text-sm font-mono ${className}`}
                   {...props}
                 >
                   {children}
@@ -318,17 +392,29 @@ const MemoizedMarkdownBlock = memo(
               );
             }
 
+            // Extract text content for copy button
+            const getTextContent = (node: React.ReactNode): string => {
+              if (typeof node === 'string') return node;
+              if (typeof node === 'number') return String(node);
+              if (Array.isArray(node)) return node.map(getTextContent).join('');
+              if (node && typeof node === 'object' && 'props' in node) {
+                const element = node as {
+                  props?: { children?: React.ReactNode };
+                };
+                return getTextContent(element.props?.children);
+              }
+              return '';
+            };
+            const codeString = getTextContent(children).replace(/\n$/, '');
+
             return (
-              <div className="relative rounded w-full pt-5 my-2">
-                <span className="absolute top-0 left-2 text-xs uppercase text-muted-foreground">
-                  {language}
-                </span>
-                <pre className="m-0 overflow-x-auto bg-muted p-4 rounded-md">
-                  <code className={className} {...props}>
-                    {children}
-                  </code>
-                </pre>
-              </div>
+              <CodeBlock
+                language={language}
+                code={codeString}
+                className={className}
+              >
+                {children}
+              </CodeBlock>
             );
           }
         }}

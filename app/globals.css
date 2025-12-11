@@ -1,6 +1,14 @@
 @import 'tailwindcss';
+@import 'highlight.js/styles/github-dark.css';
 
 @plugin 'tailwindcss-animate';
+
+/* Override highlight.js background to be transparent */
+pre code.hljs,
+code.hljs,
+.hljs {
+  background: transparent;
+}
 
 @custom-variant dark (&:is(.dark *));
 
