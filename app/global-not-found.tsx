@@ -1,5 +1,4 @@
 import React from 'react';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { FileX, Home } from 'lucide-react';
 import { Inter } from 'next/font/google';
@@ -46,10 +45,10 @@ const Custom404: React.FC = () => {
             </p>
 
             <Button asChild>
-              <Link href="/">
+              <a href="/">
                 <Home className="mr-2 h-4 w-4" />
                 Back to Home
-              </Link>
+              </a>
             </Button>
           </div>
           <Footer />

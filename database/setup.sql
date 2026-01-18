@@ -149,6 +149,7 @@ CREATE TABLE IF NOT EXISTS public.message_parts (
   tool_searchuserdocument_output jsonb NULL,
   tool_searchuserdocument_errortext text NULL,
   tool_searchuserdocument_providerexecuted boolean NULL,
+  tool_searchuserdocument_approval jsonb NULL,
 
   -- Tool: websiteSearchTool fields
   tool_websitesearchtool_toolcallid uuid NULL,
@@ -157,6 +158,7 @@ CREATE TABLE IF NOT EXISTS public.message_parts (
   tool_websitesearchtool_output jsonb NULL,
   tool_websitesearchtool_errortext text NULL,
   tool_websitesearchtool_providerexecuted boolean NULL,
+  tool_websitesearchtool_approval jsonb NULL,
 
   -- Provider metadata
   providermetadata jsonb NULL,

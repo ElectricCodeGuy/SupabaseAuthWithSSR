@@ -80,6 +80,7 @@ function reconstructPart(
     case 'tool-searchUserDocument': {
       const toolPart: ToolUIPart<UITools> = {
         type: 'tool-searchUserDocument',
+        approval: (part.tool_searchuserdocument_approval as any) || undefined,
         toolCallId: part.tool_searchuserdocument_toolcallid || '',
         state: (part.tool_searchuserdocument_state as any) || 'input-available',
         input: part.tool_searchuserdocument_input as any,
@@ -93,6 +94,7 @@ function reconstructPart(
     case 'tool-websiteSearchTool': {
       const toolPart: ToolUIPart<UITools> = {
         type: 'tool-websiteSearchTool',
+        approval: (part.tool_websitesearchtool_approval as any) || undefined,
         toolCallId: part.tool_websitesearchtool_toolcallid || '',
         state: (part.tool_websitesearchtool_state as any) || 'input-available',
         input: part.tool_websitesearchtool_input as any,
@@ -196,6 +198,8 @@ export async function fetchChat(chatId: string) {
         tool_websitesearchtool_output,
         tool_websitesearchtool_errortext,
         tool_websitesearchtool_providerexecuted,
+        tool_searchuserdocument_approval,
+        tool_websitesearchtool_approval,
         providermetadata
       )
     `

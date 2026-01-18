@@ -25,7 +25,7 @@ async function processFile(pages: string[], fileName: string, userId: string) {
   }
 
   const combinedDocumentContent = selectedDocuments.join('\n\n');
-  const { object } = await generateDocumentMetadata(combinedDocumentContent);
+  const { output } = await generateDocumentMetadata(combinedDocumentContent);
 
   const totalPages = pages.length;
 
@@ -51,10 +51,10 @@ async function processFile(pages: string[], fileName: string, userId: string) {
       {
         user_id: userId,
         title: fileName.trim(),
-        ai_title: object.descriptiveTitle,
-        ai_description: object.shortDescription,
-        ai_maintopics: object.mainTopics,
-        ai_keyentities: object.keyEntities,
+        ai_title: output.descriptiveTitle,
+        ai_description: output.shortDescription,
+        ai_maintopics: output.mainTopics,
+        ai_keyentities: output.keyEntities,
         total_pages: totalPages,
         file_path: `${userId}/${fileName}`,
         created_at: new Date().toISOString()
@@ -92,25 +92,25 @@ async function processFile(pages: string[], fileName: string, userId: string) {
           const { combinedPreliminaryAnswers } =
             await processDocumentWithAgentChains(
               doc,
-              object.descriptiveTitle,
-              object.shortDescription,
-              object.mainTopics
+              output.descriptiveTitle,
+              output.shortDescription,
+              output.mainTopics
             );
 
           const combinedContent = combinedPreliminaryAnswers
             ? `
       ${fileName} \n
-      ${object.descriptiveTitle} \n
-      ${object.shortDescription} \n
-      ${object.mainTopics} \n
-      ${object.keyEntities} \n\n
+      ${output.descriptiveTitle} \n
+      ${output.shortDescription} \n
+      ${output.mainTopics} \n
+      ${output.keyEntities} \n\n
       
       ${doc} \n\n
       
       ${combinedPreliminaryAnswers}
       `
             : `
-      ${object.descriptiveTitle} \n\n
+      ${output.descriptiveTitle} \n\n
       
       ${doc}
       `;
@@ -196,17 +196,17 @@ async function processDocumentWithAgentChains(
   try {
     const result = await preliminaryAnswerChainAgent(prompt);
 
-    const { object } = result;
+    const { output } = result;
 
     // If tags is potentially undefined, use nullish coalescing
-    const tagTaxProvisions = object.tags.join(', ') || '';
+    const tagTaxProvisions = output.tags.join(', ') || '';
 
     const combinedPreliminaryAnswers = [
-      object.preliminary_answer_1,
-      object.preliminary_answer_2,
+      output.preliminary_answer_1,
+      output.preliminary_answer_2,
       tagTaxProvisions,
-      object.hypothetical_question_1,
-      object.hypothetical_question_2
+      output.hypothetical_question_1,
+      output.hypothetical_question_2
     ].join('\n');
     return { combinedPreliminaryAnswers };
   } catch (error) {

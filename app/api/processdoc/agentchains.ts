@@ -1,5 +1,5 @@
 import 'server-only';
-import { generateObject } from 'ai';
+import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import { google } from '@ai-sdk/google';
 
@@ -35,16 +35,16 @@ export const preliminaryAnswerChainAgent = async (content: string) => {
   const SystemPrompt =
     'Given the content provided below, perform a comprehensive analysis. Generate two preliminary answers, tag key concepts or topics, and generate two hypothetical questions. Ensure all outputs address specific elements mentioned in the text. Focus on interpreting key themes, implications of specific concepts, and potential real-life applications or consequences. Answers and questions should be detailed and thought-provoking. The output language should be in the same as the input text.';
 
-  const { object, usage } = await generateObject({
-    model: google('gemini-2.5-flash-preview-09-2025-lite'),
+  const { output, usage } = await generateText({
+    model: google('gemini-3-flash-preview'),
     system: SystemPrompt,
     prompt: content,
-    schema: contentAnalysisSchema,
+    output: Output.object({ schema: contentAnalysisSchema }),
     abortSignal: AbortSignal.timeout(15000), // 15 seconds timeout
     temperature: 0
   });
 
-  return { object, usage };
+  return { output, usage };
 };
 
 const documentMetadataSchema = z.object({
@@ -86,13 +86,13 @@ export const generateDocumentMetadata = async (content: string) => {
   The output language should be in the same as the input text.
   `;
 
-  const { object, usage, finishReason } = await generateObject({
-    model: google('gemini-2.5-flash-preview-09-2025-lite'),
+  const { output, usage, finishReason } = await generateText({
+    model: google('gemini-3-flash-preview'),
     system: SystemPrompt,
     prompt: content,
-    schema: documentMetadataSchema,
+    output: Output.object({ schema: documentMetadataSchema }),
     temperature: 0
   });
 
-  return { object, usage, finishReason };
+  return { output, usage, finishReason };
 };

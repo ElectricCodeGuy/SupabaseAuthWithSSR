@@ -278,7 +278,7 @@ This SQL statement creates a trigger named `on_auth_user_created` that executes 
     tool_searchuserdocument_output jsonb NULL,
     tool_searchuserdocument_errortext text NULL,
     tool_searchuserdocument_providerexecuted boolean NULL,
-
+    tool_searchuserdocument_approval jsonb NULL,
     -- Tool: websiteSearchTool fields
     tool_websitesearchtool_toolcallid uuid NULL,
     tool_websitesearchtool_state text NULL,
@@ -286,6 +286,7 @@ This SQL statement creates a trigger named `on_auth_user_created` that executes 
     tool_websitesearchtool_output jsonb NULL,
     tool_websitesearchtool_errortext text NULL,
     tool_websitesearchtool_providerexecuted boolean NULL,
+    tool_websitesearchtool_approval jsonb NULL,
 
     -- Provider metadata
     providermetadata jsonb NULL,
@@ -708,7 +709,6 @@ While design patterns like Factory Pattern and other "clean code" principles hav
 
 1. **Shared Code (Minimal)**
    Only truly universal utilities are shared:
-
    - `getSession()` for auth
    - Type definitions for database schema
    - Error boundary components

@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
 
   if (
     selectedModel === 'gemini-3-pro-preview' ||
-    selectedModel === 'gemini-2.5-flash-preview-09-2025'
+    selectedModel === 'gemini-3-flash-preview'
   ) {
     providerOptions.google = {
       thinkingConfig: {
@@ -134,7 +134,7 @@ export async function POST(req: NextRequest) {
   const result = streamText({
     model: getModel(selectedModel),
     system: systemPrompt,
-    messages: convertToModelMessages(messages),
+    messages: await convertToModelMessages(messages),
     abortSignal: signal,
     providerOptions,
     tools: {

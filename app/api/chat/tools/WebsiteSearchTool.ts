@@ -1,7 +1,6 @@
 // app/api/chat/tools/WebsiteSearchTool.ts
-import { tool } from 'ai';
+import { generateText, tool, Output, pruneMessages } from 'ai';
 import { z } from 'zod';
-import { generateObject, pruneMessages } from 'ai';
 import { google } from '@ai-sdk/google';
 
 // Rough token estimate: ~4 characters per token
@@ -109,17 +108,17 @@ export const websiteSearchTool = tool({
       Besked som skal optimeres: ${args.query}
       `;
 
-    const { object } = await generateObject({
+    const { output } = await generateText({
       model: google('gemini-2.5-flash'),
       system: queryOptimizationPrompt,
-      schema: websiteSearchSchema,
+      output: Output.object({ schema: websiteSearchSchema }),
       messages: prunedMessages
     });
 
     const websiteQueries = [
-      object.queryVariation1,
-      object.queryVariation2,
-      object.queryVariation3
+      output.queryVariation1,
+      output.queryVariation2,
+      output.queryVariation3
     ].filter((query) => query !== undefined && query.trim() !== '');
 
     // Execute searches for each query variation using Exa API

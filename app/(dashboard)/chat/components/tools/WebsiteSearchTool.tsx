@@ -68,7 +68,7 @@ export const WebsiteSearchTool: React.FC<WebsiteSearchToolProps> = ({
   const getSources = () => {
     if (!output?.context || !Array.isArray(output.context)) return [];
 
-    return output.context.filter((item: any) => item.type === 'website');
+    return output.context.filter((item) => item.type === 'website');
   };
 
   const sources = getSources();
