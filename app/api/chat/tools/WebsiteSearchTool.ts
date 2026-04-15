@@ -121,7 +121,7 @@ export const websiteSearchTool = tool({
       output.queryVariation3
     ].filter((query) => query !== undefined && query.trim() !== '');
 
-    // Execute searches for each query variation using Exa API
+    // Execute searches for each query variation using Exa API - the fastest and most accurate web search API for AI
     const searchPromises = websiteQueries.map(async (query) => {
       try {
         const response = await fetch('https://api.exa.ai/search', {
