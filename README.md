@@ -1,20 +1,21 @@
 # Supabase Auth with SSR + RAG + AI Web Search + Autonomous Document Search
 
-## Version 3.0.0
+## Version 4.0.0
 
-This project provides a complete authentication system with Supabase SSR, featuring an AI chat interface with autonomous document search and web search capabilities. The AI decides when to search your uploaded documents or the web based on the context of your questions.
+A complete authentication system built on **Supabase SSR**, featuring an AI chat
+interface with autonomous document search and web search. The AI decides on its
+own when to search your uploaded documents or the web based on the context of
+your questions.
 
-### Key Features in v3.0.0
+### Key Features
 
-- **Autonomous Document Search**: AI automatically decides when to search through your uploaded documents - no manual file selection needed
-- **Web Search Integration**: Real-time web search using Tavily AI for up-to-date information
-- **Dashboard Route Groups**: Clean separation between public pages and authenticated dashboard (`/chat`, `/filer`)
-- **Incremental Message Saving**: Messages saved in real-time as AI responds
-- **Modern Navigation**: shadcn NavigationMenu with dropdown menus
+- **Autonomous Document Search** — the AI automatically searches your uploaded documents when relevant. No manual file selection needed.
+- **Web Search** — real-time web search powered by Exa AI for up-to-date information.
+- **Multi-Model Support** — switch between GPT-5, GPT-5 Mini, OpenAI O3, Claude 4.5 Sonnet, Gemini 2.5 Pro, and Gemini 2.5 Flash.
+- **Incremental Message Saving** — messages are saved to the database part-by-part as the AI responds, preserving the exact order of tools, reasoning, and text.
+- **Dashboard Route Groups** — clean separation between public pages and the authenticated dashboard (`/chat`, `/filer`).
 
-## Project Showcase
-
-### Images
+## Showcase
 
 <div style="display: flex; justify-content: center; align-items: center; flex-wrap: wrap;">
   <img src="public/images/image1.png" alt="Front Page 1" style="width: 45%; margin: 10px;">
@@ -27,65 +28,39 @@ This project provides a complete authentication system with Supabase SSR, featur
   <img src="public/images/image9.png" alt="RAG Chat" style="width: 45%; margin: 10px;">
 </div>
 
-### Videos
-
-You can find the videos located inside the public folder!
+Demo videos are available in the `public/` folder.
 
 ## Table of Contents
 
-- [Features](#features)
+- [Application Structure](#application-structure)
 - [Getting Started](#getting-started)
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
   - [Database Setup](#database-setup)
-  - [Document Processing Setup](#document-processing-setup)
-  - [Storage Setup and RLS](#storage-setup-and-rls)
+  - [Storage Setup](#storage-setup)
   - [Environment Variables](#environment-variables)
+- [Generating Database Types](#generating-database-types)
 - [Email Templates](#email-templates)
-  - [Confirm Your Signup](#confirm-your-signup)
-  - [Invite User Email](#invite-user-email)
-  - [Magic Link Email](#magic-link-email)
-  - [Confirm Email Change](#confirm-email-change)
-  - [Reset Password Email](#reset-password-email)
 - [Code Structure and Philosophy](#code-structure-and-philosophy)
-  - [Code Organization Over Design Patterns](#code-organization-over-design-patterns)
-  - [Intentional Code Duplication Examples](#intentional-code-duplication-examples)
 - [License](#license)
 
-## Features
+## Application Structure
 
-- **Robust and easy authentication**: Utilize Supabase's auth capabilities alongside SSR for security.
-- **Performance**: Leverage server-side rendering for faster load times and improved user experience.
-- **Next.js Integration**: Specifically designed for easy integration with Next.js 15 projects.
-
-### AI Chat Features
-
-- **Autonomous Document Search Tool**: The AI automatically searches through your uploaded documents when relevant to your question. No need to manually select files - the tool fetches all user documents from the database and performs semantic search using Voyage AI embeddings.
-
-- **Website Search Tool**: Real-time web search powered by Exa AI. The AI decides when to search the web for current information, returning sources with titles, URLs, and publication dates.
-
-- **Multi-Model Support**: Switch between GPT-5, GPT-5 Mini, OpenAI O3, Claude 4.5 Sonnet, Gemini 2.5 Pro, and Gemini 2.5 Flash.
-
-- **Incremental Message Saving**: Messages are saved to the database incrementally as each AI step completes, preserving the exact order of tools, reasoning, and text.
-
-- **Tool Output Display**: Collapsible accordion UI showing search results with clickable links to documents and web sources.
-
-### Application Structure
-
-The application uses Next.js route groups for clean separation:
+The app uses Next.js route groups for a clean separation between public and
+authenticated areas:
 
 ```
 app/
 ├── (dashboard)/          # Authenticated routes
-│   ├── chat/            # AI chat interface
-│   │   ├── [id]/        # Individual chat sessions
-│   │   └── components/  # Chat UI components
-│   └── filer/           # File management
-├── (frontpage)/         # Public routes
-│   └── components/      # Landing page components
+│   ├── chat/             # AI chat interface
+│   │   ├── [id]/         # Individual chat sessions
+│   │   └── components/   # Chat UI components
+│   └── filer/            # File management
+├── (frontpage)/          # Public routes
+│   └── components/       # Landing page components
 └── api/
     └── chat/
-        └── tools/       # AI tools (documentChat, websiteSearch)
+        └── tools/        # AI tools (documentChat, websiteSearch)
 ```
 
 ## Getting Started
@@ -94,563 +69,256 @@ app/
 
 - A [Supabase account](https://supabase.io/)
 
-**If you want to use the AI features the following keys are needed**
+**The AI features require the following API keys:**
 
-- A LlamaCloud account [LlamaCloud](https://cloud.llamaindex.ai/) (for parsing pdf files into markdown)
-- An OpenAI API key [OpenAI API](https://platform.openai.com/docs/overview)
-- An Anthropic API key [Anthropic](https://console.anthropic.com/dashboard)
-- A Voyage AI API key [Voyage AI](https://www.voyageai.com/) (for document embeddings with voyage-3-large model)
-- An Exa API key [Exa AI](https://exa.ai/) (for web search functionality)
+- [Mistral AI](https://mistral.ai/) — OCR for uploaded PDFs (`mistral-ocr-latest`)
+- [OpenAI](https://platform.openai.com/docs/overview)
+- [Anthropic](https://console.anthropic.com/dashboard)
+- [Voyage AI](https://www.voyageai.com/) — document embeddings (`voyage-4-large`, 1024 dimensions)
+- [Exa AI](https://exa.ai/) — web search
 
 ### Installation
 
-1. **Clone the Repository**
-
-   ```bash
-   git clone https://github.com/ElectricCodeGuy/SupabaseAuthWithSSR.git
-   ```
-
-2. **Navigate to the Project Directory**
-
-   ```bash
-   cd SupabaseAuthWithSSR
-   ```
-
-3. **Install Required Packages**
-
-   ```bash
-   npm install
-   ```
+```bash
+git clone https://github.com/ElectricCodeGuy/SupabaseAuthWithSSR.git
+cd SupabaseAuthWithSSR
+npm install
+```
 
 ### Database Setup
 
-Before launching your application, you must configure the database schema within Supabase.
+The entire schema — tables, indexes, RLS policies, the trigger that creates a
+`public.users` row on signup, the storage policies, and the `match_documents`
+similarity-search function — lives in a single file:
 
-#### Quick Setup (Recommended)
-
-Run the complete setup SQL file located at `database/setup.sql` in the Supabase SQL Editor. This file contains all tables, indexes, RLS policies, and functions needed for the application.
-
-```bash
-# The setup file is located at:
+```
 database/setup.sql
 ```
 
-#### Manual Setup (Step by Step)
+**To set it up, open the Supabase SQL Editor and run [`database/setup.sql`](database/setup.sql).**
 
-If you prefer to set up tables individually, follow these steps:
+That's it — there is no longer any need to copy SQL out of this README. Everything
+the application needs is in that one file, and it is safe to re-run (every
+statement uses `IF NOT EXISTS` / `CREATE OR REPLACE`).
 
-1. **Create the Users Table**
+After running it:
+
+1. Sign up at `http://localhost:3000/signup` with a real email address.
+2. Open the verification email from Supabase and click the confirmation link to activate your account.
+
+> The schema covers users, chat sessions (including the per-chat `is_favorite` and
+> `is_public` share flags), incremental `message_parts`, document metadata, and the
+> `pgvector` embeddings table with an HNSW index tuned for sub-second similarity
+> search.
+
+#### Tuning the HNSW vector index
+
+Document embeddings are searched through an [HNSW](https://github.com/pgvector/pgvector#hnsw)
+index defined in `database/setup.sql`:
 
 ```sql
--- Create users table
-create table users (
-  id uuid references auth.users not null primary key,
-  full_name text,
-  email text
-);
-
--- Enable Row Level Security (RLS)
-alter table public.users enable row level security;
-
--- Create RLS policies for users table
-create policy "Users can insert own data"
-on public.users
-for insert
-to public
-with check (id = auth.uid());
-
-create policy "Users can update own data"
-on public.users
-for update
-to public
-using (id = auth.uid())
-with check (id = auth.uid());
-
-create policy "Users can view own data"
-on public.users
-for select
-to public
-using (id = auth.uid());
+WITH (m = '16', ef_construction = '200')
 ```
 
-This SQL statement creates a `users` table with columns for storing user data such as `id`, `full_name` and `email`. The `id` column is a foreign key referencing the `auth.users` table. It also enables RLS for the users table allowing users to read, insert and update their own data
+- **`m = 16`** is the pgvector default and is the right choice in almost every
+  case — leave it alone unless you have measured a recall problem. `m` controls
+  how many connections each node keeps per layer, which is the main driver of
+  index size. Raising it to `m = 32` roughly **doubles the index size** while
+  giving little recall improvement on typical datasets.
+- **`ef_construction = 200`** is the size of the candidate list used while
+  _building_ the index. Higher values build a higher-quality graph (better
+  recall) at the cost of slower index builds; it does not affect the final index
+  size.
+- **Keep the whole index in memory.** HNSW is only fast when the entire index
+  fits in Postgres' buffer cache, which is roughly **25% of your instance's
+  total RAM**. If the index grows larger than that, Postgres has to read parts of
+  it from disk on each query and latency can degrade significantly. So as your
+  document volume grows, watch the index size against your available RAM before
+  reaching for a larger `m`.
 
-2. **Create a Trigger Function**
+##### Shrinking the index with `halfvec`
 
-   ```sql
-   create function public.handle_new_user()
-   returns trigger as $$
-   begin
-    insert into public.users (id, full_name, email)
-    values (
-      new.id,
-      new.raw_user_meta_data->>'full_name',
-      new.email
-    );
-    return new;
-   end;
-   $$ language plpgsql security definer;
-   ```
-
-This SQL function is a trigger function that automatically inserts a new user entry into the `public.users` table when a new user signs up via Supabase Auth. It extracts the `id`, `full_name` and `email` from the `auth.users` table and inserts them into the corresponding columns in the `public.users` table.
-
-3. **Create a Trigger**
-
-   ```sql
-   create trigger on_auth_user_created
-     after insert on auth.users
-     for each row execute procedure public.handle_new_user();
-   ```
-
-This SQL statement creates a trigger named `on_auth_user_created` that executes the `public.handle_new_user()` function after each new user is inserted into the `auth.users` table.
-
-4. **Sign Up for an Account**
-
-- Navigate to `http://localhost:3000/signup` in your web browser.
-- Use the sign-up form to create an account. Ensure you use a valid email address that you have access to, as you'll need to verify it in the next step.
-
-5. **Verify Your Email**
-
-- After signing up, Supabase will send an email to the address you provided. Check your inbox for an email from Supabase or your application.
-- Open the email and click on the verification link to confirm your email address. This step is crucial for activating your account and ensuring that you can log in and access the application's features.
-
-6. **Make the rest of the tables, RLS and RPC**
+If the index gets too large to keep in memory anyway — roughly, switch the index to `halfvec` (16-bit half-precision floats).
+This **cuts the index size roughly in half** and, per pgvector's official
+benchmarks, only reduces recall by **about 1%**. You build the index over a cast
+of the existing `vector(1024)` column, so the stored data does not change:
 
 ```sql
+DROP INDEX IF EXISTS public.user_documents_vec_embedding_idx;
 
+CREATE INDEX user_documents_vec_embedding_idx
+  ON public.user_documents_vec
+  USING hnsw ((embedding::halfvec(1024)) halfvec_l2_ops)
+  WITH (m = '16', ef_construction = '200');
+```
 
-  -- Chat Sessions Table
-  create table
-    public.chat_sessions (
-      id uuid not null default extensions.uuid_generate_v4 (),
-      user_id uuid not null,
-      created_at timestamp with time zone not null default current_timestamp,
-      updated_at timestamp with time zone not null default current_timestamp,
-      chat_title null,
-      constraint chat_sessions_pkey primary key (id),
-      constraint chat_sessions_user_id_fkey foreign key (user_id) references users (id)
-    ) tablespace pg_default;
+> ⚠️ **Remember to update the query too.** The `match_documents` function in
+> `database/setup.sql` must also cast to `halfvec` for the planner to use this
+> index — i.e. order by `embedding::halfvec(1024) <=> query_embedding::halfvec(1024)`.
+> If you switch the index to `halfvec`, update the function in the same migration.
 
-  create index if not exists idx_chat_sessions_user_id on public.chat_sessions using btree (user_id) tablespace pg_default;
+##### HNSW indexes cannot be filtered
 
-  create index if not exists chat_sessions_created_at_idx on public.chat_sessions using btree (created_at) tablespace pg_default;
+This is the big one. **An HNSW index is only used when the query has no `WHERE`
+filter on the table** — it just needs the vector distance `ORDER BY` and a `LIMIT`
+(exactly the shape `match_documents` already uses). The moment you add a `WHERE`
+condition on another column, Postgres can no longer use the index and falls back
+to a sequential scan.
 
-  -- Message Parts Table (NEW - Replaces chat_messages for incremental saving)
-  -- This table stores individual message parts (text, tools, reasoning, etc.)
-  -- allowing for incremental saving and proper ordering of AI responses
-  create table public.message_parts (
-    id uuid NOT NULL DEFAULT gen_random_uuid(),
-    chat_session_id uuid NOT NULL,
-    message_id uuid NOT NULL,
-    role text NOT NULL,
-    type text NOT NULL,
-    "order" integer NOT NULL DEFAULT 0,
-    created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+If you need to filter, create a **separate partial HNSW index per filter value**.
+For example, if the table had a `category` column that can be `A`, `B`, or `C`:
 
-    -- Text part fields
-    text_text text NULL,
-    text_state text NULL DEFAULT 'done',
+```sql
+-- One index per value the query will filter on
+CREATE INDEX ... USING hnsw (embedding ...) WHERE category = 'A';
+CREATE INDEX ... USING hnsw (embedding ...) WHERE category = 'B';
+CREATE INDEX ... USING hnsw (embedding ...) WHERE category = 'C';
+```
 
-    -- Reasoning part fields
-    reasoning_text text NULL,
-    reasoning_state text NULL DEFAULT 'done',
+Postgres then picks the matching partial index when the query filters on that
+exact value. If you also need an **unfiltered global search**, you still need the
+plain index with no `WHERE` clause as well.
 
-    -- File part fields
-    file_mediatype text NULL,
-    file_filename text NULL,
-    file_url text NULL,
+**When do you actually need all this?** Vector search works _without_ any index —
+it just does a sequential scan. That is perfectly fine for small tables, but it
+starts getting slow somewhere around **50k–100k rows**. So the practical rule:
 
-    -- Source URL part fields
-    source_url_id text NULL,
-    source_url_url text NULL,
-    source_url_title text NULL,
+- Keep **one global (unfiltered) index** — that is the one in `setup.sql`.
+- Only add **per-filter partial indexes** for the specific filter values whose row
+  counts climb past ~50k–100k. Below that, the sequential scan is good enough and
+  not worth the extra index size.
 
-    -- Source Document part fields
-    source_document_id text NULL,
-    source_document_mediatype text NULL,
-    source_document_title text NULL,
-    source_document_filename text NULL,
+The exact crossover point depends on your RAM and CPU. As a rough sizing guide:
+**do not run below 16 GB RAM and 4 CPU cores once you are above ~100k rows** — on
+smaller instances vector queries can spike to **3–5 second** response times.
 
-    -- Tool: searchUserDocument fields
-    tool_searchuserdocument_toolcallid uuid NULL,
-    tool_searchuserdocument_state text NULL,
-    tool_searchuserdocument_input jsonb NULL,
-    tool_searchuserdocument_output jsonb NULL,
-    tool_searchuserdocument_errortext text NULL,
-    tool_searchuserdocument_providerexecuted boolean NULL,
-    tool_searchuserdocument_approval jsonb NULL,
-    -- Tool: websiteSearchTool fields
-    tool_websitesearchtool_toolcallid uuid NULL,
-    tool_websitesearchtool_state text NULL,
-    tool_websitesearchtool_input jsonb NULL,
-    tool_websitesearchtool_output jsonb NULL,
-    tool_websitesearchtool_errortext text NULL,
-    tool_websitesearchtool_providerexecuted boolean NULL,
-    tool_websitesearchtool_approval jsonb NULL,
+##### Iterative scans and "relaxed" ordering (and why I avoid it)
 
-    -- Provider metadata
-    providermetadata jsonb NULL,
+pgvector has another answer to the filtering problem above:
+[**iterative index scans**](https://github.com/pgvector/pgvector#iterative-index-scans).
+The issue it tries to solve is that an HNSW scan returns its top-`k` candidates
+_first_ and the `WHERE` filter is applied _afterwards_ — so if your filter only
+matches a small fraction of rows, you can get back far fewer results than your
+`LIMIT` asked for. With iterative scans on, Postgres keeps re-scanning the index
+for more candidates until it has collected enough rows that satisfy the filter.
 
-    -- Constraints
-    CONSTRAINT message_parts_pkey PRIMARY KEY (id),
-    CONSTRAINT message_parts_chat_session_id_fkey FOREIGN KEY (chat_session_id)
-      REFERENCES chat_sessions (id) ON DELETE CASCADE,
-    CONSTRAINT message_parts_role_check CHECK (
-      role = ANY (ARRAY['user'::text, 'assistant'::text, 'system'::text])
-    ),
-  ) TABLESPACE pg_default;
+It comes in two modes (off by default — you opt in per session):
 
-  -- Create indexes for performance
-  CREATE INDEX idx_message_parts_chat_session_id
-    ON public.message_parts USING btree (chat_session_id) TABLESPACE pg_default;
-  CREATE INDEX idx_message_parts_message_id
-    ON public.message_parts USING btree (message_id) TABLESPACE pg_default;
-  CREATE INDEX idx_message_parts_chat_session_message_order
-    ON public.message_parts USING btree (chat_session_id, message_id, "order") TABLESPACE pg_default;
-  CREATE INDEX idx_message_parts_created_at
-    ON public.message_parts USING btree (created_at) TABLESPACE pg_default;
-  CREATE INDEX idx_message_parts_type
-    ON public.message_parts USING btree (type) TABLESPACE pg_default;
-  CREATE INDEX idx_message_parts_message_order
-    ON public.message_parts USING btree (message_id, "order") TABLESPACE pg_default;
+```sql
+-- Slightly out of distance order, but better recall / more aggressive scanning
+SET hnsw.iterative_scan = relaxed_order;
 
--- Enable the vector extension
-CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA extensions;
+-- Guarantees exact distance order (less aggressive, can still fall short)
+SET hnsw.iterative_scan = strict_order;
+```
 
--- Note: PostgreSQL currently does not support indexing vectors with more than 2,000 dimensions. If you have hundreds of thousands of documents resulting in hundreds of thousands of vectors, you need to use an embedding model that produces 2,000 dimensions or fewer.
+So **relaxed ordering** lets results come back _slightly out of order by distance_
+in exchange for scanning harder to fill the filter. If you need them perfectly
+ordered again, you re-sort the relaxed results in an outer query:
 
-# Vector Database Configuration for Efficient Similarity Search
-
-When dealing with hundreds of thousands of document vectors, optimizing for both storage and retrieval speed is critical. Our system has been configured using the following best practices:
-
-
--- Create the vector_documents table
-CREATE TABLE public.user_documents (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  title text NOT NULL,
-  total_pages integer NOT NULL,
-  ai_description text NULL,
-  ai_keyentities text[] NULL,
-  ai_maintopics text[] NULL,
-  ai_title text NULL,
-  file_path text NOT NULL,
-  created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at timestamp with time zone NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT user_documents_pkey PRIMARY KEY (id),
-  CONSTRAINT user_documents_user_title_unique UNIQUE (user_id, title),
-  CONSTRAINT user_documents_user_id_fkey FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
-) TABLESPACE pg_default;
-
--- Separate vector embeddings table
-CREATE TABLE public.user_documents_vec (
-  id uuid NOT NULL DEFAULT gen_random_uuid(),
-  document_id uuid NOT NULL,
-  text_content text NOT NULL,
-  page_number integer NOT NULL,
-  embedding extensions.vector(1024) NULL,
-  CONSTRAINT user_documents_vec_pkey PRIMARY KEY (id),
-  CONSTRAINT user_documents_vec_document_page_unique UNIQUE (document_id, page_number),
-  CONSTRAINT user_documents_vec_document_id_fkey FOREIGN KEY (document_id) REFERENCES user_documents (id) ON DELETE CASCADE
-) TABLESPACE pg_default;
-
-ALTER TABLE public.user_documents ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.user_documents_vec ENABLE ROW LEVEL SECURITY;
-
--- RLS policy for user_documents - users can only access their own documents
-CREATE POLICY "Users can only access their own documents" ON public.user_documents
-    FOR ALL
-    TO public
-    USING ((SELECT auth.uid()) = user_id);
-
-CREATE POLICY "Users can only access their own document vectors" ON public.user_documents_vec
-    FOR ALL
-    TO public
-    USING (
-        EXISTS (
-            SELECT 1 FROM user_documents
-            WHERE user_documents.id = user_documents_vec.document_id
-            AND user_documents.user_id = (SELECT auth.uid())
-        )
-    );
-
-
--- Create indexes for better performance
-CREATE INDEX IF NOT EXISTS idx_user_documents_user_id
-ON public.user_documents USING btree (user_id) TABLESPACE pg_default;
-
-
-CREATE INDEX IF NOT EXISTS idx_user_documents_vec_document_id
-ON public.user_documents_vec USING btree (document_id) TABLESPACE pg_default;
-
--- Create HNSW index for vector similarity search
-CREATE INDEX IF NOT EXISTS user_documents_vec_embedding_idx
-ON public.user_documents_vec
-USING hnsw (embedding extensions.vector_l2_ops)
-WITH (m = '16', ef_construction = '64')
-TABLESPACE pg_default;
-
-
-## HNSW Index Configuration
-
-The Hierarchical Navigable Small World (HNSW) index is configured with:
-
-- **m = 16**: Maximum number of connections per layer
-- **ef_construction = 64**: Size of the dynamic candidate list during construction
-
-These parameters balance build time, index size, and query performance for our document volumes. The HNSW index drastically improves vector similarity search performance while maintaining high recall rates.
-
-## Why These Parameters?
-
-- **Dimension Size (1024)**: Our embedding model (voyage-3-large) produces 1024-dimensional vectors, well under the pgvector 2000-dimension limit
-- **HNSW Algorithm**: Offers logarithmic search complexity, critical for large document collections
-- **Cosine Similarity**: Best metric for normalized document embeddings
-
-These optimizations enable sub-second query times even with hundreds of thousands of document vectors in the database.
-
-Above 500k rows you should consider increasing m and ef_construction to m = '32' and ef_construction = '128'
-
--- Enable RLS
-ALTER TABLE public.vector_documents ENABLE ROW LEVEL SECURITY;
-
--- Optimized RLS Policies for vector_documents
-CREATE POLICY "Users can only read their own documents"
-ON public.vector_documents
-FOR SELECT
-TO authenticated
-USING (user_id = (SELECT auth.uid()));
-
--- Users Table RLS Policies
-CREATE POLICY "Users can insert own data"
-ON public.users
-FOR INSERT
-TO public
-WITH CHECK (id = (SELECT auth.uid()));
-
-CREATE POLICY "Users can update own data"
-ON public.users
-FOR UPDATE
-TO public
-USING (id = (SELECT auth.uid()))
-WITH CHECK (id = (SELECT auth.uid()));
-
-CREATE POLICY "Users can view own data"
-ON public.users
-FOR SELECT
-TO public
-USING (id = (SELECT auth.uid()));
-
--- Chat Sessions RLS Policies
-CREATE POLICY "Users can view own chat sessions"
-ON public.chat_sessions
-AS PERMISSIVE
-FOR ALL
-TO public
-USING (user_id = (SELECT auth.uid()));
-
--- Chat Messages RLS Policies
-CREATE POLICY "Users can view messages from their sessions"
-ON public.chat_messages
-AS PERMISSIVE
-FOR ALL
-TO public
-USING (
-  chat_session_id IN (
-      SELECT chat_sessions.id
-      FROM chat_sessions
-      WHERE chat_sessions.user_id = (SELECT auth.uid())
-  )
-);
-
--- Create the similarity search function
-CREATE OR REPLACE FUNCTION match_documents(
-  query_embedding vector(1024),
-  match_count int,
-  filter_user_id uuid,
-  file_ids uuid[],
-  similarity_threshold float DEFAULT 0.30
+```sql
+WITH relaxed AS MATERIALIZED (
+  SELECT id, embedding <=> '[...]' AS distance
+  FROM user_documents_vec
+  WHERE document_id = '...'
+  ORDER BY distance
+  LIMIT 10
 )
-RETURNS TABLE (
-  id uuid,
-  text_content text,
-  title text,
-  doc_timestamp timestamp with time zone,
-  ai_title text,
-  ai_description text,
-  ai_maintopics text[],
-  ai_keyentities text[],
-  page_number integer,
-  total_pages integer,
-  similarity float
-)
-LANGUAGE plpgsql
-AS $$
-BEGIN
-  RETURN QUERY
-  SELECT
-    vec.id,
-    vec.text_content,
-    doc.title,
-    doc.created_at as doc_timestamp,
-    doc.ai_title,
-    doc.ai_description,
-    doc.ai_maintopics,
-    doc.ai_keyentities,
-    vec.page_number,
-    doc.total_pages,
-    1 - (vec.embedding <=> query_embedding) as similarity
-  FROM
-    user_documents_vec vec
-  INNER JOIN
-    user_documents doc ON vec.document_id = doc.id
-  WHERE
-    doc.user_id = filter_user_id
-    -- Use the renamed parameter in the filter condition
-    AND doc.id = ANY(file_ids)
-    AND 1 - (vec.embedding <=> query_embedding) > similarity_threshold
-  ORDER BY
-    vec.embedding <=> query_embedding ASC
-  LIMIT LEAST(match_count, 200);
-END;
-$$;
+SELECT * FROM relaxed ORDER BY distance + 0;
 ```
 
-# Document Processing Setup
+Two related knobs bound how hard it scans: `hnsw.max_scan_tuples` (default
+`20000`) and `hnsw.scan_mem_multiplier` (default `1`× `work_mem`).
 
-To enable document upload and chat functionality, you'll need additional API keys:
+> ⚠️ **My honest recommendation: don't rely on this mode.** On my main project
+> ([lovguiden.dk](https://lovguiden.dk)), which has **1M–10M row** table, relaxed
+> (and iterative scans generally) produced **very slow and inefficient queries** —
+> not the win the docs suggest at that scale. If you genuinely need filtered vector
+> search on a large table, the **per-filter partial indexes** described above were
+> far more predictable for me than leaning on iterative/relaxed ordering.
 
-1. **LlamaIndex Cloud Setup**
+### Storage Setup
 
-- Visit [LlamaIndex Cloud](https://cloud.llamaindex.ai/)
-- Create an account and get your API key
-- Add to `.env.local`:
-  ```
-  LLAMA_CLOUD_API_KEY=your_api_key_here
-  ```
+Document upload requires a storage bucket:
 
-These services enable document processing, embedding storage, and semantic search capabilities in your chat interface.
+1. Go to **Storage** in your Supabase dashboard and click **Create Bucket**.
+2. Name it `userfiles` and set it to **private**.
 
-### Storage Setup and RLS
-
-After setting up the basic database structure, you need to configure storage and its associated security policies in Supabase.
-
-1. **Create Storage Bucket**
-
-First, create a storage bucket named 'userfiles' in your Supabase dashboard:
-
-- Go to Storage in your Supabase dashboard
-- Click "Create Bucket"
-- Name it "userfiles"
-- Set it to private
-
-2. **Configure Storage RLS Policies**
-
-Add the following policies to secure your storage. These policies ensure users can only access their own files and folders.
-
-```sql
--- Policy 1: Allow users to select their own files
-create policy "User can select own files"
-on storage.objects for select
-using ((bucket_id = 'userfiles'::text) AND
-       ((auth.uid())::text = (storage.foldername(name))[1]));
-
--- Policy 2: Allow users to insert their own files
-create policy "User can insert own files"
-on storage.objects for insert
-with check ((bucket_id = 'userfiles'::text) AND
-            ((auth.uid())::text = (storage.foldername(name))[1]));
-
--- Policy 3: Allow users to update their own files
-create policy "User can update own files"
-on storage.objects for update
-using ((bucket_id = 'userfiles'::text) AND
-       ((auth.uid())::text = (storage.foldername(name))[1]));
-
--- Policy 4: Allow users to delete their own files
-create policy "User can delete own files"
-on storage.objects for delete
-using ((bucket_id = 'userfiles'::text) AND
-       ((auth.uid())::text = (storage.foldername(name))[1]));
-
--- Policy 5: Allow public select access to objects
-create policy "Allow public select access"
-on storage.objects for select
-using (true);
-```
-
-These policies accomplish the following:
-
-- Policies 1-4 ensure users can only manage (select, insert, update, delete) files within their own user directory
-- Policy 5 allows public select access to all objects, which is necessary for certain Supabase functionality
-
-The `storage.foldername(name)[1]` function extracts the first part of the file path, which should match the user's ID.
-
-3. **Verify Configuration**
-
-After setting up these policies:
-
-- Users can only access files in their own directory
-- Files are organized by user ID automatically
-- Public select access is maintained for system functionality
-- All other operations are restricted to file owners only
+The row-level security policies that scope each user to their own folder are
+already included in `database/setup.sql` (Step 9), so no extra SQL is needed.
 
 ### Environment Variables
 
-Configure your environment by renaming `.env.local.example` to `.env.local` and updating it with your Supabase project details:
+Copy `.env.local.example` to `.env.local` and fill in your values:
 
-- `SUPABASE_URL`: Your Supabase project URL.
-- `SUPABASE_ANON_KEY`: Your Supabase anon (public) key.
-- `SUPABASE_SERVICE_ROLE_KEY=`: Your Supabse Service key
-
-**Document Processing:**
-
-- `LLAMA_CLOUD_API_KEY`: Your LlamaIndex Cloud API key
-
-**AI Model API Keys:**
-
-- `OPENAI_API_KEY`: Your OpenAI API key
-- `ANTHROPIC_API_KEY`: Your Anthropic API key
-- `GOOGLE_GENERATIVE_AI_API_KEY`: Your Google AI API key
-
-**Embeddings & Search:**
-
-- `VOYAGE_API_KEY`: Your Voyage AI API key (for document embeddings)
-- `EXA_API_KEY`: Your Exa AI API key (for web search)
-
-## 📧 Email Templates
-
-To ensure that the authentication flow works correctly with the API routes provided in this codebase, please update your email templates in the Supabase project settings according to the templates provided below:
-
-### Confirm Your Signup
-
-When users sign up, they'll receive an email to confirm their account. The template should look like this:
-
-```html
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>Confirm Your Signup</title>
-    <!-- Add styles and head content here -->
-  </head>
-  <body>
-    <div class="container">
-      <div class="header">
-        <h1>Welcome to You Company Name</h1>
-      </div>
-
-      <h2>Confirm your signup</h2>
-      <p>Follow this link to confirm your user:</p>
-      <a
-        href="{{ .SiteURL }}/api/auth/callback?token_hash={{ .TokenHash }}&type=email"
-        >Confirm your email</a
-      >
-    </div>
-  </body>
-</html>
+```bash
+cp .env.local.example .env.local
 ```
 
-Invite User Email When you invite new users to your platform, they should
-receive an invitation like this:
+**Supabase**
+
+- `SUPABASE_URL` — your Supabase project URL
+- `SUPABASE_ANON_KEY` — your anon (public) key
+- `SUPABASE_SERVICE_ROLE_KEY` — your service-role key
+
+**Document Processing**
+
+- `MISTRAL_API_KEY` — Mistral AI key (OCR for uploaded PDFs via `mistral-ocr-latest`)
+
+**AI Models**
+
+- `OPENAI_API_KEY`
+- `ANTHROPIC_API_KEY`
+- `GOOGLE_GENERATIVE_AI_API_KEY`
+
+**Embeddings & Search**
+
+- `VOYAGE_API_KEY` — document embeddings
+- `EXA_API_KEY` — web search
+
+## Generating Database Types
+
+The TypeScript types in `types/database.d.ts` are generated directly from your
+Supabase schema using the Supabase CLI (installed as a dev dependency). Whenever
+you change the schema, regenerate them with:
+
+```bash
+npm run types
+```
+
+This runs `supabase gen types typescript --project-id <project-id>` and writes the
+result to `types/database.d.ts`. It talks to the Supabase Management API, so you
+need to be authenticated once:
+
+```bash
+# Either log in interactively…
+npx supabase login
+
+# …or export a personal access token (from https://supabase.com/dashboard/account/tokens)
+export SUPABASE_ACCESS_TOKEN=your_token_here
+```
+
+The project ID is configured in the `types` script in `package.json`; update it
+there if you point the app at a different Supabase project.
+
+## Email Templates
+
+For the auth flow to work with the API routes in this codebase, update your email
+templates in **Supabase → Authentication → Email Templates** to point at the
+`/api/auth/callback` route:
+
+**Confirm Signup**
+
+```html
+<h2>Confirm your signup</h2>
+<p>Follow this link to confirm your user:</p>
+<a
+  href="{{ .SiteURL }}/api/auth/callback?token_hash={{ .TokenHash }}&type=email"
+  >Confirm your email</a
+>
+```
+
+**Invite User**
 
 ```html
 <h2>You have been invited</h2>
@@ -664,8 +332,7 @@ receive an invitation like this:
 >
 ```
 
-Magic Link Email For passwordless login, the magic link email template should be
-set as follows:
+**Magic Link**
 
 ```html
 <h2>Magic Link</h2>
@@ -676,8 +343,7 @@ set as follows:
 >
 ```
 
-Confirm Email Change When users need to confirm their new email, use the
-following template:
+**Confirm Email Change**
 
 ```html
 <h2>Confirm Change of Email</h2>
@@ -688,7 +354,7 @@ following template:
 <a href="{{ .ConfirmationURL }}">Change Email</a>
 ```
 
-Reset Password Email For users that have requested a password reset:
+**Reset Password**
 
 ```html
 <h2>Reset Password</h2>
@@ -701,70 +367,17 @@ Reset Password Email For users that have requested a password reset:
 
 ## Code Structure and Philosophy
 
-### Code Organization Over Design Patterns
+This project favors **code organization over design patterns**. Rather than
+forcing abstractions like the Factory Pattern, related code is kept together in
+the same feature folder so it is easy to understand and maintain at a glance.
 
-While design patterns like Factory Pattern and other "clean code" principles have their place, they often lead to overly complex, hard-to-understand codebases. Different developers have different coding styles and approaches - this is natural and okay. Instead of forcing a specific pattern, we focus on keeping related code together in the same folder, making it easier for everyone to understand and maintain.
+Only truly universal utilities are shared (`getSession()` for auth, the database
+type definitions, error-boundary components). Everything else — custom hooks, API
+route handlers, feature-specific state and types — stays with its feature. The
+result is that each feature directory is a self-contained unit: changes can be
+made confidently without hunting through shared directories or worrying about side
+effects.
 
-### Intentional Code Duplication Examples
+## License
 
-1. **Shared Code (Minimal)**
-   Only truly universal utilities are shared:
-   - `getSession()` for auth
-   - Type definitions for database schema
-   - Error boundary components
-
-2. **Locality of Behavior**
-   Everything else stays with its feature:
-   - Custom hooks live in feature directories
-   - API route handlers stay with their features
-   - State management is feature-specific
-   - Types and interfaces specific to a feature stay in that feature's directory
-
-This approach means:
-
-- Each feature directory is a complete, self-contained unit
-- No hunting through shared directories to understand a feature
-- Changes can be made confidently without side effects
-- New developers can understand features by looking in one place
-
-The goal is maximum independence and clarity, even at the cost of some duplication. Rather than creating complex abstractions or following rigid design patterns, we prioritize keeping related code together and making it easy to understand at a glance. Shared code is limited to only the most basic, unchanging utilities that truly serve every part of the application.
-
-### Project Structure Visualization
-
-Below is a comprehensive dependency graph showing how all components and modules in the project are interconnected. This visualization helps understand the project's architecture and component relationships:
-
-<img src="/full-deps.svg" alt="Project Dependencies Graph" style="width: 100%; margin: 20px 0;">
-
-This dependency graph illustrates:
-
-- Component hierarchies and their relationships
-- Module dependencies across the application
-- Import/Export relationships between files
-- The overall architectural structure of the project
-
-Understanding this graph can help developers:
-
-- Navigate the codebase more effectively
-- Identify potential areas for refactoring
-- Understand component dependencies
-- Visualize the application's architecture
-
-The dependency graph was generated using the following command:
-
-```bash
-npx madge \
-  --image full-deps.svg \
-  --extensions js,jsx,ts,tsx \
-  --ts-config tsconfig.json \
-  --exclude "node_modules|.next|public" \
-  --warning \
-  .
-```
-
-## 📜 License
-
-🔖 Licensed under the MIT License. See LICENSE.md for details.
-
-```
-
-```
+Licensed under the MIT License. See [LICENSE.md](LICENSE.md) for details.

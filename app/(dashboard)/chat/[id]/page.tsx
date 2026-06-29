@@ -1,25 +1,31 @@
 import ChatComponent from '../components/Chat';
-import { cookies } from 'next/headers';
 import WebsiteWiever from '../components/WebsiteWiever';
 import DocumentViewer from '../components/PDFViewer';
 import UserPdfViewer from '../components/UserPdfFiles';
 import { fetchChat, formatMessages } from './fetch';
+import { getSelectableModels, DEFAULT_MODEL_ID } from '../models';
 import { getUserInfo } from '@/lib/server/supabase';
 import { createClient } from '@/lib/client/client';
+import { connection } from 'next/server';
 
-export default async function ChatPage(props: {
+interface ChatPageProps {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ url?: string; pdf?: string; file?: string }>;
-}) {
-  const params = await props.params;
-  const searchParams = await props.searchParams;
-  const { id } = params;
+}
 
-  const chatData = await fetchChat(id);
+export default async function ChatPage({
+  params,
+  searchParams
+}: ChatPageProps) {
+  await connection();
+  const { id } = await params;
+  const { url, pdf, file } = await searchParams;
 
-  const cookieStore = await cookies();
-
-  const selectedOption = cookieStore.get('selectedOption')?.value ?? 'gpt-5';
+  const [chatData, models] = await Promise.all([
+    fetchChat(id),
+    getSelectableModels()
+  ]);
+  const selectedModel = chatData?.selectedModel ?? DEFAULT_MODEL_ID;
 
   let formattedMessages = undefined;
   let attachmentUrl = undefined;
@@ -27,8 +33,8 @@ export default async function ChatPage(props: {
   if (chatData) {
     formattedMessages = formatMessages(chatData.message_parts);
 
-    if (searchParams.file && formattedMessages) {
-      const fileName = decodeURIComponent(searchParams.file);
+    if (file && formattedMessages) {
+      const fileName = decodeURIComponent(file);
 
       for (const message of formattedMessages) {
         const filePart = message.parts?.find(
@@ -49,22 +55,19 @@ export default async function ChatPage(props: {
         <ChatComponent
           currentChat={formattedMessages}
           chatId={id}
-          initialSelectedOption={selectedOption}
+          initialSelectedOption={selectedModel}
+          models={models}
         />
       </div>
       {attachmentUrl ? (
         <UserPdfViewer
           url={attachmentUrl}
-          fileName={
-            searchParams.file
-              ? decodeURIComponent(searchParams.file)
-              : 'Document'
-          }
+          fileName={file ? decodeURIComponent(file) : 'Document'}
         />
-      ) : searchParams.url ? (
-        <WebsiteWiever url={decodeURIComponent(searchParams.url)} />
-      ) : searchParams.pdf ? (
-        <DocumentComponent fileName={decodeURIComponent(searchParams.pdf)} />
+      ) : url ? (
+        <WebsiteWiever url={decodeURIComponent(url)} />
+      ) : pdf ? (
+        <DocumentComponent fileName={decodeURIComponent(pdf)} />
       ) : null}
     </div>
   );

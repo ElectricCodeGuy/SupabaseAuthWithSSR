@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, BarChart3, Users, Globe, Cpu } from 'lucide-react';
-import Link from 'next/link';
+import Link from '@/components/link';
 
 export const BentoGrid: React.FC = () => {
   return (

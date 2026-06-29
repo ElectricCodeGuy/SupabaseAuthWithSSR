@@ -1,5 +1,109 @@
 ## CHANGELOG
 
+## [v4.0.0] - 2026-06-29
+
+### Major Changes
+
+- **Mistral OCR for document processing**: Replaced LlamaParse/LlamaIndex with
+  Mistral OCR (`mistral-ocr-latest`).
+  - `/api/processdoc` now downloads the PDF, OCRs it with Mistral, and runs the
+    existing Voyage embeddings + `user_documents` / `user_documents_vec` pipeline
+    in a single request.
+  - Removed the `/api/uploaddoc` and `/api/checkdoc` polling routes (LlamaParse
+    was async; Mistral OCR is synchronous).
+  - Upload flow in the Filer simplified to a single `processdoc` call (no jobId
+    polling). Swap `LLAMA_CLOUD_API_KEY` for `MISTRAL_API_KEY`.
+
+- **Database-driven AI model selection**: New `ai_models` catalog table (USD
+  pricing) and a `users.selected_model` FK.
+  - Models: GPT-5.5, Opus 4.8, Sonnet 4.6, Gemini 3.5 Flash, Gemini 3.1 Pro
+    (default). The chat API resolves the provider from `ai_models` and reads the
+    user's selection from the DB — the model is no longer sent over `useChat`.
+  - New **AI Models** chat settings tab listing each model, pricing, and tier.
+  - Model picker is driven by the DB with provider logos from
+    `public/images/ai-providers/`.
+
+- **Generic tool columns on `message_parts`**: Consolidated the per-tool column
+  groups (`tool_searchuserdocument_*`, `tool_websitesearchtool_*`) into one
+  generic `tool_*` set — the `type` column identifies the tool, so new tools no
+  longer require schema changes. Added `text_state` / `reasoning_state`.
+
+- **Shared dashboard header**: Moved the sidebar open/close trigger + breadcrumb
+  into the dashboard layout so it shows on every page (not just chat). The chat
+  title is fetched via `GET /api/chat-title/[id]` with SWR.
+
+- **Chat sharing & favorites**: Per-chat `is_favorite` and `is_public` flags on
+  `chat_sessions` (with partial indexes for the favorites group and public
+  lookups), surfaced through the sidebar chat menu (`ChatActionsMenu`):
+  favorite/unfavorite, rename, delete, and a share dialog exposing a public
+  `/shared-chat/[id]` link. The original migration was folded into
+  `database/setup.sql`.
+
+### Added
+
+- `GET /api/chat-previews` — returns chats already sorted, grouped by date, and
+  with favorites split out (grouping moved off the client). The sidebar fetches
+  it directly; `SettingsConversations` uses it too.
+- `GET /api/chat-title/[id]` — breadcrumb title for a conversation.
+- Supabase CLI as a dev dependency + `npm run types` to regenerate
+  `types/database.d.ts`.
+- Shared `components/brand-icons.tsx` (Linkedin/Youtube/Github) since
+  lucide-react v1 dropped brand glyphs.
+- README: HNSW index tuning guide (m/ef_construction, `halfvec`, the
+  no-filtering rule, iterative/relaxed-ordering caveats, RAM/buffer-cache sizing).
+- SQL migrations under `supabase/migrations/` (tool-column consolidation,
+  `ai_models` + `users.selected_model`), with `database/setup.sql` kept as the
+  single, up-to-date source of truth (tables, RLS, indexes, functions, seed data).
+
+### Changed
+
+- **Reworked the document search tool UI** (`DocumentChatTool`): rewritten around
+  a collapsible `InlineToolSection`, all text in English, matching the tool's new
+  `list` / `findByName` / `search` output modes.
+- **`components/link.tsx`**: the app-wide `Link` wrapper disables Next.js
+  prefetch by default (cuts background RSC requests / serverless cost and avoids
+  buggy over-eager prefetching); used in place of `next/link` across the app.
+- **Chat previews**: grouping/sorting moved server-side into the
+  `/api/chat-previews` route, the `fetchChatPreviews` server action removed, and
+  the sidebar reduced to a single fetch (no client-side `useSWRInfinite` merge).
+  Preview types moved to a types-only module.
+- Document embeddings model bumped to Voyage `voyage-4-large`.
+- Chat breadcrumb title derived server-side (`deriveChatTitle`) / via the title
+  route instead of being computed in the client component.
+- Version bumped to **4.0.0** across `package.json`, README, and
+  `database/setup.sql`.
+- **Server actions return `{ success, message }`** instead of throwing (throwing
+  from a server action surfaces an unusable client error). Callers toast the
+  message on failure.
+- **`/api/website` proxy** now requires a session (403 otherwise) and the viewer
+  shows "An account is required for this action" instead of the iframe. Added
+  comments documenting that it's an unsafe open-proxy/SSRF pattern and that it
+  spoofs the Referer/Origin headers.
+- `onFinish` updates the URL via `history.replaceState` (no RSC refetch / no lost
+  stream state) instead of `router.push`, and revalidates the previews + title
+  SWRs.
+- Selected model persisted server-side via `setSelectedModel` (was a cookie).
+- README rewritten to reference `database/setup.sql` instead of inlining SQL;
+  documents Mistral OCR.
+- `/filer` UI text translated from Danish to English.
+- Chat system prompt now includes the current date (ISO `yyyy-mm-dd`).
+
+### Removed
+
+- Subscription plumbing (no `subscriptions` table in this template): the
+  `users → subscriptions` queries, `/abonnement` sidebar links, and the
+  `hasActiveSubscription` prop chain.
+
+### Fixed
+
+- Sidebar collapses to icon mode correctly: chat history hides
+  (`group-data-[collapsible=icon]:hidden`) while icon nav items keep tooltips.
+- Breadcrumb showed the raw UUID for a new conversation — the header now derives
+  the chat id from the pathname (works with `history.replaceState`).
+- Hydration mismatch from `SidebarMenuSkeleton`'s random width (now fixed width).
+- lucide-react v1 build break from removed brand icons (Footer, ProfileHeader).
+- `message_parts` schema drift vs. the code (missing tool/state columns).
+
 ## [v3.0.0] - 2025-12-11
 
 ### Major Changes

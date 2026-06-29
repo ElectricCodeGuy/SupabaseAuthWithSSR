@@ -1,11 +1,11 @@
-/* eslint-disable @next/next/no-img-element */
+'use client';
 import { marked } from 'marked';
 import { memo, useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import type { Options as HighlightOptions } from 'rehype-highlight';
-import Link from 'next/link';
+import Link from '@/components/link';
 import { ExternalLink, Copy, Check } from 'lucide-react';
 import { encodeBase64 } from '@/utils/base64';
 import Image from 'next/image';

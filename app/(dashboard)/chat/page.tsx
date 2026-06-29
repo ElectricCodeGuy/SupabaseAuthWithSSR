@@ -1,34 +1,36 @@
 import 'server-only';
 import ChatComponent from './components/Chat';
-import { cookies } from 'next/headers';
 import DocumentViewer from './components/PDFViewer';
 import WebsiteWiever from './components/WebsiteWiever';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'node:crypto';
 import { getUserInfo } from '@/lib/server/supabase';
 import { createClient } from '@/lib/client/client';
+import { getChatModelData } from './models';
+import { connection } from 'next/server';
 
-interface PageProps {
+interface ChatPageProps {
   searchParams: Promise<Record<string, string>>;
 }
 
-export default async function ChatPage(props: PageProps) {
-  const searchParams = await props.searchParams;
-  const cookieStore = await cookies();
-  const selectedOption = cookieStore.get('selectedOption')?.value ?? 'gpt-5';
-  const createChatId = uuidv4();
+export default async function ChatPage({ searchParams }: ChatPageProps) {
+  await connection();
+  const { models, selectedModel } = await getChatModelData();
+  const createChatId = randomUUID();
+  const { url, pdf } = await searchParams;
 
   return (
     <div className="flex w-full">
       <div className="flex-1">
         <ChatComponent
           chatId={createChatId}
-          initialSelectedOption={selectedOption}
+          initialSelectedOption={selectedModel}
+          models={models}
         />
       </div>
-      {searchParams.url ? (
-        <WebsiteWiever url={decodeURIComponent(searchParams.url)} />
-      ) : searchParams.pdf ? (
-        <DocumentComponent fileName={decodeURIComponent(searchParams.pdf)} />
+      {url ? (
+        <WebsiteWiever url={decodeURIComponent(url)} />
+      ) : pdf ? (
+        <DocumentComponent fileName={decodeURIComponent(pdf)} />
       ) : null}
     </div>
   );

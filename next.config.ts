@@ -6,8 +6,11 @@ const nextConfig: NextConfig = {
       dynamic: 30,
       static: 180
     },
-    browserDebugInfoInTerminal: true,
-    globalNotFound: true
+    globalNotFound: true,
+    appNewScrollHandler: true
+  },
+  logging: {
+    browserToTerminal: true
   },
   poweredByHeader: false
 };

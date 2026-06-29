@@ -12,7 +12,7 @@ import ForgotPassword from '@/app/@modal/ForgotPassword';
 import { login } from '../action';
 import { useRouter } from 'next/navigation';
 import { useFormStatus } from 'react-dom';
-import Link from 'next/link';
+import Link from '@/components/link';
 
 export default function SignInCard() {
   const router = useRouter();

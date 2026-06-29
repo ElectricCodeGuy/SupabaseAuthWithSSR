@@ -14,7 +14,18 @@ export const dynamic = 'force-dynamic';
 
 export const maxDuration = 800;
 
-const embeddingModel = voyage('voyage-3-large');
+const embeddingModel = voyage('voyage-4-large');
+
+interface MistralOCRResponse {
+  pages: Array<{
+    index: number;
+    markdown: string;
+    images: Array<unknown>;
+    dimensions: { dpi: number; height: number; width: number } | null;
+  }>;
+  model: string;
+  usage_info: { pages_processed: number; doc_size_bytes: number };
+}
 
 type DocumentVectorRecord = TablesInsert<'user_documents_vec'>;
 
@@ -225,11 +236,11 @@ async function processDocumentWithAgentChains(
 
 export async function POST(req: NextRequest) {
   try {
-    // Check for Llama Cloud API key
-    if (!process.env.LLAMA_CLOUD_API_KEY) {
-      console.error('LLAMA_CLOUD_API_KEY is not configured');
+    // OCR is done with Mistral (mistral-ocr-latest) instead of LlamaParse.
+    if (!process.env.MISTRAL_API_KEY) {
+      console.error('MISTRAL_API_KEY is not configured');
       return NextResponse.json(
-        { error: 'Server configuration error: LLAMA_CLOUD_API_KEY is missing' },
+        { error: 'Server configuration error: MISTRAL_API_KEY is missing' },
         { status: 500 }
       );
     }
@@ -244,46 +255,111 @@ export async function POST(req: NextRequest) {
 
     const userId = session.sub;
 
-    const { jobId, fileName } = await req.json();
-
-    const markdownResponse = await fetch(
-      `https://api.cloud.llamaindex.ai/api/v1/parsing/job/${jobId}/result/markdown`,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.LLAMA_CLOUD_API_KEY}`,
-          Accept: 'application/json'
-        },
-        cache: 'no-store'
-      }
-    );
-
-    if (!markdownResponse.ok) {
-      console.error(
-        'Failed to get Markdown result:',
-        markdownResponse.statusText
-      );
+    const { filePath, fileName } = await req.json();
+    if (!filePath || !fileName) {
       return NextResponse.json(
-        {
-          error: `Failed to get Markdown result: ${markdownResponse.statusText}`
-        },
+        { error: 'Missing filePath or fileName' },
+        { status: 400 }
+      );
+    }
+
+    const supabase = createAdminClient();
+
+    // 1. Download the uploaded PDF from storage
+    const { data: fileData, error: dlError } = await supabase.storage
+      .from('userfiles')
+      .download(filePath);
+
+    if (dlError || !fileData) {
+      return NextResponse.json(
+        { error: `Download failed: ${dlError?.message}` },
         { status: 500 }
       );
     }
 
-    // Parse the JSON response to extract just the markdown property
-    const responseJson = await markdownResponse.json();
+    // 2. Upload the file to Mistral for OCR
+    const uploadForm = new FormData();
+    uploadForm.append('purpose', 'ocr');
+    uploadForm.append(
+      'file',
+      new Blob([await fileData.arrayBuffer()]),
+      fileName
+    );
 
-    // Extract the clean markdown content from the response
-    const markdownContent = responseJson.markdown as string;
+    const uploadRes = await fetch('https://api.mistral.ai/v1/files', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${process.env.MISTRAL_API_KEY}` },
+      body: uploadForm
+    });
 
-    // Use the correct page splitting pattern
-    const pages = markdownContent
-      .split('\n---\n')
-      .map((page) => page.trim())
-      .filter((page) => page !== '');
+    if (!uploadRes.ok) {
+      console.error('Mistral upload failed:', uploadRes.statusText);
+      return NextResponse.json(
+        { error: 'Mistral upload failed' },
+        { status: 500 }
+      );
+    }
 
+    const { id: mistralFileId } = await uploadRes.json();
+
+    // 3. Wait briefly for file processing, then get a signed URL
+    await new Promise((r) => setTimeout(r, 3000));
+
+    const urlRes = await fetch(
+      `https://api.mistral.ai/v1/files/${mistralFileId}/url?expiry=24`,
+      {
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${process.env.MISTRAL_API_KEY}`
+        }
+      }
+    );
+
+    if (!urlRes.ok) {
+      return NextResponse.json(
+        { error: 'Failed to get Mistral signed URL' },
+        { status: 500 }
+      );
+    }
+
+    const { url: signedUrl } = await urlRes.json();
+
+    // 4. Run OCR — returns one markdown block per page
+    const ocrRes = await fetch('https://api.mistral.ai/v1/ocr', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${process.env.MISTRAL_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'mistral-ocr-latest',
+        document: { type: 'document_url', document_url: signedUrl },
+        include_image_base64: false
+      })
+    });
+
+    if (!ocrRes.ok) {
+      return NextResponse.json({ error: 'OCR failed' }, { status: 500 });
+    }
+
+    const ocrResult: MistralOCRResponse = await ocrRes.json();
+
+    const pages = ocrResult.pages
+      .sort((a, b) => a.index - b.index)
+      .map((p) => p.markdown.trim())
+      .filter((p) => p);
+
+    if (!pages.length) {
+      return NextResponse.json(
+        { error: 'No text found in document' },
+        { status: 422 }
+      );
+    }
+
+    // 5. Embed pages + store metadata in user_documents / user_documents_vec
     await processFile(pages, fileName, userId);
     revalidatePath('/chat', 'layout');
+    revalidatePath('/filer');
     return NextResponse.json({ status: 'SUCCESS' });
   } catch (error) {
     console.error('Error in POST request:', error);

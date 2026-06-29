@@ -1,23 +1,9 @@
-import 'server-only';
 import React from 'react';
-import { type Metadata } from 'next';
 import { AppSidebar } from './components/app-sidebar';
+import { DashboardHeader } from './components/dashboard-header';
 import { createServerSupabaseClient } from '@/lib/server/server';
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger
-} from '@/components/ui/sidebar';
-import { isAfter } from 'date-fns';
-
-export const maxDuration = 120;
-export const dynamic = 'force-dynamic';
-export const metadata: Metadata = {
-  robots: {
-    follow: false,
-    index: false
-  }
-};
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { cookies } from 'next/headers';
 
 async function getUserData() {
   try {
@@ -27,13 +13,8 @@ async function getUserData() {
       .from('users')
       .select(
         `
-        role,
         full_name,
-        email,
-        subscriptions (
-          status,
-          stripe_current_period_end
-        )
+        email
       `
       )
       .maybeSingle();
@@ -43,28 +24,17 @@ async function getUserData() {
       return null;
     }
 
-    const isAdmin = userData?.role === 'admin';
-
-    // Check for active subscription
-    const subscription = userData?.subscriptions;
-    const hasActiveSubscription = Boolean(
-      subscription &&
-      (subscription.status === 'active' ||
-        subscription.status === 'trialing' ||
-        subscription.status === 'canceled') &&
-      isAfter(new Date(subscription.stripe_current_period_end), new Date())
-    );
-
     const user = {
       name: userData?.full_name || userData?.email?.split('@')[0] || 'User',
       email: userData?.email || '',
       avatar: '/avatars/user.jpg'
     };
 
+    // This template has no admin (role) table, so isAdmin is always false.
+    // Add a `role` column and restore the check here if you build that feature.
     return {
-      isAdmin,
-      user,
-      hasActiveSubscription
+      isAdmin: false,
+      user
     };
   } catch (error) {
     console.error('Error checking user data:', error);
@@ -77,25 +47,29 @@ export default async function Layout({
 }: {
   children: React.ReactNode;
 }) {
+  const cookieStore = await cookies();
+  const sidebarCookie = cookieStore.get('sidebar_state');
+
+  // Default to open if no cookie exists or if cookie is not explicitly 'false'
+  const defaultOpen = sidebarCookie?.value !== 'false';
+
   const userData = await getUserData();
 
   if (!userData) {
     return <>{children}</>;
   }
 
-  const { isAdmin, user, hasActiveSubscription } = userData;
+  const { isAdmin, user } = userData;
 
   return (
-    <SidebarProvider className="flex">
-      <AppSidebar
-        isAdmin={isAdmin}
-        user={user}
-        hasActiveSubscription={hasActiveSubscription}
-      />
-      <SidebarInset>{children}</SidebarInset>
-      <div className="fixed bottom-4 right-4 z-50 sm:hidden">
-        <SidebarTrigger />
-      </div>
+    <SidebarProvider defaultOpen={defaultOpen}>
+      <AppSidebar isAdmin={isAdmin} user={user} />
+      <SidebarInset>
+        {/* Shared header — sidebar open/close trigger + breadcrumb — shown on
+            every page in this route group. */}
+        <DashboardHeader />
+        {children}
+      </SidebarInset>
     </SidebarProvider>
   );
 }

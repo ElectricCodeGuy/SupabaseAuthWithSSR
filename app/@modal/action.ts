@@ -46,7 +46,7 @@ export async function login(formData: FormData) {
 }
 
 const formDataSchemaSignup = z.object({
-  email: z.string().email(),
+  email: z.email(),
   password: z.string().min(6),
   fullName: z.string().optional()
 });

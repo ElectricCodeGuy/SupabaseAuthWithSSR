@@ -10,9 +10,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
+import Image from 'next/image';
 import type { useChat } from '@ai-sdk/react';
 import type { UIMessagePart } from 'ai';
 import type { UITools } from '../types/tooltypes';
+import { providerLogo } from '@/lib/aiProviders';
 // Icons from Lucide React
 import {
   Send,
@@ -24,8 +26,7 @@ import {
   FileIcon,
   Plus
 } from 'lucide-react';
-import { ChatHistoryButton } from './ChatHistoryButton';
-import Link from 'next/link';
+import Link from '@/components/link';
 
 // FilePreview component remains the same
 const FilePreview = React.memo(
@@ -101,9 +102,16 @@ FilePreview.displayName = 'FilePreview';
 
 type ChatHelpers = ReturnType<typeof useChat>;
 
+export interface ModelOption {
+  model_id: string;
+  display_name: string;
+  provider: string;
+}
+
 interface MessageInputProps {
   chatId: string;
   selectedOption: string;
+  models: ModelOption[];
   handleOptionChange: (value: string) => void;
   sendMessage: ChatHelpers['sendMessage'];
   status: ChatHelpers['status'];
@@ -113,6 +121,7 @@ interface MessageInputProps {
 const MessageInput: React.FC<MessageInputProps> = ({
   chatId,
   selectedOption,
+  models,
   handleOptionChange,
   sendMessage,
   status,
@@ -198,7 +207,8 @@ const MessageInput: React.FC<MessageInputProps> = ({
       parts.push(...fileParts);
     }
 
-    // Send message
+    // Send message. The selected model is NOT sent here — the API route reads
+    // it from the user's row in the database.
     sendMessage(
       {
         role: 'user',
@@ -206,8 +216,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
       },
       {
         body: {
-          chatId: chatId,
-          option: selectedOption
+          chatId: chatId
         }
       }
     );
@@ -247,8 +256,6 @@ const MessageInput: React.FC<MessageInputProps> = ({
         {/* Bottom controls row with buttons */}
         <div className="flex px-2.5 pb-1 pt-1.5 items-center gap-2 justify-between">
           <div className="flex items-center gap-2">
-            <ChatHistoryButton />
-
             <div className="flex-1 ml-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -257,37 +264,39 @@ const MessageInput: React.FC<MessageInputProps> = ({
                     size="sm"
                     className="w-full h-8 justify-between text-xs"
                   >
-                    <span className="truncate">{selectedOption}</span>
+                    <span className="truncate">
+                      {models.find((m) => m.model_id === selectedOption)
+                        ?.display_name ?? 'Select model'}
+                    </span>
                     <ChevronDown className="h-3 w-3 ml-2 flex-shrink-0 opacity-70" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56">
-                  {[
-                    { value: 'gpt-5', label: 'GPT-5' },
-                    { value: 'gpt-5-mini', label: 'GPT-5 Mini' },
-                    { value: 'o3', label: 'OpenAI O3' },
-                    {
-                      value: 'claude-4-sonnet',
-                      label: 'Claude 4.5 Sonnet'
-                    },
-                    { value: 'gemini-3-pro-preview', label: 'Gemini 2.5 Pro' },
-                    {
-                      value: 'gemini-2.5-flash-preview-09-2025',
-                      label: 'Gemini 2.5 Flash'
-                    }
-                  ].map((option) => (
-                    <DropdownMenuItem
-                      key={option.value}
-                      onClick={() => handleOptionChange(option.value)}
-                      className={`text-xs ${
-                        selectedOption === option.value
-                          ? 'bg-primary/20 dark:bg-primary/30 text-primary dark:text-primary-foreground'
-                          : ''
-                      }`}
-                    >
-                      {option.label}
-                    </DropdownMenuItem>
-                  ))}
+                  {models.map((model) => {
+                    const logo = providerLogo(model.provider);
+                    return (
+                      <DropdownMenuItem
+                        key={model.model_id}
+                        onClick={() => handleOptionChange(model.model_id)}
+                        className={`gap-2 text-xs ${
+                          selectedOption === model.model_id
+                            ? 'bg-primary/20 dark:bg-primary/30 text-primary dark:text-primary-foreground'
+                            : ''
+                        }`}
+                      >
+                        {logo && (
+                          <Image
+                            src={logo}
+                            alt={model.provider}
+                            width={16}
+                            height={16}
+                            className="h-4 w-4 flex-shrink-0"
+                          />
+                        )}
+                        {model.display_name}
+                      </DropdownMenuItem>
+                    );
+                  })}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

@@ -17,7 +17,7 @@ import {
   SidebarMenuSubItem
 } from '@/components/ui/sidebar';
 import { ChevronRight } from 'lucide-react';
-import Link from 'next/link';
+import Link from '@/components/link';
 import { usePathname } from 'next/navigation';
 
 export function NavAdmin() {
@@ -56,6 +56,7 @@ export function NavAdmin() {
             <div className="flex items-center">
               <SidebarMenuButton
                 asChild
+                tooltip="Admin Panel"
                 isActive={isAdminActive}
                 className="flex-1"
               >
@@ -65,7 +66,7 @@ export function NavAdmin() {
                 </Link>
               </SidebarMenuButton>
               <CollapsibleTrigger asChild>
-                <button className="px-2 hover:bg-accent rounded-md">
+                <button className="px-2 hover:bg-accent rounded-md group-data-[collapsible=icon]:hidden">
                   <ChevronRight className="h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                 </button>
               </CollapsibleTrigger>

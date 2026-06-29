@@ -79,7 +79,6 @@ export default function SnakeGame() {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameState]);
 
   const generateFood = useCallback((currentSnake: Position[]): Position => {
@@ -152,7 +151,6 @@ export default function SnakeGame() {
 
       return newSnake;
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [food, gameState, generateFood]);
 
   // Game loop
@@ -214,216 +212,214 @@ export default function SnakeGame() {
 
   return (
     <Card className="rounded-2xl shadow-lg overflow-hidden backdrop-blur-sm bg-card/90 border-primary/10 pt-0">
-        <div className="p-4 bg-gradient-to-r from-green-500 to-emerald-600">
-          <h6 className="text-white font-semibold flex items-center gap-2">
-            <Gamepad2 size={20} /> Snake Game
-          </h6>
-        </div>
+      <div className="p-4 bg-gradient-to-r from-green-500 to-emerald-600">
+        <h6 className="text-white font-semibold flex items-center gap-2">
+          <Gamepad2 size={20} /> Snake Game
+        </h6>
+      </div>
 
-        <CardContent className="pt-4">
-          {gameState === 'idle' && (
-            <div className="flex flex-col items-center justify-center p-6 text-center">
-              <motion.div
-                animate={{ scale: [1, 1.1, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                <Gamepad2 className="text-primary mb-4" size={48} />
-              </motion.div>
-              <h3 className="text-lg font-semibold mb-2">
-                Classic Snake Game!
-              </h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                Use arrow keys or buttons to control the snake
+      <CardContent className="pt-4">
+        {gameState === 'idle' && (
+          <div className="flex flex-col items-center justify-center p-6 text-center">
+            <motion.div
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              <Gamepad2 className="text-primary mb-4" size={48} />
+            </motion.div>
+            <h3 className="text-lg font-semibold mb-2">Classic Snake Game!</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Use arrow keys or buttons to control the snake
+            </p>
+            <Button onClick={startGame} className="rounded-full">
+              Start Game
+            </Button>
+            {bestScore && (
+              <p className="text-sm text-muted-foreground mt-4">
+                Best Score:{' '}
+                <span className="font-bold text-primary">{bestScore}</span>
               </p>
-              <Button onClick={startGame} className="rounded-full">
-                Start Game
-              </Button>
-              {bestScore && (
-                <p className="text-sm text-muted-foreground mt-4">
-                  Best Score:{' '}
-                  <span className="font-bold text-primary">{bestScore}</span>
-                </p>
-              )}
-            </div>
-          )}
+            )}
+          </div>
+        )}
 
-          {(gameState === 'playing' || gameState === 'paused') && (
-            <div>
-              <div className="flex justify-between items-center mb-4">
-                <div className="text-sm font-semibold">Score: {score}</div>
-                <Button
-                  onClick={togglePause}
-                  size="sm"
-                  variant="outline"
-                  className="rounded-full"
-                >
-                  {gameState === 'paused' ? (
-                    <Play size={16} />
-                  ) : (
-                    <Pause size={16} />
-                  )}
-                </Button>
-              </div>
-
-              <div
-                className="relative mx-auto"
-                style={{
-                  width: GRID_SIZE * CELL_SIZE,
-                  height: GRID_SIZE * CELL_SIZE
-                }}
+        {(gameState === 'playing' || gameState === 'paused') && (
+          <div>
+            <div className="flex justify-between items-center mb-4">
+              <div className="text-sm font-semibold">Score: {score}</div>
+              <Button
+                onClick={togglePause}
+                size="sm"
+                variant="outline"
+                className="rounded-full"
               >
-                {/* Game Board */}
-                <div className="absolute inset-0 bg-gradient-to-br from-muted/30 to-muted/50 rounded-lg border-2 border-border">
-                  {/* Grid pattern */}
-                  <svg className="absolute inset-0 w-full h-full opacity-10">
-                    <pattern
-                      id="grid"
+                {gameState === 'paused' ? (
+                  <Play size={16} />
+                ) : (
+                  <Pause size={16} />
+                )}
+              </Button>
+            </div>
+
+            <div
+              className="relative mx-auto"
+              style={{
+                width: GRID_SIZE * CELL_SIZE,
+                height: GRID_SIZE * CELL_SIZE
+              }}
+            >
+              {/* Game Board */}
+              <div className="absolute inset-0 bg-gradient-to-br from-muted/30 to-muted/50 rounded-lg border-2 border-border">
+                {/* Grid pattern */}
+                <svg className="absolute inset-0 w-full h-full opacity-10">
+                  <pattern
+                    id="grid"
+                    width={CELL_SIZE}
+                    height={CELL_SIZE}
+                    patternUnits="userSpaceOnUse"
+                  >
+                    <rect
                       width={CELL_SIZE}
                       height={CELL_SIZE}
-                      patternUnits="userSpaceOnUse"
-                    >
-                      <rect
-                        width={CELL_SIZE}
-                        height={CELL_SIZE}
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="0.5"
-                      />
-                    </pattern>
-                    <rect width="100%" height="100%" fill="url(#grid)" />
-                  </svg>
-                </div>
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="0.5"
+                    />
+                  </pattern>
+                  <rect width="100%" height="100%" fill="url(#grid)" />
+                </svg>
+              </div>
 
-                {/* Snake */}
-                <AnimatePresence>
-                  {snake.map((segment, index) => (
-                    <motion.div
-                      key={`${segment.x}-${segment.y}-${index}`}
-                      className={`absolute rounded-sm ${
-                        index === 0
-                          ? 'bg-gradient-to-br from-green-500 to-emerald-600 z-20'
-                          : 'bg-gradient-to-br from-green-600 to-green-700'
-                      }`}
-                      style={{
-                        left: segment.x * CELL_SIZE,
-                        top: segment.y * CELL_SIZE,
-                        width: CELL_SIZE - 2,
-                        height: CELL_SIZE - 2
-                      }}
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      exit={{ scale: 0 }}
-                      transition={{ duration: 0.1 }}
-                    >
-                      {index === 0 && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-2 h-2 bg-white rounded-full opacity-80" />
-                        </div>
-                      )}
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-
-                {/* Food */}
-                <motion.div
-                  key={`${food.x}-${food.y}`}
-                  className="absolute z-10"
-                  style={{
-                    left: food.x * CELL_SIZE,
-                    top: food.y * CELL_SIZE,
-                    width: CELL_SIZE - 2,
-                    height: CELL_SIZE - 2
-                  }}
-                  initial={{ scale: 0, rotate: 0 }}
-                  animate={{ scale: 1, rotate: 360 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <Apple className="w-full h-full text-red-500 fill-red-500" />
-                </motion.div>
-
-                {/* Pause overlay */}
-                {gameState === 'paused' && (
+              {/* Snake */}
+              <AnimatePresence>
+                {snake.map((segment, index) => (
                   <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg z-30"
+                    key={`${segment.x}-${segment.y}-${index}`}
+                    className={`absolute rounded-sm ${
+                      index === 0
+                        ? 'bg-gradient-to-br from-green-500 to-emerald-600 z-20'
+                        : 'bg-gradient-to-br from-green-600 to-green-700'
+                    }`}
+                    style={{
+                      left: segment.x * CELL_SIZE,
+                      top: segment.y * CELL_SIZE,
+                      width: CELL_SIZE - 2,
+                      height: CELL_SIZE - 2
+                    }}
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    exit={{ scale: 0 }}
+                    transition={{ duration: 0.1 }}
                   >
-                    <div className="text-center">
-                      <Pause className="mx-auto mb-2 text-primary" size={48} />
-                      <p className="text-lg font-semibold">Game Paused</p>
-                      <p className="text-sm text-muted-foreground">
-                        Press Space to continue
-                      </p>
-                    </div>
+                    {index === 0 && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-2 h-2 bg-white rounded-full opacity-80" />
+                      </div>
+                    )}
                   </motion.div>
-                )}
-              </div>
+                ))}
+              </AnimatePresence>
 
-              {/* Mobile Controls */}
-              <div className="mt-4 grid grid-cols-3 gap-2 max-w-[200px] mx-auto">
-                <div />
-                <Button
-                  onClick={() => handleDirectionClick('UP')}
-                  size="sm"
-                  variant="outline"
-                  className="rounded-full"
-                >
-                  <ArrowUp size={16} />
-                </Button>
-                <div />
-                <Button
-                  onClick={() => handleDirectionClick('LEFT')}
-                  size="sm"
-                  variant="outline"
-                  className="rounded-full"
-                >
-                  <ArrowLeft size={16} />
-                </Button>
-                <div />
-                <Button
-                  onClick={() => handleDirectionClick('RIGHT')}
-                  size="sm"
-                  variant="outline"
-                  className="rounded-full"
-                >
-                  <ArrowRight size={16} />
-                </Button>
-                <div />
-                <Button
-                  onClick={() => handleDirectionClick('DOWN')}
-                  size="sm"
-                  variant="outline"
-                  className="rounded-full"
-                >
-                  <ArrowDown size={16} />
-                </Button>
-                <div />
-              </div>
-            </div>
-          )}
+              {/* Food */}
+              <motion.div
+                key={`${food.x}-${food.y}`}
+                className="absolute z-10"
+                style={{
+                  left: food.x * CELL_SIZE,
+                  top: food.y * CELL_SIZE,
+                  width: CELL_SIZE - 2,
+                  height: CELL_SIZE - 2
+                }}
+                initial={{ scale: 0, rotate: 0 }}
+                animate={{ scale: 1, rotate: 360 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Apple className="w-full h-full text-red-500 fill-red-500" />
+              </motion.div>
 
-          {gameState === 'ended' && (
-            <div className="flex flex-col items-center justify-center p-6 text-center">
-              <Trophy className="text-yellow-500 mb-4" size={48} />
-              <h3 className="text-lg font-semibold mb-2">Game Over!</h3>
-              <p className="text-2xl font-bold text-primary mb-2">
-                Score: {score}
-              </p>
-              {bestScore === score && score > 0 && (
-                <motion.p
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="text-sm text-green-600 font-semibold mb-4"
+              {/* Pause overlay */}
+              {gameState === 'paused' && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg z-30"
                 >
-                  New Best Score! 🎉
-                </motion.p>
+                  <div className="text-center">
+                    <Pause className="mx-auto mb-2 text-primary" size={48} />
+                    <p className="text-lg font-semibold">Game Paused</p>
+                    <p className="text-sm text-muted-foreground">
+                      Press Space to continue
+                    </p>
+                  </div>
+                </motion.div>
               )}
-              <Button onClick={startGame} className="rounded-full">
-                Play Again
-              </Button>
             </div>
-          )}
-        </CardContent>
+
+            {/* Mobile Controls */}
+            <div className="mt-4 grid grid-cols-3 gap-2 max-w-[200px] mx-auto">
+              <div />
+              <Button
+                onClick={() => handleDirectionClick('UP')}
+                size="sm"
+                variant="outline"
+                className="rounded-full"
+              >
+                <ArrowUp size={16} />
+              </Button>
+              <div />
+              <Button
+                onClick={() => handleDirectionClick('LEFT')}
+                size="sm"
+                variant="outline"
+                className="rounded-full"
+              >
+                <ArrowLeft size={16} />
+              </Button>
+              <div />
+              <Button
+                onClick={() => handleDirectionClick('RIGHT')}
+                size="sm"
+                variant="outline"
+                className="rounded-full"
+              >
+                <ArrowRight size={16} />
+              </Button>
+              <div />
+              <Button
+                onClick={() => handleDirectionClick('DOWN')}
+                size="sm"
+                variant="outline"
+                className="rounded-full"
+              >
+                <ArrowDown size={16} />
+              </Button>
+              <div />
+            </div>
+          </div>
+        )}
+
+        {gameState === 'ended' && (
+          <div className="flex flex-col items-center justify-center p-6 text-center">
+            <Trophy className="text-yellow-500 mb-4" size={48} />
+            <h3 className="text-lg font-semibold mb-2">Game Over!</h3>
+            <p className="text-2xl font-bold text-primary mb-2">
+              Score: {score}
+            </p>
+            {bestScore === score && score > 0 && (
+              <motion.p
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="text-sm text-green-600 font-semibold mb-4"
+              >
+                New Best Score! 🎉
+              </motion.p>
+            )}
+            <Button onClick={startGame} className="rounded-full">
+              Play Again
+            </Button>
+          </div>
+        )}
+      </CardContent>
     </Card>
   );
 }

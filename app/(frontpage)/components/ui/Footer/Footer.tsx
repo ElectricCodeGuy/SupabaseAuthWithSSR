@@ -1,10 +1,10 @@
 'use client';
 import React from 'react';
 import { usePathname } from 'next/navigation';
-import Link from 'next/link';
+import Link from '@/components/link';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Linkedin, Youtube } from 'lucide-react';
+import { Linkedin, Youtube } from '@/components/brand-icons';
 
 const Footer: React.FC = () => {
   const pathname = usePathname();

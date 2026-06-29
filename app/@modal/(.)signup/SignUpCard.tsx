@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Check, X } from 'lucide-react';
 import { signup } from '../action';
 import { useFormStatus } from 'react-dom';
-import Link from 'next/link';
+import Link from '@/components/link';
 import {
   Popover,
   PopoverContent,

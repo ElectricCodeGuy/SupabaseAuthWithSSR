@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/link';
 import { MessageSquareOff, Home, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 

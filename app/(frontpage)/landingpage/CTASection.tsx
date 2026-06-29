@@ -3,7 +3,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Sparkles } from 'lucide-react';
-import Link from 'next/link';
+import Link from '@/components/link';
 
 export const CTASection: React.FC = () => {
   return (

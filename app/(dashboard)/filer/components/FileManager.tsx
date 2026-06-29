@@ -2,8 +2,12 @@
 
 import { useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { useDropzone, FileRejection, FileWithPath } from 'react-dropzone';
-import useSWR, { mutate } from 'swr';
+import {
+  useDropzone,
+  type FileRejection,
+  type FileWithPath
+} from 'react-dropzone';
+import { mutate } from 'swr';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -27,8 +31,7 @@ import {
   FileStack
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { da } from 'date-fns/locale';
-import Link from 'next/link';
+import Link from '@/components/link';
 import { deleteUserFile } from '../action';
 import { encodeBase64 } from '@/utils/base64';
 import {
@@ -94,10 +97,6 @@ export function FileManager({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState('');
-  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
-  const [currentFileName, setCurrentFileName] = useState<string | null>(null);
-  const [shouldCheckStatus, setShouldCheckStatus] = useState(false);
-  const [shouldProcessDoc, setShouldProcessDoc] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   // Delete state
@@ -108,17 +107,11 @@ export function FileManager({
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const resetUploadState = useCallback(() => {
-    setShouldCheckStatus(false);
-    setShouldProcessDoc(false);
-    mutate([`/api/checkdoc`, currentJobId], null, false);
-    mutate(['/api/processdoc', currentJobId, currentFileName], null, false);
     setIsUploading(false);
     setUploadProgress(0);
     setUploadStatus('');
-    setCurrentJobId(null);
-    setCurrentFileName(null);
     setSelectedFile(null);
-  }, [currentJobId, currentFileName]);
+  }, []);
 
   // Check if a document is selected based on URL
   const isDocSelected = (doc: UserDocument) => {
@@ -127,80 +120,11 @@ export function FileManager({
     return encoded === selectedDocFileName;
   };
 
-  // SWR for checking document processing status
-  useSWR(
-    shouldCheckStatus && currentJobId ? [`/api/checkdoc`, currentJobId] : null,
-    async ([url, jobId]) => {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jobId })
-      });
-      if (!response.ok) throw new Error('Failed to fetch processing status');
-      return response.json();
-    },
-    {
-      refreshInterval: 5000,
-      revalidateOnFocus: false,
-      onSuccess: (data) => {
-        if (data.status === 'SUCCESS') {
-          setUploadProgress(75);
-          setUploadStatus('Færdigbehandler fil...');
-          setShouldCheckStatus(false);
-          setShouldProcessDoc(true);
-        } else if (data.status === 'PENDING') {
-          setUploadStatus('Analyserer fil...');
-        } else {
-          setUploadStatus('Fejl ved analyse af fil.');
-          resetUploadState();
-        }
-      },
-      onError: () => {
-        setUploadStatus('Fejl ved analyse af fil.');
-        resetUploadState();
-      }
-    }
-  );
-
-  // SWR for processing document
-  useSWR(
-    shouldProcessDoc && currentJobId && currentFileName
-      ? ['/api/processdoc', currentJobId, currentFileName]
-      : null,
-    async ([url, jobId, fileName]) => {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jobId, fileName })
-      });
-      if (!response.ok) throw new Error('Failed to process document');
-      return response.json();
-    },
-    {
-      onSuccess: (data) => {
-        if (data.status === 'SUCCESS') {
-          setUploadProgress(100);
-          setUploadStatus('Upload fuldført!');
-          mutate('userFiles');
-          router.refresh();
-          setTimeout(() => resetUploadState(), 2000);
-        } else {
-          setUploadStatus('Fejl ved behandling af fil.');
-          resetUploadState();
-        }
-      },
-      onError: () => {
-        setUploadStatus('Fejl ved behandling af fil.');
-        resetUploadState();
-      }
-    }
-  );
-
   const uploadFile = useCallback(
     async (file: File) => {
       setIsUploading(true);
       setUploadProgress(0);
-      setUploadStatus('Uploader...');
+      setUploadStatus('Uploading...');
 
       let uploadedFilePath: string | null = null;
 
@@ -219,7 +143,7 @@ export function FileManager({
 
         if (!presignedResponse.ok) {
           const error = await presignedResponse.json();
-          throw new Error(error.message || 'Kunne ikke få upload URL');
+          throw new Error(error.message || 'Could not get upload URL');
         }
 
         const { uploadUrl, filePath, totalSize, maxSize } =
@@ -227,7 +151,7 @@ export function FileManager({
 
         if (totalSize + file.size > maxSize) {
           throw new Error(
-            `Maks størrelse overskredet (${maxSize / (1024 * 1024)} MB)`
+            `Maximum size exceeded (${maxSize / (1024 * 1024)} MB)`
           );
         }
 
@@ -241,37 +165,32 @@ export function FileManager({
         });
 
         if (!uploadResponse.ok) {
-          throw new Error('Kunne ikke uploade fil');
+          throw new Error('Could not upload file');
         }
 
-        setUploadProgress(40);
-        setUploadStatus('Forbereder analyse...');
+        setUploadProgress(50);
+        setUploadStatus('Analyzing & processing file...');
 
-        const processResponse = await fetch('/api/uploaddoc', {
+        // Mistral OCR + embeddings run in this single request (no polling).
+        const processResponse = await fetch('/api/processdoc', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            uploadedFiles: [
-              { name: fileNameWithUnderscores, path: uploadedFilePath }
-            ]
+            filePath: uploadedFilePath,
+            fileName: fileNameWithUnderscores
           })
         });
 
         if (!processResponse.ok) {
-          throw new Error('Fejl ved behandling af fil');
+          const err = await processResponse.json().catch(() => ({}));
+          throw new Error(err.error || 'Error processing file');
         }
 
-        const result = await processResponse.json();
-        setUploadProgress(50);
-        setUploadStatus('Analyserer fil...');
-
-        if (result.results[0].jobId) {
-          setCurrentJobId(result.results[0].jobId);
-          setCurrentFileName(file.name);
-          setShouldCheckStatus(true);
-        } else {
-          throw new Error('Intet job ID modtaget');
-        }
+        setUploadProgress(100);
+        setUploadStatus('Upload complete!');
+        mutate('userFiles');
+        router.refresh();
+        setTimeout(() => resetUploadState(), 2000);
       } catch (error) {
         console.error('Upload error:', error);
 
@@ -286,7 +205,7 @@ export function FileManager({
         }
 
         setUploadStatus(
-          error instanceof Error ? error.message : 'Upload fejlede'
+          error instanceof Error ? error.message : 'Upload failed'
         );
         setTimeout(() => resetUploadState(), 3000);
       }
@@ -379,10 +298,10 @@ export function FileManager({
                 className={`w-6 h-6 mx-auto mb-2 ${isDragActive ? 'text-primary' : 'text-muted-foreground'}`}
               />
               <p className="text-sm font-medium">
-                {isDragActive ? 'Slip filen her' : 'Træk fil hertil eller klik'}
+                {isDragActive ? 'Drop the file here' : 'Drag a file here or click'}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                PDF, maks 50 MB
+                PDF, max 50 MB
               </p>
             </div>
           ) : (
@@ -432,7 +351,7 @@ export function FileManager({
             <div className="flex flex-col items-center justify-center h-full p-8 text-center">
               <FileStack className="w-12 h-12 text-muted-foreground/50 mb-3" />
               <p className="text-sm text-muted-foreground">
-                Ingen dokumenter uploadet endnu
+                No documents uploaded yet
               </p>
             </div>
           ) : (
@@ -442,8 +361,7 @@ export function FileManager({
                 const isDeleting = deletingId === doc.id;
                 const docUrl = getDocUrl(doc.title);
                 const timeAgo = formatDistanceToNow(new Date(doc.created_at), {
-                  addSuffix: true,
-                  locale: da
+                  addSuffix: true
                 });
 
                 const content = (
@@ -471,7 +389,7 @@ export function FileManager({
                           <>
                             <span>·</span>
                             <span className="flex-shrink-0">
-                              {doc.total_pages} sider
+                              {doc.total_pages} pages
                             </span>
                           </>
                         )}
@@ -552,7 +470,9 @@ export function FileManager({
             </Pagination>
           ) : (
             <p className="text-xs text-muted-foreground text-center">
-              {documents.length} dokument{documents.length !== 1 ? 'er' : ''}
+              {documents.length === 1
+                ? '1 document'
+                : `${documents.length} documents`}
             </p>
           )}
         </div>
@@ -562,20 +482,20 @@ export function FileManager({
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Slet dokument?</AlertDialogTitle>
+            <AlertDialogTitle>Delete document?</AlertDialogTitle>
             <AlertDialogDescription>
-              Er du sikker på at du vil slette &quot;{documentToDelete?.title}
-              &quot;? Dette vil også fjerne dokumentet fra din chat-kontekst.
-              Denne handling kan ikke fortrydes.
+              Are you sure you want to delete &quot;{documentToDelete?.title}
+              &quot;? This will also remove the document from your chat context.
+              This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Annuller</AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Slet dokument
+              Delete document
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

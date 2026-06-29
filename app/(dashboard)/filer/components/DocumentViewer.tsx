@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { X, Eye, FileText } from 'lucide-react';
-import Link from 'next/link';
+import Link from '@/components/link';
 
 interface DocumentViewerProps {
   fileName: string | null;
@@ -16,7 +16,7 @@ export function DocumentViewer({ fileName, signedUrl }: DocumentViewerProps) {
       <div className="flex-1 border rounded-lg bg-card flex flex-col items-center justify-center text-center p-8">
         <Eye className="w-16 h-16 text-muted-foreground/30 mb-4" />
         <p className="text-muted-foreground">
-          Vælg et dokument for at se preview
+          Select a document to see a preview
         </p>
       </div>
     );
@@ -37,7 +37,7 @@ export function DocumentViewer({ fileName, signedUrl }: DocumentViewerProps) {
           </Link>
         </Button>
         <FileText className="w-16 h-16 text-muted-foreground/30 mb-4" />
-        <p className="text-muted-foreground">Kunne ikke indlæse preview</p>
+        <p className="text-muted-foreground">Could not load preview</p>
       </div>
     );
   }

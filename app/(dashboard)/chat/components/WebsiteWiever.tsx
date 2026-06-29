@@ -1,20 +1,23 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
+import Link from '@/components/link';
 import { usePathname } from 'next/navigation';
-import { X, ExternalLink } from 'lucide-react';
+import useSWR from 'swr';
+import { X, ExternalLink, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger
 } from '@/components/ui/tooltip';
 
 interface WebsiteViewerProps {
   url: string;
 }
+
+const fetcher = (url: string): Promise<{ isLoggedIn: boolean }> =>
+  fetch(url).then((r) => r.json());
 
 const WebsiteViewer: React.FC<WebsiteViewerProps> = ({ url }) => {
   const getProxiedUrl = (url: string) => {
@@ -25,33 +28,35 @@ const WebsiteViewer: React.FC<WebsiteViewerProps> = ({ url }) => {
   };
   const pathname = usePathname();
 
+  // The proxy route (/api/website) requires a session and returns 403 otherwise,
+  // so only render the iframe for logged-in users; show a message instead.
+  const { data, isLoading } = useSWR('/api/user-data', fetcher);
+  const isLoggedIn = data?.isLoggedIn ?? false;
+
   // Note: Not all websites can be proxied due to security restrictions.
   // If the website does some sort of POST request after render to get the data, it is not possible to proxy it with this technique.
   // Im also not sure if this might cause some legal issues... So use it at your own risk.
   return (
     <div className="w-1/2 overflow-y-auto h-[calc(100vh-48px)] border-l border-border relative flex flex-col">
       <div className="h-10 border-b border-border flex items-center px-2 bg-background">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                asChild
-                variant="outline"
-                size="icon"
-                className="m-0.5 rounded-md p-1 h-7 w-7 bg-background text-foreground transition-all duration-200 
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              asChild
+              variant="outline"
+              size="icon"
+              className="m-0.5 rounded-md p-1 h-7 w-7 bg-background text-foreground transition-all duration-200 
                          hover:-translate-y-[1px] hover:bg-background hover:shadow-md hover:text-primary hover:border-primary"
-              >
-                <Link href={pathname} replace>
-                  <X className="h-4 w-4 font-bold" />
-                </Link>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Close</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-
+            >
+              <Link href={pathname} replace>
+                <X className="h-4 w-4 font-bold" />
+              </Link>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Close</p>
+          </TooltipContent>
+        </Tooltip>
         <a
           href={url}
           target="_blank"
@@ -66,11 +71,20 @@ const WebsiteViewer: React.FC<WebsiteViewerProps> = ({ url }) => {
         </a>
       </div>
       <div className="flex-1 bg-background/50">
-        <iframe
-          src={getProxiedUrl(url)}
-          className="w-full h-full border-none"
-          title="Website Viewer"
-        />
+        {isLoading ? null : isLoggedIn ? (
+          <iframe
+            src={getProxiedUrl(url)}
+            className="w-full h-full border-none"
+            title="Website Viewer"
+          />
+        ) : (
+          <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
+            <Lock className="h-10 w-10 text-muted-foreground/50" />
+            <p className="text-sm font-medium text-muted-foreground">
+              An account is required for this action
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

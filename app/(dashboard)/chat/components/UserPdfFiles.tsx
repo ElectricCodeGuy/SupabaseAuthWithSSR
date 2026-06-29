@@ -2,12 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { X, Loader2 } from 'lucide-react';
-import Link from 'next/link';
+import Link from '@/components/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
-  TooltipProvider,
   TooltipTrigger,
   TooltipContent
 } from '@/components/ui/tooltip';
@@ -64,25 +63,23 @@ export default function UserPdfViewer({
   return (
     <div className="w-[55%] border-l border-slate-200 hidden sm:flex flex-col justify-start items-stretch overflow-hidden relative">
       <div className="absolute top-0 left-0 z-10 m-2">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                asChild
-                className="rounded-md p-1 h-6 w-6 bg-white text-gray-800 transition-all duration-200 border border-slate-200 hover:bg-white hover:shadow-md hover:text-primary hover:border-primary"
-              >
-                <Link href={pathname} replace prefetch={false}>
-                  <X className="h-4 w-4 font-bold" />
-                </Link>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Luk</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              asChild
+              className="rounded-md p-1 h-6 w-6 bg-white text-gray-800 transition-all duration-200 border border-slate-200 hover:bg-white hover:shadow-md hover:text-primary hover:border-primary"
+            >
+              <Link href={pathname} replace prefetch={false}>
+                <X className="h-4 w-4 font-bold" />
+              </Link>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Luk</p>
+          </TooltipContent>
+        </Tooltip>
       </div>
 
       {isLoading && (

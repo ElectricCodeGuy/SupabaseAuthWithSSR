@@ -109,7 +109,7 @@ export const websiteSearchTool = tool({
       `;
 
     const { output } = await generateText({
-      model: google('gemini-2.5-flash'),
+      model: google('gemini-3.1-flash-lite-preview'),
       system: queryOptimizationPrompt,
       output: Output.object({ schema: websiteSearchSchema }),
       messages: prunedMessages

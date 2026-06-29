@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import { motion } from 'framer-motion';
-import Link from 'next/link';
+import Link from '@/components/link';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Sparkles, Zap } from 'lucide-react';
 

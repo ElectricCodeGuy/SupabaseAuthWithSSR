@@ -13,7 +13,7 @@ const deleteFileSchema = z.object({
 export async function deleteUserFile(formData: FormData) {
   const session = await getSession();
   if (!session) {
-    return { success: false, message: 'Ikke autoriseret' };
+    return { success: false, message: 'Not authorized' };
   }
 
   const result = deleteFileSchema.safeParse({
@@ -43,7 +43,7 @@ export async function deleteUserFile(formData: FormData) {
       console.error('Error deleting file from storage:', deleteError);
       return {
         success: false,
-        message: 'Fejl ved sletning af fil fra storage'
+        message: 'Error deleting file from storage'
       };
     }
 
@@ -59,7 +59,7 @@ export async function deleteUserFile(formData: FormData) {
       console.error('Error deleting document records:', docDeleteError);
       return {
         success: false,
-        message: 'Fejl ved sletning af dokument metadata'
+        message: 'Error deleting document metadata'
       };
     }
 
@@ -67,13 +67,13 @@ export async function deleteUserFile(formData: FormData) {
 
     return {
       success: true,
-      message: `Fil slettet succesfuldt`
+      message: `File deleted successfully`
     };
   } catch (error) {
     console.error('Error during deletion:', error);
     return {
       success: false,
-      message: 'Fejl ved sletning af fil'
+      message: 'Error deleting file'
     };
   }
 }
@@ -84,19 +84,19 @@ export async function revalidateFiles() {
 
 export async function getDocumentSignedUrl(filePath: string | null) {
   if (!filePath) {
-    return { success: false, url: null, message: 'Ingen fil sti' };
+    return { success: false, url: null, message: 'No file path' };
   }
 
   const session = await getSession();
   if (!session) {
-    return { success: false, url: null, message: 'Ikke autoriseret' };
+    return { success: false, url: null, message: 'Not authorized' };
   }
 
   const userId = session.sub;
 
   // Verify the file belongs to the user
   if (!filePath.startsWith(`${userId}/`)) {
-    return { success: false, url: null, message: 'Ikke autoriseret' };
+    return { success: false, url: null, message: 'Not authorized' };
   }
 
   try {
@@ -111,7 +111,7 @@ export async function getDocumentSignedUrl(filePath: string | null) {
       return {
         success: false,
         url: null,
-        message: 'Kunne ikke hente dokument'
+        message: 'Could not load document'
       };
     }
 
@@ -121,7 +121,7 @@ export async function getDocumentSignedUrl(filePath: string | null) {
     return {
       success: false,
       url: null,
-      message: 'Fejl ved hentning af dokument'
+      message: 'Error loading document'
     };
   }
 }

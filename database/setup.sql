@@ -1,5 +1,5 @@
 -- =============================================================================
--- SUPABASE DATABASE SETUP - Version 3.0.0
+-- SUPABASE DATABASE SETUP - Version 4.0.0
 -- =============================================================================
 -- Run this SQL in the Supabase SQL Editor to set up all required tables,
 -- functions, indexes, and RLS policies for the application.
@@ -82,6 +82,10 @@ CREATE TABLE IF NOT EXISTS public.chat_sessions (
   created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
   chat_title text NULL,
+  -- Per-chat flags used by the chat sidebar menu. A chat can be opened publicly
+  -- (via /shared-chat/[id]) only while is_public = true.
+  is_favorite boolean NOT NULL DEFAULT false,
+  is_public boolean NOT NULL DEFAULT false,
   CONSTRAINT chat_sessions_pkey PRIMARY KEY (id),
   CONSTRAINT chat_sessions_user_id_fkey FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 ) TABLESPACE pg_default;
@@ -91,6 +95,13 @@ CREATE INDEX IF NOT EXISTS idx_chat_sessions_user_id
   ON public.chat_sessions USING btree (user_id) TABLESPACE pg_default;
 CREATE INDEX IF NOT EXISTS chat_sessions_created_at_idx
   ON public.chat_sessions USING btree (created_at) TABLESPACE pg_default;
+-- Partial indexes keep the "favorites" sidebar group and public lookups cheap
+CREATE INDEX IF NOT EXISTS chat_sessions_user_favorite_idx
+  ON public.chat_sessions (user_id, is_favorite)
+  WHERE is_favorite = true;
+CREATE INDEX IF NOT EXISTS chat_sessions_public_idx
+  ON public.chat_sessions (id)
+  WHERE is_public = true;
 
 -- Enable RLS for chat_sessions
 ALTER TABLE public.chat_sessions ENABLE ROW LEVEL SECURITY;
@@ -112,7 +123,7 @@ USING (user_id = (SELECT auth.uid()));
 CREATE TABLE IF NOT EXISTS public.message_parts (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   chat_session_id uuid NOT NULL,
-  message_id uuid NOT NULL,
+  message_id text NOT NULL,
   role text NOT NULL,
   type text NOT NULL,
   "order" integer NOT NULL DEFAULT 0,
@@ -142,23 +153,15 @@ CREATE TABLE IF NOT EXISTS public.message_parts (
   source_document_title text NULL,
   source_document_filename text NULL,
 
-  -- Tool: searchUserDocument fields
-  tool_searchuserdocument_toolcallid uuid NULL,
-  tool_searchuserdocument_state text NULL,
-  tool_searchuserdocument_input jsonb NULL,
-  tool_searchuserdocument_output jsonb NULL,
-  tool_searchuserdocument_errortext text NULL,
-  tool_searchuserdocument_providerexecuted boolean NULL,
-  tool_searchuserdocument_approval jsonb NULL,
-
-  -- Tool: websiteSearchTool fields
-  tool_websitesearchtool_toolcallid uuid NULL,
-  tool_websitesearchtool_state text NULL,
-  tool_websitesearchtool_input jsonb NULL,
-  tool_websitesearchtool_output jsonb NULL,
-  tool_websitesearchtool_errortext text NULL,
-  tool_websitesearchtool_providerexecuted boolean NULL,
-  tool_websitesearchtool_approval jsonb NULL,
+  -- Tool fields (generic — shared by ALL tools). The `type` column identifies
+  -- which tool a row belongs to (e.g. 'tool-searchUserDocument')
+  tool_toolcallid text NULL,
+  tool_state text NULL,
+  tool_input jsonb NULL,
+  tool_output jsonb NULL,
+  tool_errortext text NULL,
+  tool_providerexecuted boolean NULL,
+  tool_approval jsonb NULL,
 
   -- Provider metadata
   providermetadata jsonb NULL,
@@ -248,6 +251,8 @@ CREATE TABLE IF NOT EXISTS public.user_documents_vec (
   text_content text NOT NULL,
   page_number integer NOT NULL,
   embedding extensions.vector(1024) NULL,
+  -- Timestamp set automatically when the row is inserted
+  created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT user_documents_vec_pkey PRIMARY KEY (id),
   CONSTRAINT user_documents_vec_document_page_unique UNIQUE (document_id, page_number),
   CONSTRAINT user_documents_vec_document_id_fkey FOREIGN KEY (document_id) REFERENCES user_documents (id) ON DELETE CASCADE
@@ -258,12 +263,25 @@ CREATE INDEX IF NOT EXISTS idx_user_documents_vec_document_id
   ON public.user_documents_vec USING btree (document_id) TABLESPACE pg_default;
 
 -- HNSW index for vector similarity search
--- Parameters: m=16 (connections per layer), ef_construction=64 (candidate list size)
--- For >500k rows, consider m=32 and ef_construction=128
+-- Parameters: m=16 (connections per layer), ef_construction=200 (build candidate list size)
+--   - m=16 is the pgvector default and is fine in almost all cases. Raising it to
+--     m=32 roughly DOUBLES the index size for little recall gain on most datasets.
+--   - The whole index should fit in Postgres' buffer cache (~25% of the instance RAM)
+--     to stay fast. If the index grows larger than that, query latency can degrade.
+--
+-- NOTE: This index is ONLY used by unfiltered queries (vector ORDER BY + LIMIT,
+-- like match_documents below). Adding a WHERE filter on another column disables
+-- it -- for that you need a separate partial HNSW index per filter value.
+--
+-- TODO (only when you grow past ~100k rows of dense text): switch this index to
+-- halfvec to roughly halve its size at ~1% recall loss, e.g.
+--   USING hnsw ((embedding::halfvec(1024)) halfvec_l2_ops)
+-- If you do, also cast to halfvec inside match_documents() so the planner uses it.
+-- See the "Tuning the HNSW vector index" section in README.md for details.
 CREATE INDEX IF NOT EXISTS user_documents_vec_embedding_idx
   ON public.user_documents_vec
   USING hnsw (embedding extensions.vector_l2_ops)
-  WITH (m = '16', ef_construction = '64')
+  WITH (m = '16', ef_construction = '200')
   TABLESPACE pg_default;
 
 -- Enable RLS for user_documents_vec
@@ -339,7 +357,65 @@ END;
 $$;
 
 -- =============================================================================
--- STEP 9: STORAGE BUCKET SETUP
+-- STEP 9: AI MODELS CATALOG + PER-USER SELECTION
+-- =============================================================================
+-- Reference table of the models the app can use. The primary key is an
+-- auto-incrementing id; `model_id` is the slug the chat API route switches on
+-- and is what users.selected_model points at, so each user's chosen model is
+-- visible directly on the users table. Costs are per 1M tokens in USD.
+
+CREATE TABLE IF NOT EXISTS public.ai_models (
+  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  model_id text NOT NULL UNIQUE,
+  display_name text NOT NULL,
+  provider text NOT NULL,
+  input_cost_per_million_usd numeric(10, 4) NOT NULL,
+  output_cost_per_million_usd numeric(10, 4) NOT NULL,
+  active boolean NOT NULL DEFAULT true,
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  description text NOT NULL DEFAULT '',
+  source_url text NOT NULL DEFAULT '',
+  cost_tier text NOT NULL DEFAULT 'medium',
+  cost_note text NOT NULL DEFAULT '',
+  display_order integer NOT NULL DEFAULT 0,
+  selectable boolean NOT NULL DEFAULT true,
+  CONSTRAINT ai_models_cost_tier_check CHECK (
+    cost_tier = ANY (ARRAY['low'::text, 'medium'::text, 'high'::text])
+  )
+);
+
+CREATE INDEX IF NOT EXISTS ai_models_display_order_idx
+  ON public.ai_models USING btree (display_order);
+
+-- Reference data: readable by any authenticated user, not writable from the app
+ALTER TABLE public.ai_models ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Authenticated users can read ai models"
+ON public.ai_models
+FOR SELECT
+TO authenticated
+USING (true);
+
+-- Seed models. logo_url is intentionally omitted: the UI maps `provider` to a
+-- local image in public/images/ai-providers/.
+INSERT INTO public.ai_models
+  (model_id, display_name, provider, input_cost_per_million_usd, output_cost_per_million_usd, active, description, source_url, cost_tier, cost_note, display_order, selectable)
+VALUES
+  ('gpt-5.5',                'GPT-5.5',         'openai',    4.2857, 27.1429, true, 'OpenAI''s latest language model with strong general knowledge.',                'https://openai.com/index/introducing-gpt-5-5/',    'high',   '~$1.40/answer', 1, true),
+  ('gemini-3.5-flash',       'Gemini 3.5 Flash','google',    1.4286,  8.5714, true, 'Google''s fast model with frontier intelligence and strong search/grounding.',  'https://ai.google.dev/gemini-api/docs/pricing',    'medium', '~$0.30/answer', 1, true),
+  ('gemini-3.1-pro-preview', 'Gemini 3.1 Pro',  'google',    2.7143, 14.2857, true, 'Google''s most advanced model for complex problem-solving and deep reasoning.', 'https://deepmind.google/models/gemini/pro/',       'medium', '~$0.45/answer', 2, true),
+  ('claude-sonnet-4-6',      'Sonnet 4.6',      'anthropic', 2.8571, 13.7143, true, 'Anthropic''s fast and balanced model.',                                        'https://www.anthropic.com/news/claude-sonnet-4-6', 'medium', '~$0.45/answer', 3, true),
+  ('claude-opus-4-8',        'Opus 4.8',        'anthropic', 4.2857, 22.8571, true, 'Anthropic''s most advanced model with strong analysis.',                       'https://www.anthropic.com/claude',                 'high',   '~$1.15/answer', 5, true)
+ON CONFLICT (model_id) DO NOTHING;
+
+-- Per-user selected model. Nullable + ON DELETE SET NULL so removing a model
+-- doesn't break users; the app falls back to the default when null.
+ALTER TABLE public.users
+  ADD COLUMN IF NOT EXISTS selected_model text DEFAULT 'gemini-3.1-pro-preview'
+    REFERENCES public.ai_models (model_id) ON DELETE SET NULL;
+
+-- =============================================================================
+-- STEP 10: STORAGE BUCKET SETUP
 -- =============================================================================
 -- Note: Create a storage bucket named 'userfiles' in the Supabase dashboard first
 -- Then run these policies:

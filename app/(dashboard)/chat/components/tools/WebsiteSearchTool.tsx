@@ -15,7 +15,7 @@ import {
   AccordionItem,
   AccordionTrigger
 } from '@/components/ui/accordion';
-import Link from 'next/link';
+import Link from '@/components/link';
 import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 

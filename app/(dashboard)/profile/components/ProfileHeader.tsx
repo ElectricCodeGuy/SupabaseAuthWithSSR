@@ -2,16 +2,15 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import Link from 'next/link';
+import Link from '@/components/link';
 import {
   User as PersonIcon,
   Briefcase as WorkIcon,
-  Github as GitHubIcon,
-  Linkedin as LinkedInIcon,
   Code as CodeIcon,
   Calendar as CalendarTodayIcon,
   Sparkles
 } from 'lucide-react';
+import { Github as GitHubIcon, Linkedin as LinkedInIcon } from '@/components/brand-icons';
 import { FloatingShapes } from './FloatingShapes';
 
 interface ProfileHeaderProps {

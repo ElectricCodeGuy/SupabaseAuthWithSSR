@@ -2,7 +2,7 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
+import Link from '@/components/link';
 import { ExternalLink, Info, AlertCircle } from 'lucide-react';
 import type { SourceUrlUIPart, SourceDocumentUIPart } from 'ai';
 import useSWR from 'swr';
@@ -53,8 +53,8 @@ const SourceItem = ({
     source.type === 'source-url'
       ? source.title
       : source.type === 'source-document'
-      ? source.title
-      : undefined;
+        ? source.title
+        : undefined;
 
   // useSWR hook at the top level
   const { data, error, isLoading } = useSWR<Metadata>(
@@ -79,8 +79,8 @@ const SourceItem = ({
     source.type === 'source-url' && sourceUrl
       ? `?url=${encodeURIComponent(sourceUrl)}`
       : source.type === 'source-document'
-      ? `?document=${encodeURIComponent(source.sourceId)}`
-      : '#';
+        ? `?document=${encodeURIComponent(source.sourceId)}`
+        : '#';
 
   return (
     <li

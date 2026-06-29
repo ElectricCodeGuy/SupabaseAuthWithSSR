@@ -36,12 +36,11 @@ export const preliminaryAnswerChainAgent = async (content: string) => {
     'Given the content provided below, perform a comprehensive analysis. Generate two preliminary answers, tag key concepts or topics, and generate two hypothetical questions. Ensure all outputs address specific elements mentioned in the text. Focus on interpreting key themes, implications of specific concepts, and potential real-life applications or consequences. Answers and questions should be detailed and thought-provoking. The output language should be in the same as the input text.';
 
   const { output, usage } = await generateText({
-    model: google('gemini-3-flash-preview'),
+    model: google('gemini-3.1-flash-lite-preview'),
     system: SystemPrompt,
     prompt: content,
     output: Output.object({ schema: contentAnalysisSchema }),
-    abortSignal: AbortSignal.timeout(15000), // 15 seconds timeout
-    temperature: 0
+    abortSignal: AbortSignal.timeout(15000) // 15 seconds timeout
   });
 
   return { output, usage };
@@ -87,11 +86,10 @@ export const generateDocumentMetadata = async (content: string) => {
   `;
 
   const { output, usage, finishReason } = await generateText({
-    model: google('gemini-3-flash-preview'),
+    model: google('gemini-3.1-flash-lite-preview'),
     system: SystemPrompt,
     prompt: content,
-    output: Output.object({ schema: documentMetadataSchema }),
-    temperature: 0
+    output: Output.object({ schema: documentMetadataSchema })
   });
 
   return { output, usage, finishReason };

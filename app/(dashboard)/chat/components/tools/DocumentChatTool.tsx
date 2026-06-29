@@ -1,25 +1,99 @@
-import React from 'react';
+'use client';
+
+import React, { useState } from 'react';
 import {
   FileText,
+  BookOpen,
+  Files,
+  ChevronDown,
+  ChevronUp,
+  ChevronRight,
   Loader2,
   CheckCircle,
-  XCircle,
-  FileIcon
+  XCircle
 } from 'lucide-react';
 import type { ToolUIPart } from 'ai';
 import type { UITools } from '@/app/(dashboard)/chat/types/tooltypes';
+import Link from '@/components/link';
+import { Badge } from '@/components/ui/badge';
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger
-} from '@/components/ui/accordion';
-import Link from 'next/link';
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent
+} from '@/components/ui/collapsible';
+import { cn } from '@/lib/utils';
 
 // Client-side base64 encoding for URLs
 function encodeBase64(str: string): string {
   return btoa(unescape(encodeURIComponent(str)));
 }
+
+interface InlineToolSectionProps {
+  icon: React.ReactNode;
+  label: string;
+  summary?: string;
+  state: string;
+  isSuccess?: boolean;
+  loadingText?: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}
+
+const InlineToolSection: React.FC<InlineToolSectionProps> = ({
+  icon,
+  label,
+  summary,
+  state,
+  isSuccess = true,
+  loadingText,
+  defaultOpen = false,
+  children
+}) => {
+  const [open, setOpen] = useState(defaultOpen);
+
+  const isLoading = state === 'input-streaming' || state === 'input-available';
+  const isError =
+    state === 'output-error' || (state === 'output-available' && !isSuccess);
+  const isDone = state === 'output-available' && isSuccess;
+
+  const statusIcon = isLoading ? (
+    <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+  ) : isError ? (
+    <XCircle className="h-3.5 w-3.5 text-red-500 dark:text-red-400" />
+  ) : isDone ? (
+    <CheckCircle className="h-3.5 w-3.5 text-green-500 dark:text-green-400" />
+  ) : null;
+
+  return (
+    <Collapsible
+      open={open}
+      onOpenChange={setOpen}
+      className="my-1.5 rounded-lg border border-border/60 bg-background/50 dark:bg-background/30"
+    >
+      <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 px-3 rounded-lg text-left cursor-pointer hover:bg-muted/40 transition-colors">
+        <ChevronRight
+          className={cn(
+            'h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 shrink-0',
+            open && 'rotate-90'
+          )}
+        />
+        <span className="shrink-0">{icon}</span>
+        <span className="text-sm text-muted-foreground grow truncate">
+          {isLoading && loadingText ? loadingText : label}
+        </span>
+        {summary && isDone && (
+          <span className="text-xs text-muted-foreground/70 shrink-0">
+            {summary}
+          </span>
+        )}
+        <span className="shrink-0">{statusIcon}</span>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="px-3 pb-2.5 pt-0.5">{children}</div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+};
 
 interface DocumentChatToolProps {
   toolInvocation: Extract<
@@ -29,187 +103,186 @@ interface DocumentChatToolProps {
   index: string;
 }
 
+interface DocSummary {
+  id: string;
+  title: string;
+  fileName: string;
+  description?: string;
+  topics?: string[];
+  totalPages?: number;
+}
+
+interface SearchHit {
+  documentId: string;
+  title: string;
+  fileName: string;
+  page: number;
+  totalPages: number;
+  text: string;
+}
+
+type DocOutput =
+  | { mode: 'list' | 'findByName'; query?: string; documents: DocSummary[] }
+  | { mode: 'search'; query: string; results: SearchHit[] };
+
 const DocumentChatTool: React.FC<DocumentChatToolProps> = ({
-  toolInvocation,
-  index
+  toolInvocation
 }) => {
-  const query = toolInvocation.input?.query || '';
-  const output = toolInvocation.output;
+  const [showAll, setShowAll] = useState(false);
+  const output = toolInvocation.output as DocOutput | undefined;
 
-  // Determine status icon based on state
-  const getStatusIcon = () => {
-    switch (toolInvocation.state) {
-      case 'input-streaming':
-      case 'input-available':
-        return (
-          <Loader2 className="h-4 w-4 animate-spin text-gray-600 dark:text-gray-400" />
-        );
-      case 'output-available':
-        return (
-          <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400" />
-        );
-      case 'output-error':
-        return <XCircle className="h-4 w-4 text-red-500 dark:text-red-400" />;
-      default:
-        return null;
-    }
-  };
+  const isSearch = output?.mode === 'search';
+  const docs: DocSummary[] =
+    output && output.mode !== 'search' ? (output.documents ?? []) : [];
+  const hits: SearchHit[] =
+    output && output.mode === 'search' ? (output.results ?? []) : [];
 
-  // Determine background color based on state
-  const getBackgroundClass = () => {
-    switch (toolInvocation.state) {
-      case 'output-available':
-        return 'bg-[rgba(240,255,240,0.7)] dark:bg-green-950/40 border-[rgba(0,200,0,0.1)] dark:border-green-800/30';
-      case 'output-error':
-        return 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800';
-      default:
-        return 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700';
-    }
-  };
+  const items = isSearch ? hits : docs;
+  const count = items.length;
+  const displayItems = showAll ? items : items.slice(0, 3);
+  const remaining = count - 3;
 
-  // Extract document sources from output context
-  const getSources = () => {
-    if (!output?.context || !Array.isArray(output.context)) return [];
-    return output.context.filter((item: any) => item.type === 'document');
-  };
+  const label = isSearch
+    ? 'Searching documents'
+    : output?.mode === 'findByName'
+      ? 'Finding documents'
+      : 'Reading your documents';
 
-  // Group sources by document title
-  const getGroupedSources = () => {
-    const sources = getSources();
-    const grouped: Record<string, typeof sources> = {};
-
-    for (const source of sources) {
-      const key = source.title;
-      if (!grouped[key]) {
-        grouped[key] = [];
-      }
-      grouped[key].push(source);
-    }
-
-    return Object.entries(grouped).map(([title, pages]) => ({
-      title,
-      aiTitle: pages[0]?.aiTitle,
-      pages: pages.sort((a, b) => a.page - b.page),
-      totalPages: pages[0]?.totalPages
-    }));
-  };
-
-  const sources = getSources();
-  const groupedSources = getGroupedSources();
+  const summaryText =
+    count > 0 && toolInvocation.state === 'output-available'
+      ? `${count} ${count === 1 ? 'document' : 'documents'}`
+      : undefined;
 
   return (
-    <Accordion type="single" collapsible className="my-1">
-      <AccordionItem
-        value={`tool-${index}`}
-        className={`border rounded-lg shadow-sm ${getBackgroundClass()}`}
-      >
-        <AccordionTrigger className="py-2 px-3 min-h-[36px] hover:no-underline">
-          <div className="flex items-center gap-2 w-full">
-            <div className="flex-shrink-0">
-              <FileText className="text-primary h-5 w-5" />
-            </div>
-            <span className="text-sm font-medium flex-grow text-left">
-              Document Search
-            </span>
-            {sources.length > 0 &&
-              toolInvocation.state === 'output-available' && (
-                <span className="text-xs mr-2">
-                  {groupedSources.length}{' '}
-                  {groupedSources.length === 1 ? 'document' : 'documents'},{' '}
-                  {sources.length} {sources.length === 1 ? 'page' : 'pages'}
-                </span>
-              )}
-            <div className="flex-shrink-0">{getStatusIcon()}</div>
+    <InlineToolSection
+      icon={<Files className="text-primary h-4 w-4" />}
+      label={label}
+      summary={summaryText}
+      state={toolInvocation.state}
+      loadingText={`${label}…`}
+    >
+      <div className="max-h-96 overflow-y-auto space-y-2">
+        {output?.query && (
+          <div className="text-xs">
+            <span className="font-bold text-gray-700 dark:text-gray-300">
+              Search query:
+            </span>{' '}
+            <span className="dark:text-gray-400">{output.query}</span>
           </div>
-        </AccordionTrigger>
-        <AccordionContent className="px-3 py-2 bg-black/[0.02] dark:bg-white/[0.02]">
-          <div className="space-y-3">
-            {/* Query */}
-            {query && (
-              <div className="text-xs">
-                <span className="font-bold text-gray-700 dark:text-gray-300">
-                  Search query:
-                </span>{' '}
-                <span className="dark:text-gray-400">{query}</span>
-              </div>
-            )}
+        )}
 
-            {/* Document Sources */}
-            {toolInvocation.state === 'output-available' &&
-              groupedSources.length > 0 && (
-                <div className="space-y-2">
-                  <div className="text-xs font-bold text-gray-700 dark:text-gray-300">
-                    Found documents:
-                  </div>
-                  <div className="space-y-2">
-                    {groupedSources.map((doc, idx) => (
-                      <div
-                        key={idx}
-                        className="p-2 rounded-md bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700"
-                      >
-                        <div className="flex items-start gap-2">
-                          <FileIcon className="h-4 w-4 mt-0.5 text-primary flex-shrink-0" />
-                          <div className="flex-grow min-w-0">
-                            <div className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">
-                              {doc.aiTitle || doc.title}
-                            </div>
-                            {doc.aiTitle && doc.aiTitle !== doc.title && (
-                              <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                {doc.title}
-                              </div>
-                            )}
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              {doc.pages.slice(0, 10).map((page, pageIdx) => (
-                                <Link
-                                  key={pageIdx}
-                                  href={`?pdf=${encodeBase64(doc.title)}&p=${page.page}`}
-                                  className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-                                  prefetch={false}
-                                >
-                                  p. {page.page}
-                                </Link>
-                              ))}
-                              {doc.pages.length > 10 && (
-                                <span className="text-xs text-gray-500 dark:text-gray-400 px-1">
-                                  +{doc.pages.length - 10} more
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-            {/* No documents found */}
-            {toolInvocation.state === 'output-available' &&
-              sources.length === 0 && (
-                <div className="text-xs text-gray-600 dark:text-gray-400 italic">
-                  No relevant documents found
-                </div>
-              )}
-
-            {/* Loading state */}
-            {(toolInvocation.state === 'input-streaming' ||
-              toolInvocation.state === 'input-available') && (
+        {toolInvocation.state === 'output-available' && (
+          <>
+            {count === 0 && (
               <div className="text-xs dark:text-gray-400 italic">
-                Searching your documents...
+                No documents found.
               </div>
             )}
 
-            {/* Error */}
-            {toolInvocation.state === 'output-error' && (
-              <div className="text-xs text-red-600 dark:text-red-400">
-                <span className="font-bold">Error:</span>{' '}
-                {toolInvocation.errorText || 'Search failed'}
-              </div>
+            {/* Search snippets */}
+            {isSearch &&
+              (displayItems as SearchHit[]).map((hit, idx) => (
+                <Link
+                  key={`${hit.documentId}-${hit.page}-${idx}`}
+                  href={`?pdf=${encodeBase64(hit.fileName.trim())}&p=${hit.page}`}
+                  className="block p-2 rounded bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700/50 group hover:no-underline"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-primary shrink-0" />
+                    <h5 className="text-xs font-medium truncate text-gray-900 dark:text-gray-100 group-hover:text-primary">
+                      {hit.title}
+                    </h5>
+                    <Badge
+                      variant="outline"
+                      className="ml-auto text-[10px] px-1 py-0"
+                    >
+                      p. {hit.page}
+                    </Badge>
+                  </div>
+                  <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400 line-clamp-3 pb-0">
+                    {hit.text}
+                  </p>
+                </Link>
+              ))}
+
+            {/* Document list / name lookup */}
+            {!isSearch &&
+              (displayItems as DocSummary[]).map((doc) => (
+                <Link
+                  key={doc.id}
+                  href={`?pdf=${encodeBase64(doc.fileName.trim())}`}
+                  className="block p-2 rounded bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700/50 group hover:no-underline"
+                >
+                  <div className="flex items-start gap-2">
+                    <FileText className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <h5 className="text-xs font-medium line-clamp-2 text-gray-900 dark:text-gray-100 group-hover:text-primary">
+                        {doc.title}
+                      </h5>
+                      {doc.description && (
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-2 pb-0">
+                          {doc.description}
+                        </p>
+                      )}
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                        {doc.totalPages ? (
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] px-1 py-0"
+                          >
+                            <BookOpen className="w-2.5 h-2.5 mr-0.5" />
+                            <span>{doc.totalPages} pages</span>
+                          </Badge>
+                        ) : null}
+                        {doc.topics?.slice(0, 2).map((topic) => (
+                          <Badge
+                            key={topic}
+                            variant="secondary"
+                            className="text-[10px] px-1 py-0"
+                          >
+                            {topic}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+
+            {remaining > 0 && (
+              <button
+                onClick={() => setShowAll(!showAll)}
+                className="flex items-center justify-center gap-1 text-xs text-primary hover:underline w-full"
+              >
+                {showAll ? (
+                  <>
+                    <ChevronUp className="h-2.5 w-2.5" />
+                    <span>Show fewer</span>
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="h-2.5 w-2.5" />
+                    <span>+{remaining} more</span>
+                  </>
+                )}
+              </button>
             )}
+          </>
+        )}
+
+        {(toolInvocation.state === 'input-streaming' ||
+          toolInvocation.state === 'input-available') && (
+          <div className="text-xs dark:text-gray-400 italic">{label}…</div>
+        )}
+
+        {toolInvocation.state === 'output-error' && (
+          <div className="text-xs text-red-600 dark:text-red-400">
+            <span className="font-bold">Error:</span>{' '}
+            <span>{toolInvocation.errorText || 'Document lookup failed'}</span>
           </div>
-        </AccordionContent>
-      </AccordionItem>
-    </Accordion>
+        )}
+      </div>
+    </InlineToolSection>
   );
 };
 

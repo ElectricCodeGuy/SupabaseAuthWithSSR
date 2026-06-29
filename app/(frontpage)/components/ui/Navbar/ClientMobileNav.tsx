@@ -1,7 +1,8 @@
 import { useState, useCallback, Fragment } from 'react';
 import { usePathname } from 'next/navigation';
-import Link from 'next/link';
-import { Menu, LucideIcon, ChevronDown } from 'lucide-react';
+import Link from '@/components/link';
+import type { LucideIcon } from 'lucide-react';
+import { Menu, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,

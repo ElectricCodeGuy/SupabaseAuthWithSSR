@@ -1,110 +1,85 @@
-import { FlatCompat } from '@eslint/eslintrc';
-import js from '@eslint/js';
-import prettierConfig from 'eslint-config-prettier';
-import globals from 'globals';
-import tseslint from 'typescript-eslint';
-import { defineConfig } from 'eslint/config';
+// @ts-check
 
-const compat = new FlatCompat({
-  baseDirectory: import.meta.dirname
-});
+import { defineConfig, globalIgnores } from 'eslint/config';
+import ts from 'typescript-eslint';
+import nextPlugin from '@next/eslint-plugin-next';
+import reactGoogleTranslate from 'eslint-plugin-react-google-translate';
 
 export default defineConfig([
+  ts.configs.recommendedTypeChecked,
   {
-    ignores: ['.next', 'node_modules', '**/*.d.ts', 'components/**/*']
-  },
-  // Base configs
-  js.configs.recommended,
-  //Remove this if you don't want the optional stylistic rules liek the type and interface
-  ...tseslint.configs.stylisticTypeChecked,
-
-  // Next.js config
-  ...compat.extends('next/core-web-vitals'),
-  ...compat.extends('next/typescript'),
-
-  {
-    linterOptions: {
-      reportUnusedDisableDirectives: true
-    },
-    files: ['**/*.{js,jsx,ts,tsx}'],
-    ignores: ['**/*.d.ts'],
     languageOptions: {
-      parser: tseslint.parser,
-      ecmaVersion: 'latest',
-      sourceType: 'module',
       parserOptions: {
-        project: ['./tsconfig.json'], // Specify the path to your tsconfig.json
-        tsconfigRootDir: import.meta.dirname,
-        ecmaFeatures: {
-          jsx: true
-        }
-      },
-      globals: {
-        ...globals.browser,
-        ...globals.node
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname
       }
-    },
-    settings: {
-      next: {
-        rootDir: './'
-      }
+    }
+  },
+  {
+    plugins: {
+      '@next/next': nextPlugin,
+      'react-google-translate': reactGoogleTranslate
     },
     rules: {
-      // TypeScript specific rules
+      ...nextPlugin.configs.recommended.rules,
+      '@next/next/no-img-element': 'off'
+    }
+  },
+  {
+    rules: {
+      'react-google-translate/no-conditional-text-nodes-with-siblings': 'error',
+      'react-google-translate/no-return-text-nodes': 'error',
+      // Type imports
+      '@typescript-eslint/consistent-type-imports': 'error',
+
+      // Allow any — Supabase responses, JSONB columns, etc.
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+
+      // Useful but too many hits in existing code — warn for now
+      '@typescript-eslint/no-misused-promises': 'off',
+      '@typescript-eslint/no-floating-promises': 'off',
+      '@typescript-eslint/restrict-template-expressions': 'off',
+      '@typescript-eslint/no-base-to-string': 'off',
+      '@typescript-eslint/no-deprecated': 'off',
+
+      // Off — generated types trigger this
+      '@typescript-eslint/no-redundant-type-constituents': 'off',
+
+      // Relaxed
+      '@typescript-eslint/ban-ts-comment': 'off',
+      '@typescript-eslint/require-await': 'off',
+
+      // Strict
       '@typescript-eslint/no-unused-vars': [
         'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }
       ],
-      '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/consistent-type-imports': [
-        'warn',
-        { prefer: 'type-imports', fixStyle: 'separate-type-imports' }
-      ],
-      '@typescript-eslint/no-non-null-assertion': 'off',
-      '@typescript-eslint/prefer-nullish-coalescing': 'off',
-      // Next.js specific rules
-      '@next/next/no-html-link-for-pages': 'off',
-      '@next/next/no-img-element': 'error',
-      '@next/next/no-head-element': 'error',
-      '@next/next/no-sync-scripts': 'error',
-      '@next/next/google-font-display': 'error',
-      '@next/next/google-font-preconnect': 'error',
-
-      // React hooks rules
-      'react-hooks/rules-of-hooks': 'error',
-      'react-hooks/exhaustive-deps': 'warn',
-
-      // Turn off rules that conflict with Next.js
-      'react/react-in-jsx-scope': 'off',
-      'react/prop-types': 'off',
-
-      // Performance rules
-      'react/jsx-no-constructed-context-values': 'error',
-      'react/jsx-no-duplicate-props': 'error',
-      'react/jsx-key': ['error', { checkFragmentShorthand: true }],
-      'react/self-closing-comp': [
+      '@typescript-eslint/no-unused-expressions': [
         'error',
-        {
-          component: true,
-          html: true
-        }
-      ]
+        { allowShortCircuit: true, allowTernary: true }
+      ],
+      '@typescript-eslint/no-empty-function': [
+        'error',
+        { allow: ['arrowFunctions'] }
+      ],
+      '@typescript-eslint/no-unnecessary-type-assertion': 'error'
     }
   },
-
-  // CommonJS files config
   {
-    files: ['**/*.js', '**/*.jsx', '**/*.mjs', 'eslint.config.mjs'],
-    ...tseslint.configs.disableTypeChecked
+    files: ['next-env.d.ts'],
+    rules: { '@typescript-eslint/triple-slash-reference': 'off' }
   },
-
-  // CommonJS files config
   {
-    files: ['**/*.cjs', '**/*.cts'],
-    languageOptions: {
-      sourceType: 'commonjs'
+    files: ['components/ui/**'],
+    rules: {
+      '@typescript-eslint/restrict-template-expressions': 'off',
+      '@typescript-eslint/no-deprecated': 'off'
     }
   },
-
-  prettierConfig
+  globalIgnores(['.next/**', '*.mjs'])
 ]);

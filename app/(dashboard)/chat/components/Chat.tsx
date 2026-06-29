@@ -5,8 +5,8 @@ import { useChat, type UIMessage } from '@ai-sdk/react';
 import { useParams } from 'next/navigation';
 import { useSWRConfig } from 'swr';
 import { ChatScrollAnchor } from '../hooks/chat-scroll-anchor';
-import { setModelSettings } from '../actions';
-import Link from 'next/link';
+import { setSelectedModel } from '../actions';
+import Link from '@/components/link';
 // Shadcn UI components
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
@@ -15,28 +15,29 @@ import ReasoningContent from './tools/Reasoning';
 import SourceView from './tools/SourceView';
 import DocumentSearchTool from './tools/DocumentChatTool';
 import { WebsiteSearchTool } from './tools/WebsiteSearchTool';
-import MessageInput from './ChatMessageInput';
+import MessageInput, { type ModelOption } from './ChatMessageInput';
 import { toast } from 'sonner';
 // Icons from Lucide React
 import { User, Bot, Copy, CheckCircle, FileIcon } from 'lucide-react';
 import { type ToolUIPart, DefaultChatTransport } from 'ai';
 import type { UITools } from '@/app/(dashboard)/chat/types/tooltypes';
-import { useRouter } from 'next/navigation';
 
 interface ChatProps {
   currentChat?: UIMessage[];
   chatId: string;
   initialSelectedOption: string;
+  models: ModelOption[];
 }
 
 const ChatComponent: React.FC<ChatProps> = ({
   currentChat,
   chatId,
-  initialSelectedOption
+  initialSelectedOption,
+  models
 }) => {
+
   const param = useParams();
-  const router = useRouter();
-  const currentChatId = param.id as string;
+  const currentChatId = param.id as string | undefined;
   const { mutate } = useSWRConfig();
 
   const [isCopied, setIsCopied] = useState(false);
@@ -48,7 +49,10 @@ const ChatComponent: React.FC<ChatProps> = ({
   const handleOptionChange = async (newValue: string) => {
     startTransition(async () => {
       setOptimisticOption(newValue);
-      await setModelSettings(newValue);
+      const result = await setSelectedModel(newValue);
+      if (!result.success) {
+        toast.error(result.message ?? 'Failed to update model');
+      }
     });
   };
 
@@ -58,8 +62,14 @@ const ChatComponent: React.FC<ChatProps> = ({
     }),
     experimental_throttle: 50,
     messages: currentChat,
-    onFinish: async () => {
-      // Navigate to the new chat URL if we're not already there
+    onFinish: async ({ isAbort, isDisconnect, isError }) => {
+      // Don't run navigation/mutation logic if the stream errored or was cut off
+      if (isError || isAbort || isDisconnect) {
+        console.error('Skipping onFinish logic due to error/abort/disconnect');
+        return;
+      }
+
+      // Update the address bar to /chat/<id> for a brand-new chat.
       if (chatId !== currentChatId) {
         const currentSearchParams = new URLSearchParams(window.location.search);
         let newUrl = `/chat/${chatId}`;
@@ -68,12 +78,19 @@ const ChatComponent: React.FC<ChatProps> = ({
           newUrl += `?${currentSearchParams.toString()}`;
         }
 
-        router.push(newUrl, { scroll: false });
+        // Native History API → updates the URL WITHOUT a navigation or RSC
+        // refetch. router.refresh() is intentionally NOT called: refreshing
+        // would re-run the server layout just to add the new conversation to
+        // the sidebar, throwing away the streamed chat state.
+        window.history.replaceState(null, '', newUrl);
       }
 
-      // Always mutate to refresh the chat list
-      await mutate((key) => Array.isArray(key) && key[0] === 'chatPreviews');
-      router.refresh();
+      // Refresh the sidebar chat list and the header breadcrumb title (both
+      // are SWR GET routes) so the new conversation + its title show up.
+      await mutate(
+        (key) => typeof key === 'string' && key.startsWith('/api/chat-previews')
+      );
+      await mutate(`/api/chat-title/${chatId}`);
     },
     onError: (error) => {
       toast.error(error.message || 'An error occurred');
@@ -91,7 +108,7 @@ const ChatComponent: React.FC<ChatProps> = ({
   };
 
   return (
-    <div className="flex h-screen w-full flex-col overflow-y-auto">
+    <div className="flex h-[calc(100dvh-3rem)] w-full flex-col overflow-y-auto">
       {messages.length === 0 ? (
         <div className="flex flex-col justify-center items-center h-[90vh] text-center px-4">
           <h2 className="text-2xl font-semibold text-foreground/80 pb-2">
@@ -329,6 +346,7 @@ const ChatComponent: React.FC<ChatProps> = ({
         <MessageInput
           chatId={chatId}
           selectedOption={optimisticOption}
+          models={models}
           handleOptionChange={handleOptionChange}
           sendMessage={sendMessage}
           status={status}

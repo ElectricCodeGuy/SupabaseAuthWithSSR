@@ -10,7 +10,7 @@ import {
   Lock,
   Loader2
 } from 'lucide-react';
-import Link from 'next/link';
+import Link from '@/components/link';
 
 export const metadata: Metadata = {
   title: '🔒 Admin Panel 🕵️‍♂️',

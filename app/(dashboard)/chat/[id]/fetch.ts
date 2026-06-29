@@ -1,7 +1,6 @@
 import 'server-only';
 
 import { createServerSupabaseClient } from '@/lib/server/server';
-import { unstable_noStore as noStore } from 'next/cache';
 import type {
   UIMessage,
   UIMessagePart,
@@ -76,32 +75,19 @@ function reconstructPart(
       return sourceDocPart;
     }
 
-    // Tool parts - handle our specific tools
-    case 'tool-searchUserDocument': {
-      const toolPart: ToolUIPart<UITools> = {
-        type: 'tool-searchUserDocument',
-        approval: (part.tool_searchuserdocument_approval as any) || undefined,
-        toolCallId: part.tool_searchuserdocument_toolcallid || '',
-        state: (part.tool_searchuserdocument_state as any) || 'input-available',
-        input: part.tool_searchuserdocument_input as any,
-        output: part.tool_searchuserdocument_output as any,
-        errorText: part.tool_searchuserdocument_errortext || undefined,
-        providerExecuted:
-          part.tool_searchuserdocument_providerexecuted || undefined
-      };
-      return toolPart;
-    }
+    // Tool parts - all tools share the generic tool_* columns; `type` tells us
+    // which tool this row is.
+    case 'tool-searchUserDocument':
     case 'tool-websiteSearchTool': {
       const toolPart: ToolUIPart<UITools> = {
-        type: 'tool-websiteSearchTool',
-        approval: (part.tool_websitesearchtool_approval as any) || undefined,
-        toolCallId: part.tool_websitesearchtool_toolcallid || '',
-        state: (part.tool_websitesearchtool_state as any) || 'input-available',
-        input: part.tool_websitesearchtool_input as any,
-        output: part.tool_websitesearchtool_output as any,
-        errorText: part.tool_websitesearchtool_errortext || undefined,
-        providerExecuted:
-          part.tool_websitesearchtool_providerexecuted || undefined
+        type: part.type,
+        approval: (part.tool_approval as any) || undefined,
+        toolCallId: part.tool_toolcallid || '',
+        state: (part.tool_state as any) || 'input-available',
+        input: part.tool_input as any,
+        output: part.tool_output as any,
+        errorText: part.tool_errortext || undefined,
+        providerExecuted: part.tool_providerexecuted || undefined
       };
       return toolPart;
     }
@@ -150,8 +136,27 @@ export function formatMessages(messageParts: MessagePart[]): UIMessage[] {
   return messages;
 }
 
+// Derive the breadcrumb title: stored title, else first user message, else fallback.
+// Pure function of server data so it can be computed in the server component.
+export function deriveChatTitle(
+  chatTitle: string | null | undefined,
+  messages: UIMessage[] | undefined
+): string {
+  const stored = chatTitle?.trim();
+  if (stored) return stored;
+
+  const firstUserText =
+    messages
+      ?.find((m) => m.role === 'user')
+      ?.parts?.filter((p): p is TextUIPart => p.type === 'text')
+      .map((p) => p.text)
+      .join('')
+      .trim() || '';
+
+  return firstUserText ? firstUserText.slice(0, 70) : 'New chat';
+}
+
 export async function fetchChat(chatId: string) {
-  noStore();
   const supabase = await createServerSupabaseClient();
 
   // ONE QUERY - ALREADY SORTED
@@ -164,6 +169,11 @@ export async function fetchChat(chatId: string) {
       created_at,
       updated_at,
       chat_title,
+      is_favorite,
+      is_public,
+      users (
+        selected_model
+      ),
       message_parts!inner (
         id,
         chat_session_id,
@@ -186,20 +196,13 @@ export async function fetchChat(chatId: string) {
         source_document_mediatype,
         source_document_title,
         source_document_filename,
-        tool_searchuserdocument_toolcallid,
-        tool_searchuserdocument_state,
-        tool_searchuserdocument_input,
-        tool_searchuserdocument_output,
-        tool_searchuserdocument_errortext,
-        tool_searchuserdocument_providerexecuted,
-        tool_websitesearchtool_toolcallid,
-        tool_websitesearchtool_state,
-        tool_websitesearchtool_input,
-        tool_websitesearchtool_output,
-        tool_websitesearchtool_errortext,
-        tool_websitesearchtool_providerexecuted,
-        tool_searchuserdocument_approval,
-        tool_websitesearchtool_approval,
+        tool_toolcallid,
+        tool_state,
+        tool_input,
+        tool_output,
+        tool_errortext,
+        tool_providerexecuted,
+        tool_approval,
         providermetadata
       )
     `
@@ -221,6 +224,7 @@ export async function fetchChat(chatId: string) {
 
   return {
     ...data,
-    messages: formattedMessages
+    messages: formattedMessages,
+    selectedModel: data.users?.selected_model ?? null
   };
 }

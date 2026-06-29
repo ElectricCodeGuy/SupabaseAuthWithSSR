@@ -3,7 +3,7 @@ import { fetchUserFilesData } from './fetch';
 import { FileManager } from './components/FileManager';
 import { DocumentViewer } from './components/DocumentViewer';
 import { Card, CardContent } from '@/components/ui/card';
-import Link from 'next/link';
+import Link from '@/components/link';
 import { Button } from '@/components/ui/button';
 import { getSession } from '@/lib/server/supabase';
 import { createAdminClient } from '@/lib/server/admin';
@@ -61,10 +61,10 @@ export default async function FilerPage({ searchParams }: PageProps) {
         <Card>
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground">
-              Du skal være logget ind for at se denne side
+              You must be logged in to view this page
             </p>
             <Button asChild className="mt-4">
-              <Link href="/login">Log ind</Link>
+              <Link href="/login">Log in</Link>
             </Button>
           </CardContent>
         </Card>

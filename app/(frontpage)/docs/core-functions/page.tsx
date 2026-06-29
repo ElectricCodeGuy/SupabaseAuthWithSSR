@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight, Cpu, FileText, Box } from 'lucide-react';
@@ -322,7 +322,7 @@ import { z } from 'zod';
 import { embed } from 'ai';
 import { voyage } from 'voyage-ai-provider';
 
-const embeddingModel = voyage.textEmbeddingModel('voyage-3-large');
+const embeddingModel = voyage.textEmbeddingModel('voyage-4-large');
 
 export const searchUserDocument = ({ userId }: { userId: string }) =>
   tool({

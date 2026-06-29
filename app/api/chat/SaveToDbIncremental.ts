@@ -181,11 +181,12 @@ export const saveMessagesToDB = async ({
             break;
           }
 
-          // TOOL PARTS
+          // TOOL PARTS - all tools share the generic tool_* columns; `type`
+          // records which tool this part is.
           case 'tool-searchUserDocument': {
             const toolPart = part;
             // Generate a deterministic UUID from the toolCallId string
-            const toolCallUuid =
+            const toolCallId =
               toolPart.toolCallId?.includes('-') &&
               toolPart.toolCallId.length === 36
                 ? toolPart.toolCallId
@@ -194,18 +195,12 @@ export const saveMessagesToDB = async ({
             allParts.push({
               ...basePart,
               type: 'tool-searchUserDocument',
-              tool_searchuserdocument_toolcallid: toolCallUuid,
-              tool_searchuserdocument_state: toolPart.state,
-              tool_searchuserdocument_input: sanitizeForPostgres(
-                toolPart.input
-              ),
-              tool_searchuserdocument_output: sanitizeForPostgres(
-                toolPart.output
-              ),
-              tool_searchuserdocument_errortext:
-                sanitizeForPostgres(toolPart.errorText) || null,
-              tool_searchuserdocument_providerexecuted:
-                toolPart.providerExecuted || null
+              tool_toolcallid: toolCallId,
+              tool_state: toolPart.state,
+              tool_input: sanitizeForPostgres(toolPart.input),
+              tool_output: sanitizeForPostgres(toolPart.output),
+              tool_errortext: sanitizeForPostgres(toolPart.errorText) || null,
+              tool_providerexecuted: toolPart.providerExecuted || null
             });
             break;
           }
@@ -215,16 +210,12 @@ export const saveMessagesToDB = async ({
             allParts.push({
               ...basePart,
               type: 'tool-websiteSearchTool',
-              tool_websitesearchtool_toolcallid: toolPart.toolCallId,
-              tool_websitesearchtool_state: toolPart.state,
-              tool_websitesearchtool_input: sanitizeForPostgres(toolPart.input),
-              tool_websitesearchtool_output: sanitizeForPostgres(
-                toolPart.output
-              ),
-              tool_websitesearchtool_errortext:
-                sanitizeForPostgres(toolPart.errorText) || null,
-              tool_websitesearchtool_providerexecuted:
-                toolPart.providerExecuted || null
+              tool_toolcallid: toolPart.toolCallId,
+              tool_state: toolPart.state,
+              tool_input: sanitizeForPostgres(toolPart.input),
+              tool_output: sanitizeForPostgres(toolPart.output),
+              tool_errortext: sanitizeForPostgres(toolPart.errorText) || null,
+              tool_providerexecuted: toolPart.providerExecuted || null
             });
             break;
           }
