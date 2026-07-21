@@ -26,7 +26,7 @@ Supabase SSR authentication system. Clone it, run one SQL file, ship.
 
 *One prompt → two web searches → a document written into the artifacts workspace, then revised to version 2. Every step cached, persisted and cost-tracked.*
 
-### [▶&nbsp; Watch the demo video](public/images/ExampleChat.mp4)
+https://github.com/user-attachments/assets/e9fa6007-6c68-4ce1-9c9c-7f00b902e859
 
 *A real prompt running live — web search, charts, document search and more, in one turn.*
 
