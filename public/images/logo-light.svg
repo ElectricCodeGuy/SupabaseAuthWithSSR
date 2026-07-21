@@ -1,0 +1,11 @@
+<svg width="340" height="72" viewBox="0 0 340 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- SupaChat brand mark — light-background variant (dark text). -->
+  <g transform="translate(8 8) scale(1.75)">
+    <path d="M8 3h16a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5h-8.5L10 28.5V23H8a5 5 0 0 1-5-5V8a5 5 0 0 1 5-5Z" fill="#c96442"/>
+    <path d="M16 6.6c.94 3.3 2.1 4.96 5.8 6.2-3.7 1.24-4.86 2.9-5.8 6.2-.94-3.3-2.1-4.96-5.8-6.2 3.7-1.24 4.86-2.9 5.8-6.2Z" fill="#ffffff"/>
+    <path d="M23 5.4c.4 1.4.9 2.1 2.5 2.6-1.6.5-2.1 1.2-2.5 2.6-.4-1.4-.9-2.1-2.5-2.6 1.6-.5 2.1-1.2 2.5-2.6Z" fill="#ffffff" opacity="0.75"/>
+  </g>
+  <text x="78" y="50" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="38" font-weight="600" letter-spacing="-1">
+    <tspan fill="#3d3a31">Supa</tspan><tspan fill="#c96442">Chat</tspan>
+  </text>
+</svg>

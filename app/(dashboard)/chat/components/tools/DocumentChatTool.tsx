@@ -123,7 +123,16 @@ interface SearchHit {
 
 type DocOutput =
   | { mode: 'list' | 'findByName'; query?: string; documents: DocSummary[] }
-  | { mode: 'search'; query: string; results: SearchHit[] };
+  | { mode: 'search'; query: string; results: SearchHit[] }
+  | {
+      mode: 'content';
+      document?: DocSummary;
+      pageStart?: number | null;
+      pageEnd?: number | null;
+      pages?: { page: number; text: string }[];
+      truncated?: boolean;
+      error?: string;
+    };
 
 const DocumentChatTool: React.FC<DocumentChatToolProps> = ({
   toolInvocation
@@ -132,8 +141,11 @@ const DocumentChatTool: React.FC<DocumentChatToolProps> = ({
   const output = toolInvocation.output as DocOutput | undefined;
 
   const isSearch = output?.mode === 'search';
+  const isContent = output?.mode === 'content';
   const docs: DocSummary[] =
-    output && output.mode !== 'search' ? (output.documents ?? []) : [];
+    output && (output.mode === 'list' || output.mode === 'findByName')
+      ? (output.documents ?? [])
+      : [];
   const hits: SearchHit[] =
     output && output.mode === 'search' ? (output.results ?? []) : [];
 
@@ -144,9 +156,11 @@ const DocumentChatTool: React.FC<DocumentChatToolProps> = ({
 
   const label = isSearch
     ? 'Searching documents'
-    : output?.mode === 'findByName'
-      ? 'Finding documents'
-      : 'Reading your documents';
+    : isContent
+      ? 'Reading document content'
+      : output?.mode === 'findByName'
+        ? 'Finding documents'
+        : 'Reading your documents';
 
   const summaryText =
     count > 0 && toolInvocation.state === 'output-available'
@@ -162,7 +176,7 @@ const DocumentChatTool: React.FC<DocumentChatToolProps> = ({
       loadingText={`${label}…`}
     >
       <div className="max-h-96 overflow-y-auto space-y-2">
-        {output?.query && (
+        {output && 'query' in output && output.query && (
           <div className="text-xs">
             <span className="font-bold text-gray-700 dark:text-gray-300">
               Search query:
@@ -173,10 +187,42 @@ const DocumentChatTool: React.FC<DocumentChatToolProps> = ({
 
         {toolInvocation.state === 'output-available' && (
           <>
-            {count === 0 && (
+            {count === 0 && !isContent && (
               <div className="text-xs dark:text-gray-400 italic">
                 No documents found.
               </div>
+            )}
+
+            {/* Full-content read (getContent) */}
+            {isContent && output?.mode === 'content' && (
+              output.error ? (
+                <div className="text-xs text-red-600 dark:text-red-400">
+                  {output.error}
+                </div>
+              ) : output.document ? (
+                <Link
+                  href={`?pdf=${encodeBase64(output.document.fileName.trim())}${output.pageStart ? `&p=${output.pageStart}` : ''}`}
+                  className="block p-2 rounded bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700/50 group hover:no-underline"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-primary shrink-0" />
+                    <h5 className="text-xs font-medium truncate text-gray-900 dark:text-gray-100 group-hover:text-primary">
+                      {output.document.title}
+                    </h5>
+                    <Badge
+                      variant="outline"
+                      className="ml-auto text-[10px] px-1 py-0"
+                    >
+                      {output.pageStart && output.pageEnd
+                        ? `p. ${output.pageStart}–${output.pageEnd}`
+                        : 'full text'}
+                    </Badge>
+                  </div>
+                  <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400 pb-0">
+                    {`Read ${output.pages?.length ?? 0} page${(output.pages?.length ?? 0) === 1 ? '' : 's'}${output.truncated ? ' (truncated — more available)' : ''}`}
+                  </p>
+                </Link>
+              ) : null
             )}
 
             {/* Search snippets */}

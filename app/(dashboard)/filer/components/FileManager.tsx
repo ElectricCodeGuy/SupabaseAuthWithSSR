@@ -4,8 +4,7 @@ import { useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   useDropzone,
-  type FileRejection,
-  type FileWithPath
+  type FileRejection
 } from 'react-dropzone';
 import { mutate } from 'swr';
 import { Button } from '@/components/ui/button';
@@ -210,11 +209,11 @@ export function FileManager({
         setTimeout(() => resetUploadState(), 3000);
       }
     },
-    [resetUploadState]
+    [resetUploadState, router]
   );
 
   const onDrop = useCallback(
-    (acceptedFiles: FileWithPath[], fileRejections: FileRejection[]) => {
+    (acceptedFiles: File[], fileRejections: FileRejection[]) => {
       if (fileRejections.length > 0) return;
       const file = acceptedFiles[0];
       if (file) {

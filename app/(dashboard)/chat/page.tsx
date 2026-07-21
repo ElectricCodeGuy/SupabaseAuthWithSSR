@@ -1,11 +1,9 @@
 import 'server-only';
 import ChatComponent from './components/Chat';
 import DocumentViewer from './components/PDFViewer';
-import WebsiteWiever from './components/WebsiteWiever';
 import { randomUUID } from 'node:crypto';
-import { getUserInfo } from '@/lib/server/supabase';
-import { createClient } from '@/lib/client/client';
 import { getChatModelData } from './models';
+import { fetchPdfSignedUrl } from './fetch';
 import { connection } from 'next/server';
 
 interface ChatPageProps {
@@ -16,7 +14,7 @@ export default async function ChatPage({ searchParams }: ChatPageProps) {
   await connection();
   const { models, selectedModel } = await getChatModelData();
   const createChatId = randomUUID();
-  const { url, pdf } = await searchParams;
+  const { pdf } = await searchParams;
 
   return (
     <div className="flex w-full">
@@ -27,9 +25,7 @@ export default async function ChatPage({ searchParams }: ChatPageProps) {
           models={models}
         />
       </div>
-      {url ? (
-        <WebsiteWiever url={decodeURIComponent(url)} />
-      ) : pdf ? (
+      {pdf ? (
         <DocumentComponent fileName={decodeURIComponent(pdf)} />
       ) : null}
     </div>
@@ -37,28 +33,6 @@ export default async function ChatPage({ searchParams }: ChatPageProps) {
 }
 
 async function DocumentComponent({ fileName }: { fileName: string }) {
-  const session = await getUserInfo();
-  const userId = session?.id;
-
-  let signedUrl = null;
-
-  if (userId) {
-    try {
-      const supabase = createClient();
-      const decodedFileName = decodeURIComponent(fileName);
-      const filePath = `${userId}/${decodedFileName}`;
-
-      const { data, error } = await supabase.storage
-        .from('userfiles')
-        .createSignedUrl(filePath, 3600); // 1 hour expiry
-
-      if (!error && data) {
-        signedUrl = data.signedUrl;
-      }
-    } catch (error) {
-      console.error('Error creating signed URL:', error);
-    }
-  }
-
+  const signedUrl = await fetchPdfSignedUrl(fileName);
   return <DocumentViewer fileName={fileName} signedUrl={signedUrl} />;
 }

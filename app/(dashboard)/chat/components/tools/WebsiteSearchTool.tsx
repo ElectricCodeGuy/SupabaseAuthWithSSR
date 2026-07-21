@@ -15,7 +15,6 @@ import {
   AccordionItem,
   AccordionTrigger
 } from '@/components/ui/accordion';
-import Link from '@/components/link';
 import { format } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 
@@ -90,8 +89,7 @@ export const WebsiteSearchTool: React.FC<WebsiteSearchToolProps> = ({
             {sources.length > 0 &&
               toolInvocation.state === 'output-available' && (
                 <span className="text-xs mr-2">
-                  {sources.length} {sources.length === 1 ? 'source' : 'sources'}{' '}
-                  found
+                  {`${sources.length} ${sources.length === 1 ? 'source' : 'sources'} found`}
                 </span>
               )}
             <div className="flex-shrink-0">{getStatusIcon()}</div>
@@ -124,10 +122,11 @@ export const WebsiteSearchTool: React.FC<WebsiteSearchToolProps> = ({
                         key={idx}
                         className="p-2 rounded-md bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700"
                       >
-                        <Link
-                          href={`?url=${source.url}`}
+                        <a
+                          href={source.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           className="group flex items-start gap-2 hover:no-underline"
-                          prefetch={false}
                         >
                           <ExternalLink className="h-3 w-3 mt-0.5 text-gray-400 group-hover:text-primary flex-shrink-0" />
                           <div className="flex-grow min-w-0">
@@ -149,7 +148,7 @@ export const WebsiteSearchTool: React.FC<WebsiteSearchToolProps> = ({
                               {source.url}
                             </div>
                           </div>
-                        </Link>
+                        </a>
                       </div>
                     ))}
                   </div>
@@ -168,7 +167,7 @@ export const WebsiteSearchTool: React.FC<WebsiteSearchToolProps> = ({
             {toolInvocation.state === 'output-error' && (
               <div className="text-xs text-red-600 dark:text-red-400">
                 <span className="font-bold">Error:</span>{' '}
-                {toolInvocation.errorText || 'Search failed'}
+                <span>{toolInvocation.errorText || 'Search failed'}</span>
               </div>
             )}
           </div>

@@ -4,9 +4,11 @@ import { defineConfig, globalIgnores } from 'eslint/config';
 import ts from 'typescript-eslint';
 import nextPlugin from '@next/eslint-plugin-next';
 import reactGoogleTranslate from 'eslint-plugin-react-google-translate';
+import reactHooks from 'eslint-plugin-react-hooks';
 
 export default defineConfig([
   ts.configs.recommendedTypeChecked,
+  reactHooks.configs.flat.recommended,
   {
     languageOptions: {
       parserOptions: {
@@ -22,7 +24,8 @@ export default defineConfig([
     },
     rules: {
       ...nextPlugin.configs.recommended.rules,
-      '@next/next/no-img-element': 'off'
+      '@next/next/no-img-element': 'off',
+      '@next/next/no-html-link-for-pages': 'off'
     }
   },
   {
@@ -81,5 +84,15 @@ export default defineConfig([
       '@typescript-eslint/no-deprecated': 'off'
     }
   },
-  globalIgnores(['.next/**', '*.mjs'])
+  {
+    // E-mails renderes af react-email og åbnes i mailklienter — Google
+    // Translate manipulerer aldrig deres DOM, så reglerne er falske
+    // positiver her.
+    files: ['components/emails/**'],
+    rules: {
+      'react-google-translate/no-conditional-text-nodes-with-siblings': 'off',
+      'react-google-translate/no-return-text-nodes': 'off'
+    }
+  },
+  globalIgnores(['.next/**', '**/*.mjs'])
 ]);

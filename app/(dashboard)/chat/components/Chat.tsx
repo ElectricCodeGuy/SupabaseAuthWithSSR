@@ -1,11 +1,10 @@
 'use client';
 
-import React, { useState, useOptimistic, startTransition } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useChat, type UIMessage } from '@ai-sdk/react';
 import { useParams } from 'next/navigation';
 import { useSWRConfig } from 'swr';
 import { ChatScrollAnchor } from '../hooks/chat-scroll-anchor';
-import { setSelectedModel } from '../actions';
 import Link from '@/components/link';
 // Shadcn UI components
 import { Button } from '@/components/ui/button';
@@ -15,6 +14,17 @@ import ReasoningContent from './tools/Reasoning';
 import SourceView from './tools/SourceView';
 import DocumentSearchTool from './tools/DocumentChatTool';
 import { WebsiteSearchTool } from './tools/WebsiteSearchTool';
+import { MemoryTool } from './tools/MemoryTool';
+import { ConversationSearchTool } from './tools/ConversationSearchTool';
+import { ChartTool } from './tools/ChartTool';
+import { PdfTool } from './tools/PdfTool';
+import { ArtifactTool } from './tools/ArtifactTool';
+import { ArtifactPanel } from './ArtifactPanel';
+import {
+  deriveArtifacts,
+  findLatestArtifactVersion,
+  groupKey
+} from '@/app/(dashboard)/chat/lib/artifacts';
 import MessageInput, { type ModelOption } from './ChatMessageInput';
 import { toast } from 'sonner';
 // Icons from Lucide React
@@ -35,32 +45,21 @@ const ChatComponent: React.FC<ChatProps> = ({
   initialSelectedOption,
   models
 }) => {
-
   const param = useParams();
   const currentChatId = param.id as string | undefined;
   const { mutate } = useSWRConfig();
 
   const [isCopied, setIsCopied] = useState(false);
-  const [optimisticOption, setOptimisticOption] = useOptimistic<string, string>(
-    initialSelectedOption,
-    (_, newValue) => newValue
-  );
-
-  const handleOptionChange = async (newValue: string) => {
-    startTransition(async () => {
-      setOptimisticOption(newValue);
-      const result = await setSelectedModel(newValue);
-      if (!result.success) {
-        toast.error(result.message ?? 'Failed to update model');
-      }
-    });
-  };
+  // Conversation-scoped model choice — plain client state. It is sent with
+  // every request in the message body (NOT persisted to the user's default),
+  // and the API route stores it on chat_sessions.settings so reopening the
+  // conversation restores it.
+  const [selectedOption, setSelectedOption] = useState(initialSelectedOption);
 
   const { messages, status, sendMessage, stop } = useChat({
     transport: new DefaultChatTransport({
       api: '/api/chat'
     }),
-    experimental_throttle: 50,
     messages: currentChat,
     onFinish: async ({ isAbort, isDisconnect, isError }) => {
       // Don't run navigation/mutation logic if the stream errored or was cut off
@@ -107,252 +106,428 @@ const ChatComponent: React.FC<ChatProps> = ({
     );
   };
 
+  // ── Document workspace (artifacts) ────────────────────────────────────────
+  // Fully derived from messages each render — no effects, no refs. The only
+  // state is user INTENT:
+  //  - dismissedKey: the newest version key at the moment the user closed the
+  //    panel. The panel auto-opens whenever a newer version than that exists.
+  //    Seeded with the restored history's newest key so reload never pops it.
+  //  - pinned: an explicit "Open"/version-nav selection. It records the newest
+  //    key at pin time, so the moment the AI produces a NEW version the pin
+  //    expires and the panel snaps back to following the latest document.
+  // Groups are addressed by groupKey() (first version's part key), which is
+  // stable across the pending→real artifactId flip — ids never leak into
+  // state, so there is nothing to remap.
+  const artifacts = useMemo(() => deriveArtifacts(messages), [messages]);
+  const latest = findLatestArtifactVersion(artifacts);
+
+  const [dismissedKey, setDismissedKey] = useState<string | null>(() => {
+    const restored = deriveArtifacts(currentChat ?? []);
+    return findLatestArtifactVersion(restored)?.version.key ?? null;
+  });
+  const [pinned, setPinned] = useState<{
+    groupKey: string;
+    versionIndex: number | null;
+    atLatestKey: string | null;
+  } | null>(null);
+
+  const activePin =
+    pinned && pinned.atLatestKey === (latest?.version.key ?? null)
+      ? pinned
+      : null;
+  const pinnedGroup = activePin
+    ? (artifacts.find((g) => groupKey(g) === activePin.groupKey) ?? null)
+    : null;
+
+  const openArtifact =
+    pinnedGroup ??
+    (latest && latest.version.key !== dismissedKey ? latest.group : null);
+  const artifactVersionIndex = pinnedGroup ? activePin!.versionIndex : null;
+
+  const closeArtifactPanel = () => {
+    setPinned(null);
+    setDismissedKey(latest?.version.key ?? null);
+  };
+
+  // "Open" on an inline card: pin that group, positioned on that card's version.
+  const openArtifactForPart = (messageId: string, partIndex: number) => {
+    const partKey = `${messageId}:${partIndex}`;
+    for (const group of artifacts) {
+      const versionIdx = group.versions.findIndex((v) => v.key === partKey);
+      if (versionIdx !== -1) {
+        setPinned({
+          groupKey: groupKey(group),
+          versionIndex:
+            versionIdx === group.versions.length - 1 ? null : versionIdx,
+          atLatestKey: latest?.version.key ?? null
+        });
+        return;
+      }
+    }
+  };
+
+  // Version navigation inside the panel is also a pin (on the open group).
+  const handleArtifactVersionChange = (index: number | null) => {
+    if (!openArtifact) return;
+    setPinned({
+      groupKey: groupKey(openArtifact),
+      versionIndex: index,
+      atLatestKey: latest?.version.key ?? null
+    });
+  };
+
   return (
-    <div className="flex h-[calc(100dvh-3rem)] w-full flex-col overflow-y-auto">
-      {messages.length === 0 ? (
-        <div className="flex flex-col justify-center items-center h-[90vh] text-center px-4">
-          <h2 className="text-2xl font-semibold text-foreground/80 pb-2">
-            Chat with our AI Assistant
-          </h2>
-          <p className="text-muted-foreground pb-2 max-w-2xl">
-            Experience the power of AI-driven conversations with our chat
-            template. Ask questions on any topic and get informative responses
-            instantly.
-          </p>
-          <p className="font-bold text-foreground/80 pb-2">
-            Check out{' '}
-            <Link
-              href="https://www.lovguiden.dk/"
-              target="_blank"
-              rel="noopener"
-              className="text-xl text-blue-600 dark:text-blue-400 hover:underline"
-            >
-              Lovguiden
-            </Link>
-            , a Danish legal AI platform, for a real-world example of AI in
-            action.
-          </p>
-          <h2 className="text-2xl font-semibold text-foreground/80">
-            Start chatting now and enjoy the AI experience!
-          </h2>
-        </div>
-      ) : (
-        <ul className="flex-1 w-full mx-auto max-w-[1000px] px-0 md:px-1 lg:px-4">
-          {messages.map((message, index) => {
-            const isUserMessage = message.role === 'user';
-            const copyToClipboard = (str: string) => {
-              window.navigator.clipboard.writeText(str);
-            };
-            const handleCopy = (content: string) => {
-              copyToClipboard(content);
-              setIsCopied(true);
-              setTimeout(() => setIsCopied(false), 1000);
-            };
+    <div className="flex h-[calc(100dvh-3rem)] w-full overflow-hidden">
+      <div className="flex min-w-0 flex-1 flex-col overflow-y-auto">
+        {messages.length === 0 ? (
+          <div className="flex flex-col justify-center items-center h-[90vh] text-center px-4">
+            <h2 className="text-2xl font-semibold text-foreground/80 pb-2">
+              Chat with our AI Assistant
+            </h2>
+            <p className="text-muted-foreground pb-2 max-w-2xl">
+              Experience the power of AI-driven conversations with our chat
+              template. Ask questions on any topic and get informative responses
+              instantly.
+            </p>
+            <p className="font-bold text-foreground/80 pb-2">
+              Check out{' '}
+              <Link
+                href="https://www.lovguiden.dk/"
+                target="_blank"
+                rel="noopener"
+                className="text-xl text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                Lovguiden
+              </Link>
+              , a Danish legal AI platform, for a real-world example of AI in
+              action.
+            </p>
+            <h2 className="text-2xl font-semibold text-foreground/80">
+              Start chatting now and enjoy the AI experience!
+            </h2>
+          </div>
+        ) : (
+          <ul className="flex-1 w-full mx-auto max-w-[1000px] px-0 md:px-1 lg:px-4">
+            {messages.map((message, index) => {
+              const isUserMessage = message.role === 'user';
+              const copyToClipboard = (str: string) => {
+                window.navigator.clipboard.writeText(str);
+              };
+              const handleCopy = (content: string) => {
+                copyToClipboard(content);
+                setIsCopied(true);
+                setTimeout(() => setIsCopied(false), 1000);
+              };
 
-            // Get created at time
-            const createdAtTime = message.id
-              ? new Date().toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  hour12: false
-                })
-              : new Date().toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  hour12: false
-                });
+              // Get created at time
+              const createdAtTime = message.id
+                ? new Date().toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                  })
+                : new Date().toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                  });
 
-            return (
-              <li key={`${message.id}-${index}`} className="my-4 mx-2">
-                <Card
-                  className={`relative gap-2 py-2 ${
-                    isUserMessage
-                      ? 'bg-primary/5 dark:bg-primary/10 border-primary/20'
-                      : 'bg-card dark:bg-card/90 border-border/50'
-                  }`}
-                >
-                  <CardHeader className="pb-2 px-4">
-                    <div className="flex items-center gap-3">
-                      {isUserMessage ? (
-                        <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
-                          <User className="h-4 w-4 text-primary-foreground" />
+              return (
+                <li key={`${message.id}-${index}`} className="my-4 mx-2">
+                  <Card
+                    className={`relative gap-2 py-2 ${
+                      isUserMessage
+                        ? 'bg-primary/5 dark:bg-primary/10 border-primary/20'
+                        : 'bg-card dark:bg-card/90 border-border/50'
+                    }`}
+                  >
+                    <CardHeader className="pb-2 px-4">
+                      <div className="flex items-center gap-3">
+                        {isUserMessage ? (
+                          <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
+                            <User className="h-4 w-4 text-primary-foreground" />
+                          </div>
+                        ) : (
+                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                            <Bot className="h-4 w-4 text-primary" />
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-sm">
+                            {isUserMessage ? 'You' : 'AI Assistant'}
+                          </h3>
+                          <p className="text-xs text-muted-foreground">
+                            {createdAtTime}
+                          </p>
                         </div>
-                      ) : (
-                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                          <Bot className="h-4 w-4 text-primary" />
-                        </div>
-                      )}
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-sm">
-                          {isUserMessage ? 'You' : 'AI Assistant'}
-                        </h3>
-                        <p className="text-xs text-muted-foreground">
-                          {createdAtTime}
-                        </p>
+                        {!isUserMessage && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() =>
+                              handleCopy(getMessageContent(message))
+                            }
+                          >
+                            {isCopied ? (
+                              <CheckCircle
+                                size={14}
+                                className="text-green-600 dark:text-green-400"
+                              />
+                            ) : (
+                              <Copy size={14} />
+                            )}
+                          </Button>
+                        )}
                       </div>
-                      {!isUserMessage && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6"
-                          onClick={() => handleCopy(getMessageContent(message))}
-                        >
-                          {isCopied ? (
-                            <CheckCircle
-                              size={14}
-                              className="text-green-600 dark:text-green-400"
-                            />
-                          ) : (
-                            <Copy size={14} />
-                          )}
-                        </Button>
-                      )}
-                    </div>
-                  </CardHeader>
+                    </CardHeader>
 
-                  <CardContent className="py-0 px-4">
-                    {(() => {
-                      // Collect all sources for this message
-                      const sources = message.parts?.filter(
-                        (part) =>
-                          (part.type === 'source-url' ||
-                            part.type === 'source-document') &&
-                          !isUserMessage
-                      ) as Extract<
-                        (typeof message.parts)[number],
-                        { type: 'source-url' | 'source-document' }
-                      >[];
+                    <CardContent className="py-0 px-4">
+                      {(() => {
+                        // Collect all sources for this message
+                        const sources = message.parts?.filter(
+                          (part) =>
+                            (part.type === 'source-url' ||
+                              part.type === 'source-document') &&
+                            !isUserMessage
+                        ) as Extract<
+                          (typeof message.parts)[number],
+                          { type: 'source-url' | 'source-document' }
+                        >[];
 
-                      return (
-                        <>
-                          {/* Render ALL parts in the order they appear */}
-                          {message.parts?.map((part, partIndex) => {
-                            const indexStr = `${message.id}-${partIndex}`;
+                        return (
+                          <>
+                            {/* Render ALL parts in the order they appear */}
+                            {message.parts?.map((part, partIndex) => {
+                              const indexStr = `${message.id}-${partIndex}`;
 
-                            // Handle text parts
-                            if (part.type === 'text') {
-                              return (
-                                <MemoizedMarkdown
-                                  key={`part-${partIndex}`}
-                                  content={part.text}
-                                  id={`${
-                                    isUserMessage ? 'user' : 'assistant'
-                                  }-text-${message.id}-${partIndex}`}
-                                />
-                              );
-                            }
-
-                            // Handle reasoning parts (assistant only)
-                            if (part.type === 'reasoning' && !isUserMessage) {
-                              return (
-                                <div key={`part-${partIndex}`} className="mt-4">
-                                  <ReasoningContent
-                                    details={part}
-                                    messageId={message.id}
+                              // Handle text parts
+                              if (part.type === 'text') {
+                                return (
+                                  <MemoizedMarkdown
+                                    key={`part-${partIndex}`}
+                                    content={part.text}
+                                    id={`${
+                                      isUserMessage ? 'user' : 'assistant'
+                                    }-text-${message.id}-${partIndex}`}
                                   />
-                                </div>
-                              );
-                            }
+                                );
+                              }
 
-                            // Skip source parts - they'll be rendered together below
-                            if (
-                              (part.type === 'source-url' ||
-                                part.type === 'source-document') &&
-                              !isUserMessage
-                            ) {
-                              return null;
-                            }
-
-                            // Handle file parts (user messages)
-                            if (part.type === 'file' && isUserMessage) {
-                              return (
-                                <div key={`part-${partIndex}`} className="mt-4">
-                                  <div className="flex items-center gap-2 p-2 bg-background rounded border">
-                                    <FileIcon className="h-4 w-4 text-blue-500" />
-                                    <Link
-                                      className="font-medium text-blue-600 dark:text-blue-400 hover:underline flex-1"
-                                      href={`?file=${part.filename || 'file'}`}
-                                    >
-                                      {part.filename || 'Attached File'}
-                                    </Link>
+                              // Handle reasoning parts (assistant only)
+                              if (part.type === 'reasoning' && !isUserMessage) {
+                                return (
+                                  <div
+                                    key={`part-${partIndex}`}
+                                    className="mt-4"
+                                  >
+                                    <ReasoningContent
+                                      details={part}
+                                      messageId={message.id}
+                                    />
                                   </div>
-                                </div>
-                              );
-                            }
+                                );
+                              }
 
-                            // Handle tool invocation parts (assistant only)
-                            if (
-                              part.type === 'tool-searchUserDocument' &&
-                              !isUserMessage
-                            ) {
-                              return (
-                                <DocumentSearchTool
-                                  key={`part-${partIndex}`}
-                                  toolInvocation={
-                                    part as Extract<
-                                      ToolUIPart<UITools>,
-                                      {
-                                        type: 'tool-searchUserDocument';
-                                      }
-                                    >
-                                  }
-                                  index={indexStr}
-                                />
-                              );
-                            }
-                            if (
-                              part.type === 'tool-websiteSearchTool' &&
-                              !isUserMessage
-                            ) {
-                              return (
-                                <WebsiteSearchTool
-                                  key={`part-${partIndex}`}
-                                  toolInvocation={
-                                    part as Extract<
-                                      ToolUIPart<UITools>,
-                                      {
-                                        type: 'tool-websiteSearchTool';
-                                      }
-                                    >
-                                  }
-                                  index={indexStr}
-                                />
-                              );
-                            }
+                              // Skip source parts - they'll be rendered together below
+                              if (
+                                (part.type === 'source-url' ||
+                                  part.type === 'source-document') &&
+                                !isUserMessage
+                              ) {
+                                return null;
+                              }
 
-                            return null;
-                          })}
+                              // Handle file parts (user messages)
+                              if (part.type === 'file' && isUserMessage) {
+                                return (
+                                  <div
+                                    key={`part-${partIndex}`}
+                                    className="mt-4"
+                                  >
+                                    <div className="flex items-center gap-2 p-2 bg-background rounded border">
+                                      <FileIcon className="h-4 w-4 text-blue-500" />
+                                      <Link
+                                        className="font-medium text-blue-600 dark:text-blue-400 hover:underline flex-1"
+                                        href={`?file=${part.filename || 'file'}`}
+                                      >
+                                        {part.filename || 'Attached File'}
+                                      </Link>
+                                    </div>
+                                  </div>
+                                );
+                              }
 
-                          {/* Render all sources together in a single dropdown */}
-                          {sources && sources.length > 0 && (
-                            <div className="mt-2">
-                              <SourceView sources={sources} />
-                            </div>
-                          )}
-                        </>
-                      );
-                    })()}
-                  </CardContent>
-                </Card>
-              </li>
-            );
-          })}
-          <ChatScrollAnchor trackVisibility status={status} />
-        </ul>
-      )}
+                              // Handle tool invocation parts (assistant only)
+                              if (
+                                part.type === 'tool-searchUserDocument' &&
+                                !isUserMessage
+                              ) {
+                                return (
+                                  <DocumentSearchTool
+                                    key={`part-${partIndex}`}
+                                    toolInvocation={
+                                      part as Extract<
+                                        ToolUIPart<UITools>,
+                                        {
+                                          type: 'tool-searchUserDocument';
+                                        }
+                                      >
+                                    }
+                                    index={indexStr}
+                                  />
+                                );
+                              }
+                              if (
+                                part.type === 'tool-websiteSearchTool' &&
+                                !isUserMessage
+                              ) {
+                                return (
+                                  <WebsiteSearchTool
+                                    key={`part-${partIndex}`}
+                                    toolInvocation={
+                                      part as Extract<
+                                        ToolUIPart<UITools>,
+                                        {
+                                          type: 'tool-websiteSearchTool';
+                                        }
+                                      >
+                                    }
+                                    index={indexStr}
+                                  />
+                                );
+                              }
+                              if (
+                                part.type === 'tool-saveMemory' &&
+                                !isUserMessage
+                              ) {
+                                return (
+                                  <MemoryTool
+                                    key={`part-${partIndex}`}
+                                    toolInvocation={
+                                      part as Extract<
+                                        ToolUIPart<UITools>,
+                                        { type: 'tool-saveMemory' }
+                                      >
+                                    }
+                                    index={indexStr}
+                                  />
+                                );
+                              }
+                              if (
+                                part.type === 'tool-conversationSearch' &&
+                                !isUserMessage
+                              ) {
+                                return (
+                                  <ConversationSearchTool
+                                    key={`part-${partIndex}`}
+                                    toolInvocation={
+                                      part as Extract<
+                                        ToolUIPart<UITools>,
+                                        { type: 'tool-conversationSearch' }
+                                      >
+                                    }
+                                    index={indexStr}
+                                  />
+                                );
+                              }
+                              if (
+                                part.type === 'tool-createChart' &&
+                                !isUserMessage
+                              ) {
+                                return (
+                                  <ChartTool
+                                    key={`part-${partIndex}`}
+                                    toolInvocation={
+                                      part as Extract<
+                                        ToolUIPart<UITools>,
+                                        { type: 'tool-createChart' }
+                                      >
+                                    }
+                                    index={indexStr}
+                                  />
+                                );
+                              }
+                              if (
+                                part.type === 'tool-createPDF' &&
+                                !isUserMessage
+                              ) {
+                                return (
+                                  <PdfTool
+                                    key={`part-${partIndex}`}
+                                    toolInvocation={
+                                      part as Extract<
+                                        ToolUIPart<UITools>,
+                                        { type: 'tool-createPDF' }
+                                      >
+                                    }
+                                    index={indexStr}
+                                  />
+                                );
+                              }
+                              if (
+                                (part.type === 'tool-createArtifact' ||
+                                  part.type === 'tool-updateArtifact') &&
+                                !isUserMessage
+                              ) {
+                                return (
+                                  <ArtifactTool
+                                    key={`part-${partIndex}`}
+                                    toolInvocation={
+                                      part as Extract<
+                                        ToolUIPart<UITools>,
+                                        | { type: 'tool-createArtifact' }
+                                        | { type: 'tool-updateArtifact' }
+                                      >
+                                    }
+                                    onOpen={() =>
+                                      openArtifactForPart(message.id, partIndex)
+                                    }
+                                  />
+                                );
+                              }
 
-      <div className="sticky bottom-0 mt-auto max-w-[720px] mx-auto w-full z-5 pb-2">
-        {/* Pass chat functions as props to MessageInput */}
-        <MessageInput
-          chatId={chatId}
-          selectedOption={optimisticOption}
-          models={models}
-          handleOptionChange={handleOptionChange}
-          sendMessage={sendMessage}
-          status={status}
-          stop={stop}
-        />
+                              return null;
+                            })}
+
+                            {/* Render all sources together in a single dropdown */}
+                            {sources && sources.length > 0 && (
+                              <div className="mt-2">
+                                <SourceView sources={sources} />
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </CardContent>
+                  </Card>
+                </li>
+              );
+            })}
+            <ChatScrollAnchor trackVisibility status={status} />
+          </ul>
+        )}
+
+        <div className="sticky bottom-0 mt-auto max-w-[720px] mx-auto w-full z-5 pb-2">
+          {/* Pass chat functions as props to MessageInput */}
+          <MessageInput
+            chatId={chatId}
+            selectedOption={selectedOption}
+            models={models}
+            handleOptionChange={setSelectedOption}
+            sendMessage={sendMessage}
+            status={status}
+            stop={stop}
+          />
+        </div>
       </div>
+
+      <ArtifactPanel
+        artifact={openArtifact}
+        versionIndex={artifactVersionIndex}
+        onVersionChange={handleArtifactVersionChange}
+        onClose={closeArtifactPanel}
+      />
     </div>
   );
 };

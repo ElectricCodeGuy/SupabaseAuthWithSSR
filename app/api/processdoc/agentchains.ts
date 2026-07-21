@@ -1,7 +1,7 @@
 import 'server-only';
 import { generateText, Output } from 'ai';
 import { z } from 'zod';
-import { google } from '@ai-sdk/google';
+import { anthropic } from '@ai-sdk/anthropic';
 
 const contentAnalysisSchema = z.object({
   preliminary_answer_1: z
@@ -36,7 +36,7 @@ export const preliminaryAnswerChainAgent = async (content: string) => {
     'Given the content provided below, perform a comprehensive analysis. Generate two preliminary answers, tag key concepts or topics, and generate two hypothetical questions. Ensure all outputs address specific elements mentioned in the text. Focus on interpreting key themes, implications of specific concepts, and potential real-life applications or consequences. Answers and questions should be detailed and thought-provoking. The output language should be in the same as the input text.';
 
   const { output, usage } = await generateText({
-    model: google('gemini-3.1-flash-lite-preview'),
+    model: anthropic('claude-sonnet-5'),
     system: SystemPrompt,
     prompt: content,
     output: Output.object({ schema: contentAnalysisSchema }),
@@ -86,7 +86,7 @@ export const generateDocumentMetadata = async (content: string) => {
   `;
 
   const { output, usage, finishReason } = await generateText({
-    model: google('gemini-3.1-flash-lite-preview'),
+    model: anthropic('claude-sonnet-5'),
     system: SystemPrompt,
     prompt: content,
     output: Output.object({ schema: documentMetadataSchema })

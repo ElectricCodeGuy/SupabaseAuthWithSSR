@@ -1,5 +1,165 @@
 ## CHANGELOG
 
+## [v5.0.0] - 2026-07-21
+
+### Major Changes
+
+- **AI SDK v7 chat route, Anthropic-only with two-tier prompt caching**: The
+  chat route was rewritten on the newest AI SDK v7 surface (`instructions[]`
+  system blocks, `prepareStep`, `onStepEnd`, `stopWhen: isStepCount(10)`,
+  `toUIMessageStream` + `createUIMessageStreamResponse`).
+  - A static system prompt block carries a cache breakpoint (which also caches
+    the tool definitions), and a moving breakpoint is re-placed on the last
+    message each step — so multi-step tool turns and follow-ups are served
+    from Anthropic's prompt cache at ~10% of the normal input price.
+  - Adaptive thinking with summarized reasoning display; the dynamic system
+    block injects the current date, the user's memories, and the artifact
+    workspace state.
+
+- **Full AI tool suite**: The chat grew from two tools to eight.
+  - `saveMemory` — long-term memory (save/list/delete), injected into every
+    system prompt (`user_memories` table).
+  - `conversationSearch` — keyword search across all past chats with links.
+  - `createChart` — interactive bar/line/area/pie charts (Recharts,
+    colorblind-safe validated palette, data-table fallback).
+  - `createPDF` — polished PDFs via `@react-pdf/renderer` (report/memo/letter/
+    contract templates, cover page, TOC, callouts, tables), uploaded to
+    Storage and previewable in the file manager. **Replaces the Word/`docx`
+    document tool.**
+  - `createArtifact` / `updateArtifact` — a versioned document workspace in a
+    side panel: content streams in live (it travels in the tool *input*),
+    every create/update is a persisted version, auto-opens on new versions,
+    desktop push-panel / mobile slide-over, copy + Markdown download. No new
+    tables — versions ARE the stored tool calls.
+  - `searchUserDocument` extended: list newest documents, find by name, read
+    a page range or full content, and **hybrid search** (see below).
+
+- **Per-step token usage tracking**: Every generation step — each tool call is
+  its own step — stores a usage JSON object (`model_id`, input/output/
+  cache-read/cache-write tokens, `tools[]`) on the first `message_parts` row
+  of the step. No separate usage table; cost is attributable per chat, per
+  message, and per tool.
+
+- **Usage & Admin dashboards**:
+  - `/usage` (every user): range tabs (7/30/90d), KPI tiles with
+    period-over-period deltas, tokens per day, cache hit rate over time, cost
+    by model, usage by tool, top conversations, and a per-message generations
+    table that expands into individual steps.
+  - `/admin` (`users.is_admin`): org-wide totals and daily chart, top users by
+    cost, cost by model, and a searchable users table with inline rename and
+    admin toggle. All mutations re-verify the caller is an admin server-side;
+    self-demotion is blocked.
+
+- **Hybrid document search**: `match_documents` rewritten as pgvector cosine +
+  `websearch_to_tsquery` full-text search fused with Reciprocal Rank Fusion
+  (the old 5-param signature is dropped to avoid PostgREST overload
+  ambiguity/PGRST202).
+
+- **Anthropic-only model catalog**: Claude Sonnet 5 (default), Opus 4.8 and
+  Fable 5 seeded with official API pricing; OpenAI/Google rows deactivated.
+  The AI settings modal shows a per-answer cost estimate per model, computed
+  from the same `ai_models` pricing the dashboards use.
+
+- **AI settings modal** (`#ai-settings`): a hash-controlled modal mounted once
+  in the dashboard layout — opened via `history.replaceState`, no navigation.
+  General tab (display name + default model) and Memories tab (view/add/edit/
+  delete). Server actions take `FormData`, validate with zod, call `refresh()`
+  from `next/cache`, and buttons show pending state via nested
+  `useFormStatus` components.
+
+- **Per-conversation state on the chat session**: New `chat_sessions.settings`
+  JSON column — the model picked in a conversation is stored there, so every
+  conversation keeps its own model across reloads.
+
+- **Route structure convention**: Every route is now `page.tsx` (render) +
+  `fetch.ts` (all server fetching) + `components/` (route components), with a
+  route-group `fetch.ts` for the dashboard layout. `(dashboard)/components/`
+  contains only shared code: `layout/` (sidebar/header chrome), `analytics/`
+  (StatCard, BarList, RangeTabs, charts), `ai-settings/` (the modal).
+
+### Added
+
+- **Auto-generated chat titles**: after the first exchange, a Claude Haiku
+  call in the stream's `onFinish` names the conversation from the user's
+  message *and* the assistant's answer.
+- **New landing page**: SaaS-style Hero / Features / Showcase / CTA built from
+  real product facts — a pure-CSS product mock (tool traces, mini chart, cache
+  footer) instead of screenshots, a stack strip instead of made-up stats.
+- **New logo**: `Logo.tsx` — a chat-bubble + AI-sparkle mark drawn from theme
+  tokens (`--primary`/`--primary-foreground`) with a real-text "SupaChat"
+  wordmark, replacing the hardcoded Sitemark SVG. Re-themes automatically.
+- **Signed-out sidebar state**: the dashboard layout now detects guests —
+  account-bound nav items render locked (linking to `/signin`), the chat rail
+  shows a blurred example history behind a sign-in card, and the footer swaps
+  the profile menu for a sign-in link.
+- **Profile page rebuilt** with real account data in one server round-trip:
+  identity header with initials avatar + admin badge, stat cards
+  (conversations/documents/memories/30-day spend), account details, stored
+  memories, recent conversations and documents.
+- **Warm cream theme** applied through design tokens only — fonts wired via
+  CSS variables on `body` (Outfit + Geist Mono), `antialiased`, global radius
+  reduced to `0.5rem`, and a validated colorblind-safe chart palette that
+  survives theme swaps (documented inline so theme generators don't clobber
+  it).
+- **Exa highlights**: web search results now include query-relevant highlight
+  snippets alongside full text.
+- All schema changes (`user_memories`, admin + usage columns, model catalog,
+  hybrid `match_documents`, `chat_sessions.settings`) folded into
+  `database/setup.sql` — the single, idempotent source of truth; re-run it to
+  upgrade an existing install.
+- README completely rewritten: a screenshot **Tour** section (one image + text
+  per feature, 11 new screenshots) replacing the old image wall, updated
+  structure tree and tool table.
+
+### Changed
+
+- **Web search simplified**: the AI's query goes straight to Exa — the
+  intermediate LLM query-expansion call was removed (faster, cheaper, no
+  quality loss with tool-calling models writing the queries).
+- **`route.ts` split**: `errorHandler`, `resolveModelId`, `generateChatTitle`
+  and `buildStepUsage` moved to `chatHelpers.ts`; the static system prompt,
+  `prepareStep` cache logic and step-to-UIMessage building deliberately stay
+  in the route file.
+- **Incremental saving** (`SaveToDbIncremental`) now attaches the step usage
+  JSON to the first assistant part of each step, persists chat settings, and
+  handles any `tool-*` part generically.
+- All remaining Danish UI text translated to English (profile menu, file
+  manager leftovers, web search prompts).
+- External links open in new tabs (`target="_blank"` + `rel`) instead of the
+  removed in-app website viewer.
+- Dashboard chrome grouped under `components/layout/`; sidebar footer
+  reordered (Admin dashboard → Back to Home → profile) as one flat menu.
+
+### Removed
+
+- **`/api/website` proxy, the iframe website viewer and `/api/getmetadata`** —
+  an open-proxy/SSRF pattern with header spoofing; unsafe, gone.
+- **Word document generation** (`CreateDocumentTool`) and the `docx`
+  dependency — replaced by the PDF tool.
+- The `/docs` pages (served no purpose) and the old landing-page sections.
+- Fake profile demo content (mock subscription, placeholder stats, SnakeGame).
+- OpenAI/Gemini provider logos and the multi-provider plumbing in the chat
+  route.
+- Unused dependencies flagged by knip (`framer-motion`, `docx`, and friends);
+  unused `Linkedin`/`Youtube` brand icons.
+
+### Fixed
+
+- `match_documents` PGRST202: the old function signature is explicitly
+  `DROP`ped before creating the hybrid version (PostgREST can't resolve
+  overloads).
+- Every `/login` link pointed at a route that doesn't exist — now `/signin`
+  (sidebar CTA, admin redirect, usage and filer sign-in prompts).
+- Signed-out visitors saw a broken "User" profile dropdown with sign-out —
+  the layout now passes real session state to the sidebar.
+- Cache-hit-rate chart line was invisible in dark mode (near-surface
+  generated chart color) — restored the validated palette.
+- All new `eslint-plugin-react-hooks` violations (setState-in-effect patterns
+  replaced with `useSyncExternalStore`, memo derivation, or render-time
+  guards) and Google-translate DOM-conflict warnings.
+- Hydration and type errors from the dependency cleanup (react-dropzone
+  generics, lucide-react brand icon removal, recharts label types).
+
 ## [v4.0.0] - 2026-06-29
 
 ### Major Changes
@@ -574,8 +734,6 @@ For more information about implementing vector similarity search with pgvector, 
   - Live web search during chat conversations
   - Source attribution for search results
   - Seamless integration with existing chat interface
-
-<img src="public/images/TavilySeach.png" alt="Tavily Search Integration" style="width: 60%; margin: 10px;">
 
 ### New Features Include:
 

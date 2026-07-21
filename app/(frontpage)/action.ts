@@ -99,39 +99,6 @@ export async function signup(formData: FormData): Promise<AuthResponse> {
   };
 }
 
-const formDataSchemaReset = z.object({
-  email: z.string().email()
-});
-
-export async function resetPasswordForEmail(
-  formData: FormData
-): Promise<AuthResponse> {
-  const supabase = await createClient();
-  const email = formData.get('email') ? String(formData.get('email')) : '';
-
-  const result = formDataSchemaReset.safeParse({ email: email });
-
-  if (!result.success) {
-    return {
-      success: false,
-      message: 'Invalid email address'
-    };
-  }
-
-  const { error } = await supabase.auth.resetPasswordForEmail(email);
-
-  if (error) {
-    return {
-      success: false,
-      message: 'Failed to send password reset email'
-    };
-  }
-
-  return {
-    success: true,
-    message: 'Check your email to continue the password reset process'
-  };
-}
 
 export async function signout() {
   const supabase = await createClient();

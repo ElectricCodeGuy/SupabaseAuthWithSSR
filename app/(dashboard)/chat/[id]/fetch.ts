@@ -78,7 +78,13 @@ function reconstructPart(
     // Tool parts - all tools share the generic tool_* columns; `type` tells us
     // which tool this row is.
     case 'tool-searchUserDocument':
-    case 'tool-websiteSearchTool': {
+    case 'tool-websiteSearchTool':
+    case 'tool-saveMemory':
+    case 'tool-conversationSearch':
+    case 'tool-createChart':
+    case 'tool-createPDF':
+    case 'tool-createArtifact':
+    case 'tool-updateArtifact': {
       const toolPart: ToolUIPart<UITools> = {
         type: part.type,
         approval: (part.tool_approval as any) || undefined,
@@ -136,25 +142,6 @@ export function formatMessages(messageParts: MessagePart[]): UIMessage[] {
   return messages;
 }
 
-// Derive the breadcrumb title: stored title, else first user message, else fallback.
-// Pure function of server data so it can be computed in the server component.
-export function deriveChatTitle(
-  chatTitle: string | null | undefined,
-  messages: UIMessage[] | undefined
-): string {
-  const stored = chatTitle?.trim();
-  if (stored) return stored;
-
-  const firstUserText =
-    messages
-      ?.find((m) => m.role === 'user')
-      ?.parts?.filter((p): p is TextUIPart => p.type === 'text')
-      .map((p) => p.text)
-      .join('')
-      .trim() || '';
-
-  return firstUserText ? firstUserText.slice(0, 70) : 'New chat';
-}
 
 export async function fetchChat(chatId: string) {
   const supabase = await createServerSupabaseClient();
@@ -171,6 +158,7 @@ export async function fetchChat(chatId: string) {
       chat_title,
       is_favorite,
       is_public,
+      settings,
       users (
         selected_model
       ),
@@ -203,7 +191,8 @@ export async function fetchChat(chatId: string) {
         tool_errortext,
         tool_providerexecuted,
         tool_approval,
-        providermetadata
+        providermetadata,
+        usage
       )
     `
     )
@@ -222,9 +211,13 @@ export async function fetchChat(chatId: string) {
   // Format the messages from parts
   const formattedMessages = formatMessages(data.message_parts);
 
+  // Conversation-specific state stored on the session (JSON col): prefer the
+  // model this chat last ran with, falling back to the user's default.
+  const chatSettings = data.settings as { model?: string } | null;
+
   return {
     ...data,
     messages: formattedMessages,
-    selectedModel: data.users?.selected_model ?? null
+    selectedModel: chatSettings?.model ?? data.users?.selected_model ?? null
   };
 }

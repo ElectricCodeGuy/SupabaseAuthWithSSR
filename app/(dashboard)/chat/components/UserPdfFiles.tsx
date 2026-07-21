@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import Link from '@/components/link';
 import { usePathname } from 'next/navigation';
@@ -20,45 +20,44 @@ export default function UserPdfViewer({
 }) {
   const pathname = usePathname();
   const [isLoading, setIsLoading] = useState(true);
-  const [blobUrl, setBlobUrl] = useState('');
 
-  useEffect(() => {
-    // Convert data URL to blob URL for better browser compatibility
-    if (url.startsWith('data:application/pdf;base64,')) {
-      try {
-        const base64Data = url.split(',')[1];
-        const byteCharacters = atob(base64Data);
-        const byteArrays = [];
+  // Derive the blob URL from the incoming url instead of mirroring it into
+  // state — data URLs are converted to blob URLs for better browser
+  // compatibility; anything else is used directly. Returns '' on a broken
+  // data URL, which renders the fallback below.
+  const blobUrl = useMemo(() => {
+    if (!url.startsWith('data:application/pdf;base64,')) return url;
+    try {
+      const base64Data = url.split(',')[1];
+      const byteCharacters = atob(base64Data);
+      const byteArrays = [];
 
-        for (let i = 0; i < byteCharacters.length; i += 512) {
-          const slice = byteCharacters.slice(i, i + 512);
-          const byteNumbers = new Array(slice.length);
+      for (let i = 0; i < byteCharacters.length; i += 512) {
+        const slice = byteCharacters.slice(i, i + 512);
+        const byteNumbers = new Array(slice.length);
 
-          for (let j = 0; j < slice.length; j++) {
-            byteNumbers[j] = slice.charCodeAt(j);
-          }
-
-          const byteArray = new Uint8Array(byteNumbers);
-          byteArrays.push(byteArray);
+        for (let j = 0; j < slice.length; j++) {
+          byteNumbers[j] = slice.charCodeAt(j);
         }
 
-        const blob = new Blob(byteArrays, { type: 'application/pdf' });
-        const newBlobUrl = URL.createObjectURL(blob);
-        setBlobUrl(newBlobUrl);
-
-        // Clean up the blob URL when component unmounts
-        return () => {
-          URL.revokeObjectURL(newBlobUrl);
-        };
-      } catch (error) {
-        console.error('Error converting data URL to blob:', error);
-        setIsLoading(false);
+        const byteArray = new Uint8Array(byteNumbers);
+        byteArrays.push(byteArray);
       }
-    } else {
-      // If it's not a data URL, use it directly
-      setBlobUrl(url);
+
+      const blob = new Blob(byteArrays, { type: 'application/pdf' });
+      return URL.createObjectURL(blob);
+    } catch (error) {
+      console.error('Error converting data URL to blob:', error);
+      return '';
     }
   }, [url]);
+
+  // Clean up generated blob URLs when they change / on unmount.
+  useEffect(() => {
+    if (blobUrl.startsWith('blob:')) {
+      return () => URL.revokeObjectURL(blobUrl);
+    }
+  }, [blobUrl]);
 
   return (
     <div className="w-[55%] border-l border-slate-200 hidden sm:flex flex-col justify-start items-stretch overflow-hidden relative">
@@ -77,12 +76,12 @@ export default function UserPdfViewer({
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Luk</p>
+            <p>Close</p>
           </TooltipContent>
         </Tooltip>
       </div>
 
-      {isLoading && (
+      {isLoading && blobUrl !== '' && (
         <div className="absolute inset-0 flex items-center justify-center bg-white">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -96,7 +95,7 @@ export default function UserPdfViewer({
           onLoad={() => setIsLoading(false)}
         >
           <p className="p-4 text-center">
-            Din browser understøtter ikke visning af PDF-filer direkte.
+            Your browser cannot display PDF files directly.
             <a
               href={blobUrl}
               download={fileName}
@@ -108,7 +107,7 @@ export default function UserPdfViewer({
         </object>
       ) : (
         <div className="flex flex-col items-center justify-center h-full p-4">
-          <p>Der opstod en fejl ved indlæsning af PDF-filen.</p>
+          <p>Something went wrong while loading the PDF file.</p>
         </div>
       )}
     </div>

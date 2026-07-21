@@ -125,20 +125,3 @@ export async function resetPasswordForEmail(formData: FormData) {
   };
 }
 
-export async function signout() {
-  const supabase = await createServerSupabaseClient();
-
-  const { error } = await supabase.auth.signOut();
-
-  if (error) {
-    return {
-      success: false,
-      message: 'Failed to sign out'
-    };
-  }
-
-  return {
-    success: true,
-    message: 'Successfully signed out'
-  };
-}

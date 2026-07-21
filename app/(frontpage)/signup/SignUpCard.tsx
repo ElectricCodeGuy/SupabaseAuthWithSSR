@@ -148,12 +148,12 @@ export default function SignInCard() {
     };
   }, [currentPassword]);
 
-  // Show password requirements when typing in password field
-  useEffect(() => {
-    if (currentPassword && !showPasswordRequirements) {
-      setShowPasswordRequirements(true);
-    }
-  }, [currentPassword, showPasswordRequirements]);
+  // Show password requirements once the user starts typing in the password
+  // field. Render-time state adjustment (guarded, converges in one re-render)
+  // instead of a setState-in-effect.
+  if (currentPassword && !showPasswordRequirements) {
+    setShowPasswordRequirements(true);
+  }
 
   return (
     <div className="flex justify-center items-center">

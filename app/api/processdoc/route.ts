@@ -10,8 +10,6 @@ import { voyage } from 'voyage-ai-provider';
 import type { TablesInsert } from '@/types/database';
 import { revalidatePath } from 'next/cache';
 
-export const dynamic = 'force-dynamic';
-
 export const maxDuration = 800;
 
 const embeddingModel = voyage('voyage-4-large');

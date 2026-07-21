@@ -16,75 +16,46 @@ import { ClientMobileNav } from './ClientMobileNav';
 import {
   User,
   LogIn,
-  BookOpen,
-  Rocket,
   MessageSquare,
-  Code2,
-  Layers,
-  Settings,
-  CreditCard,
   FolderOpen,
+  ChartColumn,
+  Settings2,
   BotMessageSquare
 } from 'lucide-react';
-import Sitemark from './SitemarkIcon';
+import { Github } from '@/components/brand-icons';
+import Logo from './Logo';
 import { ModeToggle } from '@/components/ui/toggleButton';
 import SignOut from './SignOut';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-// Docs navigation links
-const docsLinks = [
-  {
-    title: 'Getting Started',
-    href: '/docs/getting-started',
-    description: 'Learn how to get started with the AI chat.',
-    icon: Rocket
-  },
-  {
-    title: 'Overview',
-    href: '/docs/overview',
-    description: 'Understand the AI SDK architecture and concepts.',
-    icon: Layers
-  },
-  {
-    title: 'useChat Hook',
-    href: '/docs/usechat',
-    description: 'Learn about the useChat hook for chat functionality.',
-    icon: MessageSquare
-  },
-  {
-    title: 'Core Functions',
-    href: '/docs/core-functions',
-    description: 'Explore the key AI SDK functions.',
-    icon: Code2
-  }
-];
+const GITHUB_URL = 'https://github.com/ElectricCodeGuy/SupabaseAuthWithSSR';
 
-// Profile menu items
+// Profile menu items — every entry is a real route in this app.
 const profileMenuItems = [
   {
     href: '/profile',
     text: 'My Profile',
-    description: 'View and edit your profile information',
+    description: 'Your account, activity and memories',
     icon: User
   },
   {
     href: '/filer',
     text: 'My Files',
-    description: 'View your uploaded documents',
+    description: 'View and manage uploaded documents',
     icon: FolderOpen
   },
   {
-    href: '/settings',
-    text: 'Settings',
-    description: 'Manage your settings',
-    icon: Settings
+    href: '/usage',
+    text: 'Usage',
+    description: 'Token usage, cache hits and cost',
+    icon: ChartColumn
   },
   {
-    href: '/subscription',
-    text: 'Subscription',
-    description: 'Manage your subscription and payments',
-    icon: CreditCard
+    href: '/chat/settings',
+    text: 'Manage Chats',
+    description: 'Rename, share or delete conversations',
+    icon: Settings2
   }
 ];
 
@@ -108,14 +79,9 @@ export default function Header() {
       icon: MessageSquare
     },
     {
-      text: 'Documentation',
-      icon: BookOpen,
-      subItems: docsLinks.map((link) => ({
-        href: link.href,
-        text: link.title,
-        description: link.description,
-        icon: link.icon
-      }))
+      href: GITHUB_URL,
+      text: 'GitHub',
+      icon: Github
     },
     ...(isLoggedIn
       ? [
@@ -147,7 +113,7 @@ export default function Header() {
           href="/"
           className="flex items-center gap-2 hover:opacity-80 transition-opacity"
         >
-          <Sitemark />
+          <Logo />
         </Link>
 
         {/* Desktop Navigation */}
@@ -165,35 +131,17 @@ export default function Header() {
                 </Link>
               </NavigationMenuItem>
 
-              {/* Docs dropdown */}
+              {/* GitHub */}
               <NavigationMenuItem>
-                <NavigationMenuTrigger triggerMode="click">
-                  <BookOpen className="w-4 h-4 mr-2" />
-                  Documentation
-                </NavigationMenuTrigger>
-                <NavigationMenuContent className="right-0 left-auto">
-                  <ul className="grid w-[400px] gap-1 p-2 md:w-[500px] md:grid-cols-2">
-                    {docsLinks.map((link) => (
-                      <ClientListItem
-                        key={link.href}
-                        href={link.href}
-                        title={link.title}
-                        icon={link.icon}
-                      >
-                        {link.description}
-                      </ClientListItem>
-                    ))}
-                  </ul>
-                  <div className="border-t p-2">
-                    <Link
-                      href="/docs"
-                      className="flex items-center justify-center gap-2 text-sm font-medium text-primary hover:underline py-1"
-                    >
-                      <BookOpen className="h-4 w-4" />
-                      View all documentation
-                    </Link>
-                  </div>
-                </NavigationMenuContent>
+                <a
+                  href={GITHUB_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`${navigationMenuTriggerStyle()} flex items-center`}
+                >
+                  <Github className="w-4 h-4 mr-2" />
+                  GitHub
+                </a>
               </NavigationMenuItem>
 
               {/* Profile Menu / Login */}

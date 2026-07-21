@@ -1,41 +1,14 @@
 import { Suspense } from 'react';
-import { fetchUserFilesData } from './fetch';
+import { fetchUserFilesData, fetchDocumentPreview } from './fetch';
 import { FileManager } from './components/FileManager';
 import { DocumentViewer } from './components/DocumentViewer';
 import { Card, CardContent } from '@/components/ui/card';
 import Link from '@/components/link';
 import { Button } from '@/components/ui/button';
-import { getSession } from '@/lib/server/supabase';
-import { createAdminClient } from '@/lib/server/admin';
-import { decodeBase64 } from '@/utils/base64';
 import { Loader } from 'lucide-react';
 
 async function DocumentPreview({ encodedTitle }: { encodedTitle: string }) {
-  const session = await getSession();
-  const userId = session?.sub;
-
-  let signedUrl: string | null = null;
-  let decodedTitle: string | null = null;
-
-  if (userId && encodedTitle) {
-    try {
-      const supabase = createAdminClient();
-      // The file is stored as userId/base64EncodedTitle
-      const filePath = `${userId}/${encodedTitle}`;
-      decodedTitle = decodeBase64(encodedTitle);
-
-      const { data, error } = await supabase.storage
-        .from('userfiles')
-        .createSignedUrl(filePath, 3600);
-
-      if (!error && data) {
-        signedUrl = data.signedUrl;
-      }
-    } catch (error) {
-      console.error('Error creating signed URL:', error);
-    }
-  }
-
+  const { decodedTitle, signedUrl } = await fetchDocumentPreview(encodedTitle);
   return <DocumentViewer fileName={decodedTitle} signedUrl={signedUrl} />;
 }
 
@@ -64,7 +37,7 @@ export default async function FilerPage({ searchParams }: PageProps) {
               You must be logged in to view this page
             </p>
             <Button asChild className="mt-4">
-              <Link href="/login">Log in</Link>
+              <Link href="/signin">Sign in</Link>
             </Button>
           </CardContent>
         </Card>

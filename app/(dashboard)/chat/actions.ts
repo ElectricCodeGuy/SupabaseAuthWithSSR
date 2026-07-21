@@ -32,68 +32,6 @@ export async function deleteChatData(chatId: string) {
   return { success: true, message: 'Chat data deleted successfully' };
 }
 
-const deleteFileSchema = z.object({
-  file_name: z.string(),
-  file_id: z.string()
-});
-
-export async function deleteFilterTagAndDocumentChunks(formData: FormData) {
-  const session = await getSession();
-  if (!session) {
-    return { success: false, message: 'User not authenticated' };
-  }
-
-  const result = deleteFileSchema.safeParse({
-    file_name: formData.get('file_name'),
-    file_id: formData.get('file_id')
-  });
-
-  if (!result.success) {
-    console.error('Validation failed:', result.error.issues);
-    return {
-      success: false,
-      message: result.error.issues.map((issue) => issue.message).join(', ')
-    };
-  }
-
-  const { file_name, file_id } = result.data;
-  const userId = session.sub;
-
-  const supabase = await createServerSupabaseClient();
-  const fileToDelete = userId + '/' + file_name;
-
-  // Delete the file from storage
-  const { error: deleteError } = await supabase.storage
-    .from('userfiles')
-    .remove([fileToDelete]);
-
-  if (deleteError) {
-    console.error('Error deleting file from Supabase storage:', deleteError);
-    return { success: false, message: 'Error deleting file from storage' };
-  }
-
-  // Find and delete document records with the matching id
-  // Vector records are deleted automatically via ON DELETE CASCADE
-  const { data: deletedData, error: docDeleteError } = await supabase
-    .from('user_documents')
-    .delete()
-    .eq('user_id', userId)
-    .eq('id', file_id)
-    .select('id, title');
-
-  if (docDeleteError) {
-    console.error('Error deleting document records:', docDeleteError);
-    return { success: false, message: 'Error deleting document metadata' };
-  }
-
-  const deletedCount = deletedData?.length || 0;
-  refresh();
-
-  return {
-    success: true,
-    message: `Successfully deleted file and ${deletedCount} associated documents`
-  };
-}
 
 const updateChatTitleSchema = z.object({
   title: z.string().min(1, 'Title cannot be empty'),
@@ -202,26 +140,3 @@ export async function unshareChat(chatId: string) {
   return { success: true };
 }
 
-// Persist the user's chosen model on their users row. The FK to ai_models
-// rejects unknown model_ids, and RLS limits the update to the user's own row.
-export async function setSelectedModel(modelId: string) {
-  const session = await getSession();
-  if (!session) {
-    return { success: false, message: 'User not authenticated' };
-  }
-
-  const supabase = await createServerSupabaseClient();
-  const { error } = await supabase
-    .from('users')
-    .update({ selected_model: modelId })
-    .eq('id', session.sub);
-
-  if (error) {
-    return {
-      success: false,
-      message: `Failed to update model: ${error.message}`
-    };
-  }
-
-  return { success: true };
-}

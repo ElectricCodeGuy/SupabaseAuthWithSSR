@@ -25,7 +25,6 @@
     },
     "incremental": true,
     "noFallthroughCasesInSwitch": true,
-    "importHelpers": true,
     "useUnknownInCatchVariables": false,
     "plugins": [
       {

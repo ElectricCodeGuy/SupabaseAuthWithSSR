@@ -97,6 +97,7 @@ export type Database = {
           id: string
           is_favorite: boolean
           is_public: boolean
+          settings: Json | null
           updated_at: string
           user_id: string
         }
@@ -106,6 +107,7 @@ export type Database = {
           id?: string
           is_favorite?: boolean
           is_public?: boolean
+          settings?: Json | null
           updated_at?: string
           user_id: string
         }
@@ -115,6 +117,7 @@ export type Database = {
           id?: string
           is_favorite?: boolean
           is_public?: boolean
+          settings?: Json | null
           updated_at?: string
           user_id?: string
         }
@@ -186,6 +189,7 @@ export type Database = {
           tool_state: string | null
           tool_toolcallid: string | null
           type: string
+          usage: Json | null
         }
         Insert: {
           chat_session_id: string
@@ -217,6 +221,7 @@ export type Database = {
           tool_state?: string | null
           tool_toolcallid?: string | null
           type: string
+          usage?: Json | null
         }
         Update: {
           chat_session_id?: string
@@ -248,6 +253,7 @@ export type Database = {
           tool_state?: string | null
           tool_toolcallid?: string | null
           type?: string
+          usage?: Json | null
         }
         Relationships: [
           {
@@ -341,23 +347,55 @@ export type Database = {
           },
         ]
       }
+      user_memories: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_memories_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           email: string
           full_name: string
           id: string
+          is_admin: boolean
           selected_model: string | null
         }
         Insert: {
           email: string
           full_name?: string
           id: string
+          is_admin?: boolean
           selected_model?: string | null
         }
         Update: {
           email?: string
           full_name?: string
           id?: string
+          is_admin?: boolean
           selected_model?: string | null
         }
         Relationships: [
@@ -379,16 +417,16 @@ export type Database = {
         Args: {
           file_ids: string[]
           filter_user_id: string
+          k_rrf?: number
           match_count: number
           query_embedding: string
-          similarity_threshold?: number
+          query_text: string
+          vector_weight?: number
         }
         Returns: {
           ai_description: string
-          ai_keyentities: string[]
-          ai_maintopics: string[]
           ai_title: string
-          doc_timestamp: string
+          document_id: string
           id: string
           page_number: number
           similarity: number

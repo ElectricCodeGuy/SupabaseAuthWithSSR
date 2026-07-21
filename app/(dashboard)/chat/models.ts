@@ -1,8 +1,10 @@
 import 'server-only';
 import { createServerSupabaseClient } from '@/lib/server/server';
 
-// Default model used when a user has not chosen one yet.
-export const DEFAULT_MODEL_ID = 'gemini-3.1-pro-preview';
+// Default model used when a user has not chosen one yet. The chat API route
+// is anthropic-only (for prompt caching), so the default must be an
+// anthropic model.
+export const DEFAULT_MODEL_ID = 'claude-sonnet-5';
 
 export type SelectableModel = {
   model_id: string;

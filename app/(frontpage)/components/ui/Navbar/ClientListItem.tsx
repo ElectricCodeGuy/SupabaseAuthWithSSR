@@ -3,7 +3,7 @@ import { usePathname } from 'next/navigation';
 import Link from '@/components/link';
 import { NavigationMenuLink } from '@/components/ui/navigation-menu';
 import { cn } from '@/lib/utils';
-import { LucideIcon } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface ClientListItemProps {
   href: string;
@@ -47,7 +47,7 @@ export function ClientListItem({
         >
           <div className="text-sm leading-none font-medium flex items-center gap-2 text-foreground">
             {Icon && <Icon className="w-4 h-4 shrink-0" />}
-            {title}
+            <span>{title}</span>
             {beta && (
               <span className="inline-flex items-center rounded-full bg-blue-50 dark:bg-blue-900/30 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-300 ring-1 ring-inset ring-blue-700/10 dark:ring-blue-300/10">
                 Beta

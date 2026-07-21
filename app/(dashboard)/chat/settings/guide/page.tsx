@@ -1,10 +1,14 @@
 import { type Metadata } from 'next';
 import {
+  Brain,
+  ChartColumn,
   FileSearch,
+  FileText,
   Globe,
+  History,
   Lightbulb,
   MessageSquarePlus,
-  Share2,
+  PanelRight,
   Star
 } from 'lucide-react';
 
@@ -17,25 +21,49 @@ const tools = [
     icon: FileSearch,
     title: 'Document search',
     description:
-      'Ask the assistant to look things up in the documents you have uploaded. Be explicit ("search my documents for…") to trigger it.'
+      'The assistant searches your uploaded PDFs on its own when the question calls for it — or be explicit ("search my documents for…") to trigger it.'
   },
   {
     icon: Globe,
-    title: 'Website search',
+    title: 'Web search',
     description:
-      'The assistant can fetch and read web pages to ground its answers in up-to-date information.'
+      'Real-time web search grounds answers in up-to-date information, with sources you can open.'
+  },
+  {
+    icon: PanelRight,
+    title: 'Artifacts',
+    description:
+      'Ask for a document ("write a checklist / report / draft") and it opens in a side panel, streaming in live — with a full version history when you ask for revisions.'
+  },
+  {
+    icon: ChartColumn,
+    title: 'Charts',
+    description:
+      'Ask for a comparison or trend and the assistant renders an interactive chart — with a data table behind it.'
+  },
+  {
+    icon: FileText,
+    title: 'PDF reports',
+    description:
+      'Ask for a PDF and the assistant writes a polished, styled document straight into your files, ready to preview and download.'
+  },
+  {
+    icon: Brain,
+    title: 'Memory',
+    description:
+      'Say "remember that…" and the assistant keeps it across all your chats. View and edit memories in AI settings.'
+  },
+  {
+    icon: History,
+    title: 'Conversation search',
+    description:
+      'Ask "what did we discuss about…" and the assistant searches your past conversations and links you back to them.'
   },
   {
     icon: Star,
-    title: 'Favorites',
+    title: 'Favorites & sharing',
     description:
-      'Star a conversation from its menu to pin it to the top of the sidebar for quick access.'
-  },
-  {
-    icon: Share2,
-    title: 'Sharing',
-    description:
-      'Create a public link to a conversation so others can read it. Stop sharing at any time to revoke the link.'
+      'Star a conversation to pin it to the sidebar, or create a public link so others can read it — revoke any time.'
   }
 ];
 

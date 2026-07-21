@@ -19,22 +19,25 @@ import {
 } from '@/components/ui/collapsible';
 import { ModeToggle } from '@/components/ui/toggleButton';
 import { cn } from '@/lib/utils';
-import Sitemark from './SitemarkIcon';
+import Logo from './Logo';
 import SignOut from './SignOut';
+
+// Icons accept lucide components AND local brand icons (plain FCs).
+type MenuIcon = LucideIcon | React.ComponentType<{ className?: string }>;
 
 interface MobileSubItem {
   href: string;
   text: string;
   description?: string;
   external?: boolean;
-  icon?: LucideIcon;
+  icon?: MenuIcon;
 }
 
 interface MobileMenuItem {
   href?: string;
   text: string;
   external?: boolean;
-  icon?: LucideIcon;
+  icon?: MenuIcon;
   subItems?: MobileSubItem[];
 }
 
@@ -77,7 +80,7 @@ export function ClientMobileNav({
                 className="flex items-center"
                 onClick={() => setDrawerOpen(false)}
               >
-                <Sitemark />
+                <Logo />
               </Link>
             </div>
             <nav className="flex-grow overflow-y-auto py-2">

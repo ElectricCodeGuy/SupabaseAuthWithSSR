@@ -2,119 +2,100 @@
 import React from 'react';
 import { usePathname } from 'next/navigation';
 import Link from '@/components/link';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { Linkedin, Youtube } from '@/components/brand-icons';
+import { Github } from '@/components/brand-icons';
+import Logo from '../Navbar/Logo';
+
+const GITHUB_URL = 'https://github.com/ElectricCodeGuy/SupabaseAuthWithSSR';
+
+const productLinks = [
+  { label: 'AI Chat', href: '/chat' },
+  { label: 'Files', href: '/filer' },
+  { label: 'Usage', href: '/usage' },
+  { label: 'Profile', href: '/profile' }
+];
+
+const resourceLinks = [
+  { label: 'GitHub', href: GITHUB_URL, external: true },
+  { label: 'Next.js', href: 'https://nextjs.org', external: true },
+  { label: 'Supabase', href: 'https://supabase.com', external: true },
+  { label: 'AI SDK', href: 'https://sdk.vercel.ai', external: true }
+];
 
 const Footer: React.FC = () => {
   const pathname = usePathname();
 
-  // If the current pathname is '/chat'  do not render the component
+  // Chat pages own the full viewport — no footer there.
   if (pathname === '/chat' || /^\/chat\/[^/]+$/.test(pathname)) {
     return null;
   }
 
   return (
-    <footer className="bg-gray-800 text-white mt-auto pt-4">
-      <div className="max-w-[1600px] mx-auto px-4 flex flex-wrap justify-center items-start gap-4">
-        {/* Contact Section */}
-        <div className="w-[48%] sm:w-[48%] md:w-[21%] lg:w-[21%] xl:w-[30%] flex flex-col gap-3 p-0">
-          <h5 className="text-xl font-bold">Contact</h5>
-          <p className="text-sm text-white">Example Company Name</p>
-          <p className="text-sm text-white">123 Example Street, City 12345</p>
-          <p className="text-sm text-white mb-1">ID: 12345678</p>
-          <Link href="#" className="text-sky-300 hover:text-sky-200">
-            Privacy Policy
-          </Link>
-          <Link href="#" className="text-sky-300 hover:text-sky-200">
-            Terms of Service
-          </Link>
-        </div>
-
-        {/* Vertical Divider */}
-        <div className="hidden md:block">
-          <div className="h-auto w-px bg-white" />
-        </div>
-
-        {/* Information Section */}
-        <div className="w-[42%] sm:w-[42%] md:w-[23%] lg:w-[23%] xl:w-[23%] flex flex-col gap-3 p-0">
-          <h5 className="text-xl font-bold">Information:</h5>
-          <Link href="#" className="text-sky-300 hover:text-sky-200">
-            About Us
-          </Link>
-          <Link href="#" className="text-sky-300 hover:text-sky-200">
-            Services
-          </Link>
-          <Link href="#" className="text-sky-300 hover:text-sky-200">
-            FAQ
-          </Link>
-          <Link href="#" className="text-sky-300 hover:text-sky-200">
-            How It Works
-          </Link>
-          <Link href="#" className="text-sky-300 hover:text-sky-200">
-            Support
-          </Link>
-        </div>
-
-        {/* Horizontal Divider for Mobile */}
-        <div className="w-full block sm:block md:hidden">
-          <Separator className="bg-white my-2" />
-        </div>
-
-        {/* Vertical Divider */}
-        <div className="hidden md:block">
-          <div className="h-auto w-px bg-white" />
-        </div>
-
-        {/* Newsletter Section */}
-        <div className="w-full sm:w-full md:w-[41%] lg:w-[41%] xl:w-[41%] flex flex-col gap-3 px-1">
-          <h5 className="text-xl font-bold">Subscribe to Our Newsletter</h5>
-          <p className="text-base text-white">
-            📧 Regular updates about our services
-          </p>
-          <p className="text-base text-white">
-            🔔 Special offers and promotions
-          </p>
-          <p className="text-base text-white">💼 Industry news and insights</p>
-
-          <Button
-            className="mt-4 max-w-[200px] self-center md:self-start"
-            asChild
-          >
-            <Link href="#">Subscribe Now</Link>
-          </Button>
-        </div>
-      </div>
-
-      <Separator className="mt-4 bg-white max-w-[1580px] mx-auto" />
-
-      <div className="max-w-[1600px] mx-auto px-4 flex justify-between items-center py-2">
-        <div className="flex-grow">
-          <Link href="#" className="text-white hover:text-gray-200">
-            Example Company &copy; {new Date().getFullYear()}
-          </Link>
-        </div>
-        <div className="flex items-center">
-          <Button
-            size="icon"
-            variant="ghost"
-            className="text-white hover:bg-white/10"
-            asChild
-          >
-            <Link href="#" aria-label="LinkedIn">
-              <Linkedin className="h-5 w-5" />
+    <footer className="mt-auto border-t bg-muted/20">
+      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
+        <div className="flex flex-col gap-10 md:flex-row md:justify-between">
+          {/* Brand */}
+          <div className="max-w-sm">
+            <Link href="/" className="inline-flex items-center">
+              <Logo />
             </Link>
-          </Button>
-          <Button
-            size="icon"
-            variant="ghost"
-            className="text-white hover:bg-white/10"
-            asChild
-          >
-            <Link href="#" aria-label="YouTube">
-              <Youtube className="h-5 w-5" />
-            </Link>
-          </Button>
+            <p className="mt-3 text-sm text-muted-foreground">
+              The open-source AI chat starter for Next.js and Supabase — auth,
+              RAG, artifacts, memory and usage analytics, ready to ship.
+            </p>
+            <a
+              href={GITHUB_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <Github className="h-4 w-4" />
+              <span>Star on GitHub</span>
+            </a>
+          </div>
+
+          {/* Link columns */}
+          <div className="flex gap-16">
+            <nav aria-label="Product">
+              <h5 className="text-sm font-semibold">Product</h5>
+              <ul className="mt-3 space-y-2">
+                {productLinks.map((link) => (
+                  <li key={link.href}>
+                    <Link
+                      href={link.href}
+                      prefetch={false}
+                      className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+            <nav aria-label="Resources">
+              <h5 className="text-sm font-semibold">Resources</h5>
+              <ul className="mt-3 space-y-2">
+                {resourceLinks.map((link) => (
+                  <li key={link.href}>
+                    <a
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      {link.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          </div>
+        </div>
+
+        <div className="mt-10 flex flex-col items-center justify-between gap-2 border-t pt-6 text-xs text-muted-foreground sm:flex-row">
+          <p>
+            © {new Date().getFullYear()} SupabaseAuthWithSSR · MIT licensed
+          </p>
+          <p>Built with Next.js, Supabase &amp; Claude</p>
         </div>
       </div>
     </footer>

@@ -31,15 +31,15 @@ import Link from '@/components/link';
 // FilePreview component remains the same
 const FilePreview = React.memo(
   ({ file, onRemove }: { file: File; onRemove: () => void }) => {
-    const [previewUrl, setPreviewUrl] = useState<string>('');
+    // Derive the object URL from the file instead of mirroring it into state;
+    // the effect only handles cleanup.
+    const previewUrl = React.useMemo(() => URL.createObjectURL(file), [file]);
 
     React.useEffect(() => {
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
       return () => {
-        URL.revokeObjectURL(url);
+        URL.revokeObjectURL(previewUrl);
       };
-    }, [file]);
+    }, [previewUrl]);
 
     return (
       <div className="group/thumbnail relative">
@@ -207,8 +207,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
       parts.push(...fileParts);
     }
 
-    // Send message. The selected model is NOT sent here — the API route reads
-    // it from the user's row in the database.
+    // Send message. The conversation's model rides along in the body — the
+    // API route validates it against the active catalog and falls back to
+    // the user's default model if it's missing or invalid.
     sendMessage(
       {
         role: 'user',
@@ -216,7 +217,8 @@ const MessageInput: React.FC<MessageInputProps> = ({
       },
       {
         body: {
-          chatId: chatId
+          chatId: chatId,
+          selectedModel: selectedOption
         }
       }
     );

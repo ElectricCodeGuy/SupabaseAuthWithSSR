@@ -1,6 +1,6 @@
 'use client';
 
-import { type FC, useEffect, useState } from 'react';
+import { type FC, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -33,10 +33,14 @@ const EditChatTitleDialog: FC<EditChatTitleDialogProps> = ({
   const [title, setTitle] = useState(currentTitle);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Keep the field in sync when the dialog is (re)opened for a different chat.
-  useEffect(() => {
+  // Keep the field in sync when the dialog is (re)opened for a different
+  // chat. "Adjust state during render" pattern — the set is guarded by the
+  // prevOpen comparison, so React re-renders once and never loops.
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
     if (open) setTitle(currentTitle);
-  }, [open, currentTitle]);
+  }
 
   const handleSave = async () => {
     const trimmed = title.trim();
