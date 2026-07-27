@@ -10,9 +10,15 @@
     "types": "supabase gen types typescript --project-id fqwpshzgiqthgzwtucxz > types/database.d.ts"
   },
   "dependencies": {
+    "@agentpond/supabase": "0.6.0",
     "@ai-sdk/anthropic": "^4.0.1",
+    "@ai-sdk/otel": "1.0.37",
     "@ai-sdk/react": "^4.0.5",
+    "@arizeai/openinference-vercel": "3.1.0",
     "@date-fns/tz": "^1.2.0",
+    "@opentelemetry/api": "1.9.0",
+    "@opentelemetry/sdk-trace-base": "2.9.0",
+    "@opentelemetry/sdk-trace-node": "2.9.0",
     "@radix-ui/react-navigation-menu": "^1.2.19",
     "@radix-ui/react-slot": "^1.3.0",
     "@react-pdf/renderer": "^4.5.1",

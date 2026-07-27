@@ -8,6 +8,7 @@ import { generateText } from 'ai';
 import type { StepResult, ToolSet, UIMessage } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 import { createServerSupabaseClient } from '@/lib/server/server';
+import { agentPondTelemetry } from '@/lib/server/agentpond';
 import {
   getModelConfig,
   DEFAULT_MODEL_ID
@@ -92,6 +93,9 @@ export async function generateChatTitle({
 
     const { text } = await generateText({
       model: anthropic('claude-haiku-4-5'),
+      telemetry: agentPondTelemetry(
+        'supabase-auth-with-ssr.generate-chat-title'
+      ),
       system: TITLE_SYSTEM_PROMPT,
       prompt: assistantText
         ? `User message:\n${firstUserText}\n\nAssistant answer (excerpt):\n${assistantText}`

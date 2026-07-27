@@ -12,6 +12,7 @@ import {
 import type { AnthropicProviderOptions } from '@ai-sdk/anthropic';
 import { anthropic } from '@ai-sdk/anthropic';
 import { getSession } from '@/lib/server/supabase';
+import { agentPondTelemetry } from '@/lib/server/agentpond';
 import { getSelectedModelId } from '@/app/(dashboard)/chat/models';
 import { saveMessagesToDB } from './SaveToDbIncremental';
 import {
@@ -135,6 +136,7 @@ export async function POST(req: NextRequest) {
 
   const result = streamText({
     model: anthropic(selectedModel),
+    telemetry: agentPondTelemetry('supabase-auth-with-ssr.chat'),
     abortSignal,
     // Two system blocks, ordered by change frequency for Anthropic prompt
     // caching (prefix match; render order is tools → system → messages):

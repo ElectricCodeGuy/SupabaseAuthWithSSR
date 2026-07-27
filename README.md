@@ -59,7 +59,8 @@ npm run dev
 
 | Variable | Service | Used for |
 | --- | --- | --- |
-| `SUPABASE_URL` / `SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY` | [Supabase](https://supabase.com) | Auth, database, storage |
+| `SUPABASE_URL` / `SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY` | [Supabase](https://supabase.com) | Auth, database, storage, optional AgentPond export |
+| `AGENTPOND_ENABLED` | [AgentPond](https://github.com/marcusschiesser/agentpond) | Set to `true` to opt in to AI trace export |
 | `ANTHROPIC_API_KEY` | [Anthropic](https://console.anthropic.com/dashboard) | Chat, chat titles, document metadata |
 | `MISTRAL_API_KEY` | [Mistral](https://mistral.ai/) | PDF OCR (`mistral-ocr-latest`) |
 | `VOYAGE_API_KEY` | [Voyage](https://www.voyageai.com/) | Document embeddings (`voyage-4-large`) |
@@ -73,6 +74,28 @@ UPDATE public.users SET is_admin = true WHERE email = 'you@example.com';
 ```
 
 **Upgrading an existing install?** Just re-run [`database/setup.sql`](database/setup.sql) — it is idempotent (`IF NOT EXISTS` / `CREATE OR REPLACE` throughout), so it adds only what's new in v5: `user_memories`, `users.is_admin`, the `message_parts.usage` JSON column, `chat_sessions.settings`, the hybrid `match_documents` function, and the Anthropic model catalog (Sonnet 5, Opus 4.8, Fable 5 with official API pricing).
+
+### Optional AgentPond AI tracing
+
+Run [`database/agentpond.sql`](database/agentpond.sql) once to create the
+private Storage bucket, then set `AGENTPOND_ENABLED=true`. Traces are written
+directly to your Supabase project with the existing server-only
+`SUPABASE_SERVICE_ROLE_KEY` (or a `SUPABASE_SECRET_KEY`); no tracing is
+registered when the flag is absent or false.
+
+The AI SDK calls explicitly use `recordInputs: true` and `recordOutputs: true`.
+That includes full prompts, messages, tool data, and model responses, which can
+contain user or confidential content. Review access, retention, and consent
+requirements before opting in. Vercel documents the fields and privacy
+trade-offs in the
+[AI SDK telemetry guide](https://ai-sdk.dev/docs/ai-sdk-core/telemetry).
+
+To inspect exported traces:
+
+```bash
+npx agentpond sync
+npx agentpond traces list
+```
 
 ## The Tour
 

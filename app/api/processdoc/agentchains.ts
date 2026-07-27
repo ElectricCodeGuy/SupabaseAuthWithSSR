@@ -2,6 +2,7 @@ import 'server-only';
 import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import { anthropic } from '@ai-sdk/anthropic';
+import { agentPondTelemetry } from '@/lib/server/agentpond';
 
 const contentAnalysisSchema = z.object({
   preliminary_answer_1: z
@@ -37,6 +38,9 @@ export const preliminaryAnswerChainAgent = async (content: string) => {
 
   const { output, usage } = await generateText({
     model: anthropic('claude-sonnet-5'),
+    telemetry: agentPondTelemetry(
+      'supabase-auth-with-ssr.preliminary-document-analysis'
+    ),
     system: SystemPrompt,
     prompt: content,
     output: Output.object({ schema: contentAnalysisSchema }),
@@ -87,6 +91,9 @@ export const generateDocumentMetadata = async (content: string) => {
 
   const { output, usage, finishReason } = await generateText({
     model: anthropic('claude-sonnet-5'),
+    telemetry: agentPondTelemetry(
+      'supabase-auth-with-ssr.generate-document-metadata'
+    ),
     system: SystemPrompt,
     prompt: content,
     output: Output.object({ schema: documentMetadataSchema })
