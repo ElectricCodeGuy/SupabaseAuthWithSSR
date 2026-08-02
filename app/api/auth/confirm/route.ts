@@ -31,7 +31,7 @@ export async function GET(request: Request) {
   const redirectTo = new URL('/signin', origin);
   redirectTo.searchParams.set(
     'message',
-    encodeURIComponent('An error have occoured')
+    encodeURIComponent('An error have occurred')
   );
   return NextResponse.redirect(redirectTo);
 }
