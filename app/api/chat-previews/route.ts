@@ -6,7 +6,7 @@ import { TZDate } from '@date-fns/tz';
 import type {
   ChatPreview,
   CategorizedChats
-} from '@/app/(dashboard)/chat/chat-previews';
+} from '@/app/chat/chat-previews';
 
 const NO_STORE = { 'Cache-Control': 'no-store' };
 
@@ -73,8 +73,11 @@ export async function GET(req: NextRequest) {
   }
 
   const { searchParams } = new URL(req.url);
-  const offset = Number(searchParams.get('offset') ?? 0) || 0;
-  const limit = Number(searchParams.get('limit') ?? 30) || 30;
+  const offset = Math.max(0, Math.floor(Number(searchParams.get('offset'))) || 0);
+  const limit = Math.min(
+    100,
+    Math.max(1, Math.floor(Number(searchParams.get('limit'))) || 30)
+  );
 
   const supabase = await createServerSupabaseClient();
 

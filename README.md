@@ -11,7 +11,7 @@ Claude-powered chat with document RAG, a versioned artifacts workspace, long-ter
 interactive charts, PDF generation and per-token cost dashboards — on top of a complete
 Supabase SSR authentication system. Clone it, run one SQL file, ship.
 
-[![Version](https://img.shields.io/badge/version-5.0.0-c96442)](Changelog.md)
+[![Version](https://img.shields.io/badge/version-5.0.1-c96442)](Changelog.md)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE.md)
 [![Next.js 16](https://img.shields.io/badge/Next.js_16-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org)
 [![Supabase](https://img.shields.io/badge/Supabase_SSR-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com)
@@ -66,13 +66,15 @@ npm run dev
 | `EXA_API_KEY` | [Exa](https://exa.ai/) | Web search |
 
 4. **Sign up** at `http://localhost:3000/signup` with a real email and click the confirmation link.
-5. **(Optional) Make yourself admin** to unlock `/admin`:
+5. **(Optional) Make yourself admin** to unlock `/chat/admin`:
 
 ```sql
 UPDATE public.users SET is_admin = true WHERE email = 'you@example.com';
 ```
 
 **Upgrading an existing install?** Just re-run [`database/setup.sql`](database/setup.sql) — it is idempotent (`IF NOT EXISTS` / `CREATE OR REPLACE` throughout), so it adds only what's new in v5: `user_memories`, `users.is_admin`, the `message_parts.usage` JSON column, `chat_sessions.settings`, the hybrid `match_documents` function, and the Anthropic model catalog (Sonnet 5, Opus 4.8, Fable 5 with official API pricing).
+
+> **v5.0.1 hardening:** re-running `setup.sql` also applies two security fixes — column-level write privileges on `public.users` (a user can no longer flip their own `is_admin` through PostgREST) and a 50 MB / PDF-only limit on the `userfiles` bucket. Run it once more after the bucket exists so the bucket limits take effect.
 
 ## The Tour
 
@@ -117,7 +119,7 @@ The `createPDF` tool renders style-templated documents (report/memo/letter/contr
 
 ### 💰 Usage dashboard — every token accounted for
 
-Every generation step (each tool call is its own step) stores its token usage and cache metadata as JSON *on the message itself*. The `/usage` page turns that into range-filtered KPIs with period-over-period deltas, tokens per day, cache hit rate over time, and cost by model:
+Every generation step (each tool call is its own step) stores its token usage and cache metadata as JSON *on the message itself*. The `/chat/usage` page turns that into range-filtered KPIs with period-over-period deltas, tokens per day, cache hit rate over time, and cost by model:
 
 ![The usage dashboard: KPIs and daily charts](public/images/UserUsageImage1.png)
 
@@ -191,36 +193,44 @@ Every generation step stores a usage object on the first `message_parts` row sav
 
 No separate usage table — the metadata lives with the message it belongs to, so cost is attributable per chat, per message, and per tool.
 
-- **`/usage`** (every user): range-filtered KPIs with period-over-period deltas, tokens per day, cache hit rate over time, estimated cost + cache savings (computed against `ai_models` pricing with Anthropic's 0.1× cache-read / 1.25× cache-write multipliers), cost by model, usage by tool, top conversations, and a per-message generations table that expands into individual steps.
-- **`/admin`** (users with `is_admin = true`): org-wide totals and daily chart, top users by cost, cost by model, plus a user table with per-user tokens, cache hit rate and estimated cost — and profile management. All mutations go through server actions that re-verify the caller is an admin before using the service-role client.
+- **`/chat/usage`** (every user): range-filtered KPIs with period-over-period deltas, tokens per day, cache hit rate over time, estimated cost + cache savings (computed against `ai_models` pricing with Anthropic's 0.1× cache-read / 1.25× cache-write multipliers), cost by model, usage by tool, top conversations, and a per-message generations table that expands into individual steps.
+- **`/chat/admin`** (users with `is_admin = true`): org-wide totals and daily chart, top users by cost, cost by model, plus a user table with per-user tokens, cache hit rate and estimated cost — and profile management. All mutations go through server actions that re-verify the caller is an admin before using the service-role client.
 
 ## Application Structure
 
-Every route follows the same convention: `page.tsx` renders, `fetch.ts` holds all of that route's server fetching, and `components/` holds the components the page imports:
+Every route follows the same convention: `page.tsx` renders, `fetch.ts` holds all of that route's server fetching, and `components/` holds the components the page imports. There are no route groups — every route sits directly under `app/`:
 
 ```
 app/
-├── (dashboard)/          # Authenticated routes
-│   ├── fetch.ts          # Route-group fetching (sidebar user, AI settings data)
-│   ├── chat/             # AI chat interface
-│   │   ├── [id]/         # Individual chat sessions
-│   │   ├── components/   # Chat UI (incl. ArtifactPanel + per-tool components)
-│   │   └── settings/     # Conversations, AI models catalog, guide
+├── layout.tsx            # Root layout: fonts, theme, toaster, modal slot
+├── page.tsx              # Landing page (renders its own navbar + footer)
+├── action.ts             # Auth server actions (sign in/up/out, password reset)
+├── chat/                 # The app: one layout.tsx (sidebar + header + AI settings modal) for everything below
+│   ├── layout.tsx
+│   ├── fetch.ts          # Page fetching + the shell's user / AI settings data
+│   ├── [id]/             # Individual chat sessions
+│   ├── components/       # Chat UI (incl. ArtifactPanel + per-tool components)
+│   │   ├── layout/       #   sidebar + header chrome
+│   │   └── ai-settings/  #   the hash-controlled AI settings modal
+│   ├── settings/         # Conversations, AI models catalog, guide
 │   ├── filer/            # File management + PDF viewer
 │   ├── usage/            # Per-user token usage dashboard
 │   ├── admin/            # Admin dashboard (user management + org usage)
-│   ├── profile/          # Profile page
-│   └── components/       # ONLY shared dashboard components:
-│       ├── layout/       #   sidebar + header chrome
-│       ├── analytics/    #   StatCard, BarList, RangeTabs, charts
-│       └── ai-settings/  #   the hash-controlled AI settings modal
-├── (frontpage)/          # Public routes (landing page, signin/signup)
+│   └── profile/          # Profile page
+├── signin/ · signup/     # Auth pages (also intercepted as modals via @modal)
+├── components/           # ONLY shared components:
+│   ├── layout/           #   Navbar + Footer for the public pages
+│   ├── analytics/        #   StatCard, BarList, RangeTabs, charts
+│   ├── landing/          #   landing page sections (Hero, live ChatDemo, …)
+│   └── auth/             #   shared sign-in / sign-up content
 └── api/
     └── chat/
         └── tools/        # documentChat · WebsiteSearchTool · MemoryTool
                           # ConversationSearchTool · ChartTool · CreatePDFTool
                           # ArtifactTool
 ```
+
+Everything signed-in lives under `/chat` — `/chat/filer`, `/chat/usage`, `/chat/admin`, `/chat/profile`, `/chat/settings` — so a single `app/chat/layout.tsx` provides the dashboard shell (sidebar, header, AI settings modal) and it persists across all of them. The public pages (`/`, `/signin`, `/signup`) render the navbar and footer themselves.
 
 ## Database Setup
 
@@ -405,17 +415,29 @@ For the auth flow to work with the API routes in this codebase, update your emai
 
 </details>
 
+## Security model
+
+Everything talks to Supabase from the server. The anon key never reaches the browser — every query runs in a Server Component, Server Action or route handler (the one browser-client factory, `lib/client/client.ts`, is unused and imports `server-only`, so it can never end up in a bundle). The service-role key is only used where a request legitimately spans users, and every table has RLS. On top of that:
+
+- **Route handlers verify the caller, the origin and the input.** `/api/chat`, `/api/processdoc` and the two `/api/upload/*` routes check the session, reject cross-origin requests (Next.js only does this for Server Actions, not for route handlers), validate the body with zod, and refuse storage paths outside the caller's own `<userId>/` folder — the service-role client bypasses storage RLS, so this check is what stops one user from having another user's PDF OCR'd into their own documents.
+- **Least privilege by default.** Signed URLs, uploads, quota checks and every chat mutation go through the session client so RLS applies. The service role is confined to the admin dashboard, the public share page (gated on `is_public`) and the long-running OCR job.
+- **Column-level grants on `users`.** RLS scopes rows, not columns; `setup.sql` revokes table-level writes from the API roles and grants `UPDATE` only on `full_name` and `selected_model`, so `is_admin` can only change through the service role.
+- **Baseline response headers** (`X-Frame-Options`, `frame-ancestors 'none'`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`, HSTS) are set in `next.config.ts`. A nonce-based script CSP is the natural next step.
+- **Generic error surfaces.** Sign-in and password-reset replies don't reveal whether an account exists, and stream/API errors return fixed messages in production while details stay in the server log.
+
+Not included (worth adding before opening the app to the public): rate limiting on `/api/chat` and `/api/processdoc` — both spend real money per request — for example with Upstash Ratelimit keyed by user id.
+
 ## Code Structure and Philosophy
 
 This project favors **code organization over design patterns**. Rather than forcing abstractions like the Factory Pattern, related code is kept together in the same feature folder so it is easy to understand and maintain at a glance.
 
-Every route directory follows the same shape — `page.tsx` renders, `fetch.ts` holds all of that route's server fetching, and `components/` holds the components the page imports. Only truly shared code lives outside the routes: universal utilities (`getSession()` for auth, the database types, error-boundary components) and the dashboard-wide UI kit in `app/(dashboard)/components/` (layout chrome, analytics primitives, the AI settings modal). Everything else — custom hooks, API route handlers, feature-specific state and types — stays with its feature. The result is that each feature directory is a self-contained unit: changes can be made confidently without hunting through shared directories or worrying about side effects.
+Every route directory follows the same shape — `page.tsx` renders, `fetch.ts` holds all of that route's server fetching, and `components/` holds the components the page imports. Only truly shared code lives outside the routes: universal utilities (`getSession()` for auth, the database types, error-boundary components) and `app/components/` (public navbar/footer, analytics primitives, the landing sections). The dashboard chrome — sidebar, header, AI settings modal — belongs to the chat route under `app/chat/components/`, and every signed-in page is a child of `/chat`. Everything else — custom hooks, API route handlers, feature-specific state and types — stays with its feature. The result is that each feature directory is a self-contained unit: changes can be made confidently without hunting through shared directories or worrying about side effects.
 
 ## Tech Stack
 
 | Layer | Choice |
 | --- | --- |
-| Framework | Next.js 16 (App Router, Server Components, Server Actions) |
+| Framework | Next.js 16 (App Router, Server Components, Server Actions, React Compiler) |
 | Auth & Database | Supabase (SSR cookies, Postgres, RLS, Storage, pgvector) |
 | AI | Vercel AI SDK v7 + Anthropic Claude (Sonnet 5 / Opus 4.8 / Fable 5, prompt caching, adaptive thinking) |
 | RAG pipeline | Mistral OCR → Voyage `voyage-4-large` embeddings → hybrid pgvector + FTS search (RRF) |

@@ -1,5 +1,9 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { z } from 'zod';
+import { getSession } from '@/lib/server/supabase';
 import { createServerSupabaseClient } from '@/lib/server/server';
+
+const NO_STORE = { 'Cache-Control': 'no-store' };
 
 // Returns the breadcrumb title for a chat conversation: the stored chat_title,
 // else the first user message (truncated), else a fallback. RLS scopes this to
@@ -8,9 +12,20 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params;
-  const supabase = await createServerSupabaseClient();
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json(
+      { error: 'Unauthorized' },
+      { status: 401, headers: NO_STORE }
+    );
+  }
 
+  const { id } = await params;
+  if (!z.uuid().safeParse(id).success) {
+    return NextResponse.json({ title: 'Chat' }, { headers: NO_STORE });
+  }
+
+  const supabase = await createServerSupabaseClient();
   const { data } = await supabase
     .from('chat_sessions')
     .select(
@@ -20,18 +35,12 @@ export async function GET(
     .maybeSingle();
 
   if (!data) {
-    return NextResponse.json(
-      { title: 'Chat' },
-      { headers: { 'Cache-Control': 'no-store' } }
-    );
+    return NextResponse.json({ title: 'Chat' }, { headers: NO_STORE });
   }
 
   const stored = data.chat_title?.trim();
   if (stored) {
-    return NextResponse.json(
-      { title: stored },
-      { headers: { 'Cache-Control': 'no-store' } }
-    );
+    return NextResponse.json({ title: stored }, { headers: NO_STORE });
   }
 
   const firstUser = (data.message_parts ?? [])
@@ -45,8 +54,5 @@ export async function GET(
     )[0];
 
   const title = firstUser?.text_text?.trim().slice(0, 70) || 'New chat';
-  return NextResponse.json(
-    { title },
-    { headers: { 'Cache-Control': 'no-store' } }
-  );
+  return NextResponse.json({ title }, { headers: NO_STORE });
 }

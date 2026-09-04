@@ -11,11 +11,20 @@ import { createServerSupabaseClient } from '@/lib/server/server';
 import {
   getModelConfig,
   DEFAULT_MODEL_ID
-} from '@/app/(dashboard)/chat/models';
+} from '@/app/chat/models';
 import type { StepUsage } from '@/types/usage';
 
 // ── Errors ───────────────────────────────────────────────────────────────────
+// Text sent to the client when the stream fails. Provider errors can carry
+// internal detail (account state, request ids, upstream messages), so
+// production gets a fixed message and the specifics stay in the server log.
+const GENERIC_STREAM_ERROR =
+  'Something went wrong while generating the response. Please try again.';
+
 export function errorHandler(error: unknown) {
+  if (process.env.NODE_ENV === 'production') {
+    return GENERIC_STREAM_ERROR;
+  }
   if (error == null) {
     return 'unknown error';
   }

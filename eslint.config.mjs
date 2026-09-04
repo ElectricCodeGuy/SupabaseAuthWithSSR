@@ -84,15 +84,5 @@ export default defineConfig([
       '@typescript-eslint/no-deprecated': 'off'
     }
   },
-  {
-    // E-mails renderes af react-email og åbnes i mailklienter — Google
-    // Translate manipulerer aldrig deres DOM, så reglerne er falske
-    // positiver her.
-    files: ['components/emails/**'],
-    rules: {
-      'react-google-translate/no-conditional-text-nodes-with-siblings': 'off',
-      'react-google-translate/no-return-text-nodes': 'off'
-    }
-  },
   globalIgnores(['.next/**', '**/*.mjs'])
 ]);

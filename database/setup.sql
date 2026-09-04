@@ -1,5 +1,5 @@
 -- =============================================================================
--- SUPABASE DATABASE SETUP - Version 5.0.0
+-- SUPABASE DATABASE SETUP - Version 5.0.1
 -- =============================================================================
 -- Run this SQL in the Supabase SQL Editor to set up all required tables,
 -- functions, indexes, and RLS policies for the application.
@@ -56,9 +56,16 @@ USING (id = (SELECT auth.uid()));
 -- STEP 3: CREATE TRIGGER FOR NEW USER REGISTRATION
 -- =============================================================================
 
--- Trigger function to auto-create user record on signup
+-- Trigger function to auto-create user record on signup.
+-- SECURITY DEFINER functions resolve unqualified names through the CALLER's
+-- search_path, which lets a same-named object in another schema hijack them.
+-- Pinning search_path to '' and schema-qualifying every reference closes that.
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS trigger AS $$
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
 BEGIN
   INSERT INTO public.users (id, full_name, email)
   VALUES (
@@ -68,7 +75,7 @@ BEGIN
   );
   RETURN new;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- Trigger to execute function on new auth user
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
@@ -359,6 +366,10 @@ RETURNS TABLE (
   similarity float
 )
 LANGUAGE sql
+-- SECURITY INVOKER (the default): RLS on the underlying tables still applies,
+-- so filter_user_id can never widen what the caller may see. The pinned
+-- search_path keeps the vector operators resolving to the extensions schema.
+SET search_path = public, extensions
 AS $$
 WITH scoped AS (
   -- Filtered candidate set: this user's documents, optionally restricted to
@@ -570,11 +581,41 @@ ALTER TABLE public.users
   ADD COLUMN IF NOT EXISTS is_admin boolean NOT NULL DEFAULT false;
 
 -- =============================================================================
+-- STEP 13: COLUMN-LEVEL WRITE PRIVILEGES ON USERS
+-- =============================================================================
+-- RLS decides WHICH ROWS a user may touch; it cannot restrict WHICH COLUMNS.
+-- Without this step any signed-in user holding the (publishable) anon key
+-- could flip their own is_admin flag straight through PostgREST. Table-level
+-- write privileges are therefore revoked from the API roles and re-granted
+-- only for the columns the app lets users edit about themselves.
+--
+-- Unaffected: the signup trigger (runs as its SECURITY DEFINER owner) and the
+-- admin dashboard (service role). Idempotent — safe to re-run.
+
+REVOKE INSERT, UPDATE, DELETE ON public.users FROM anon, authenticated;
+GRANT UPDATE (full_name, selected_model) ON public.users TO authenticated;
+
+-- =============================================================================
+-- STEP 14: STORAGE BUCKET LIMITS
+-- =============================================================================
+-- The app only accepts PDFs up to 50 MB (file manager + /api/upload). Enforce
+-- the same at the bucket so a hand-crafted PUT to a signed upload URL cannot
+-- bypass the application checks. This is a no-op until the 'userfiles' bucket
+-- exists (Quickstart step 2) — re-run this file after creating it.
+
+UPDATE storage.buckets
+SET public = false,
+    file_size_limit = 52428800, -- 50 MB
+    allowed_mime_types = ARRAY['application/pdf']
+WHERE id = 'userfiles';
+
+-- =============================================================================
 -- SETUP COMPLETE
 -- =============================================================================
 --
 -- After running this SQL:
--- 1. Create a storage bucket named 'userfiles' (set to private)
+-- 1. Create a storage bucket named 'userfiles' (set to private), then re-run
+--    this file once so STEP 14 applies the size/MIME limits to it
 -- 2. Configure your environment variables in .env.local
 -- 3. Set up email templates in Supabase Auth settings
 -- 4. (Optional) Grant yourself admin access to the /admin dashboard:

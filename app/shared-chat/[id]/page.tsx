@@ -3,8 +3,8 @@ import { type Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { Bot, User } from 'lucide-react';
 import { createAdminClient } from '@/lib/server/admin';
-import { formatMessages } from '@/app/(dashboard)/chat/[id]/fetch';
-import MemoizedMarkdown from '@/app/(dashboard)/chat/components/tools/MemoizedMarkdown';
+import { formatMessages } from '@/app/chat/[id]/fetch';
+import MemoizedMarkdown from '@/app/chat/components/tools/MemoizedMarkdown';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
 export const metadata: Metadata = {

@@ -1,5 +1,86 @@
 ## CHANGELOG
 
+## [v5.0.1] - 2026-09-02
+
+### Security
+
+- **Cross-user document ingestion (high):** `/api/processdoc` downloaded any
+  storage path the client sent, using the service-role client. A signed-in
+  user could point it at another user's PDF and have it OCR'd and indexed
+  into their own documents. The route now validates the body and only accepts
+  paths inside the caller's own `<userId>/` folder.
+- **Admin self-promotion via PostgREST:** `users.is_admin` was writable by
+  the row owner (RLS scopes rows, not columns). `setup.sql` now revokes
+  table-level writes on `public.users` from the API roles and grants `UPDATE`
+  only on `full_name` and `selected_model`. Re-run `setup.sql`.
+- **CSRF guard for cookie-authenticated route handlers:** `/api/chat`,
+  `/api/processdoc`, `/api/upload/presigned-url` and `/api/upload/cleanup`
+  reject requests whose `Origin` does not match the host (Next.js only does
+  this for Server Actions).
+- **Input validation everywhere it was missing:** chat request envelope
+  (uuid chat id, bounded message count and body size, user/assistant roles
+  only), upload file name/size/type (PDF only, 50 MB), chat/admin/file
+  action ids (uuid), base64 document keys before they reach a storage path.
+- **Least privilege:** signed URLs, uploads and quota checks now use the
+  session client under storage RLS instead of the service role; every
+  `users`/`chat_sessions` query filters on the caller's id explicitly.
+- **Information leaks closed:** production stream errors and upload/OCR
+  failures return fixed messages; the password-reset action answers the same
+  whether or not the address exists.
+- **Baseline security headers** in `next.config.ts` (`X-Frame-Options`,
+  `frame-ancestors 'none'`, `nosniff`, `Referrer-Policy`,
+  `Permissions-Policy`, HSTS).
+- **Database hardening:** `handle_new_user` pins `search_path = ''`;
+  `match_documents` pins `search_path = public, extensions`; the `userfiles`
+  bucket gets `file_size_limit` 50 MB and `allowed_mime_types` PDF.
+- **Dependencies:** `npm audit` went from 6 high to 0 — Next.js 16.3.4
+  (proxy bypass, Server Action DoS/SSRF advisories), PostCSS, sharp,
+  browserslist, brace-expansion, nanoid.
+
+### Fixes
+
+- `/api/upload/cleanup` used a cookie-less browser client on the server, so
+  cleanup deletes silently failed under RLS. It now uses the session client.
+- `user_documents.file_path` written by the OCR route did not match the real
+  storage key (raw name vs. base64), so deleting an uploaded document left
+  the object behind in storage. The real key is stored now.
+- Markdown images rendered through `next/image`, which throws for any host
+  not whitelisted in `next.config.ts`; a plain `<img>` with
+  `referrerPolicy="no-referrer"` is used instead, http(s) sources only.
+
+### Cleanup
+
+- Removed the duplicate sign-in/sign-up actions and cards under `app/@modal`;
+  the modal routes render the same `SignInCard`/`SignUpCard` as the pages and
+  share the auth actions in `app/action.ts`. Password rules live in
+  `lib/validation/auth.ts` and are shared by sign-up and password reset.
+- Removed the unused server-side "browser" Supabase client, the Office
+  online viewer fallback (only PDFs are ever stored), the fake subscription
+  fields on `/api/user-data`, and a stale ESLint override for a
+  non-existent `components/emails` folder.
+
+### Changed
+
+- Route groups are gone: `(dashboard)` and `(frontpage)` are flattened into
+  `app/`, and every signed-in page now lives under `/chat` — `/filer`,
+  `/usage`, `/admin` and `/profile` moved to `/chat/filer`, `/chat/usage`,
+  `/chat/admin` and `/chat/profile` — so one `app/chat/layout.tsx` carries
+  the dashboard shell (sidebar, header, AI-settings modal) for all of them.
+  The public pages render the navbar and footer themselves.
+- Direct visits to `/signin` returned a 500: the sign-in card read
+  `localStorage` during render. The remembered e-mail is now filled in after
+  mount.
+- Landing page hero: a live, scripted replay of a multi-tool turn (reasoning,
+  document search, web search, chart, artifact streaming into the side
+  panel, follow-up with `updateArtifact` + `saveMemory`) plus a section on
+  model choice, memory and conversation management.
+
+### Build
+
+- React Compiler is enabled (`reactCompiler: true`), using the Rust
+  implementation in Turbopack (`experimental.turbopackRustReactCompiler`) so
+  the compile pass doesn't slow dev builds down.
+
 ## [v5.0.0] - 2026-07-21
 
 ### Major Changes

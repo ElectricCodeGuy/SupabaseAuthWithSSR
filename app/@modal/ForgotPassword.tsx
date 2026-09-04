@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useFormStatus } from 'react-dom';
-import { resetPasswordForEmail } from './action';
+import { resetPasswordForEmail } from '@/app/action';
 import { usePathname } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 

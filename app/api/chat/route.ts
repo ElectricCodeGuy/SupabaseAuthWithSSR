@@ -11,8 +11,10 @@ import {
 } from 'ai';
 import type { AnthropicProviderOptions } from '@ai-sdk/anthropic';
 import { anthropic } from '@ai-sdk/anthropic';
+import { z } from 'zod';
 import { getSession } from '@/lib/server/supabase';
-import { getSelectedModelId } from '@/app/(dashboard)/chat/models';
+import { rejectCrossOrigin } from '@/lib/server/security';
+import { getSelectedModelId } from '@/app/chat/models';
 import { saveMessagesToDB } from './SaveToDbIncremental';
 import {
   errorHandler,
@@ -38,6 +40,33 @@ import {
 } from './tools/ArtifactTool';
 
 export const maxDuration = 60;
+
+// Request-shape guard. The message history is the AI SDK's UIMessage[] (too
+// polymorphic to model fully here), so only the envelope is validated: a real
+// chat id, sane roles, a bounded message count and a bounded raw body — a
+// user turn carries at most a few inline PDF attachments (3 MB each,
+// base64-inflated), so anything larger is not a legitimate client.
+const MAX_BODY_CHARS = 16 * 1024 * 1024;
+const MAX_MESSAGES = 400;
+
+const chatRequestSchema = z.object({
+  chatId: z.uuid(),
+  selectedModel: z.string().max(100).optional(),
+  messages: z
+    .array(
+      z.looseObject({
+        id: z.string().max(200),
+        role: z.enum(['user', 'assistant']),
+        parts: z.array(z.unknown())
+      })
+    )
+    .min(1)
+    .max(MAX_MESSAGES)
+    .refine(
+      (messages) => messages[messages.length - 1].role === 'user',
+      'The last message must be from the user'
+    )
+});
 
 // Static system prompt — identical across turns and across users, so it
 // carries the Anthropic prompt-cache breakpoint. NOTHING per-user or
@@ -69,21 +98,28 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const body = await req.json();
-  const messages: UIMessage[] = body.messages ?? [];
-  const chatSessionId = body.chatId;
+  const crossOrigin = rejectCrossOrigin(req);
+  if (crossOrigin) return crossOrigin;
+
+  const rawBody = await req.text();
+  if (rawBody.length > MAX_BODY_CHARS) {
+    return new NextResponse('Request body too large.', { status: 413 });
+  }
+  let json: unknown;
+  try {
+    json = JSON.parse(rawBody);
+  } catch {
+    return new NextResponse('Malformed JSON body.', { status: 400 });
+  }
+  const parsed = chatRequestSchema.safeParse(json);
+  if (!parsed.success) {
+    return new NextResponse('Invalid chat request.', { status: 400 });
+  }
+  const messages = parsed.data.messages as unknown as UIMessage[];
+  const chatSessionId = parsed.data.chatId;
   // Client disconnects / stop-button aborts arrive via the request signal —
   // an AbortSignal can't be serialized into the JSON body.
   const abortSignal = req.signal;
-
-  if (!chatSessionId) {
-    return new NextResponse('Chat session ID is empty.', {
-      status: 400,
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-  }
 
   // The conversation's model comes over in the request body (the picker is
   // client state — it must work before the chat session row even exists).
@@ -91,10 +127,7 @@ export async function POST(req: NextRequest) {
   // tampered body can only ever select a real, allowed model. When absent,
   // fall back to the user's default model from their users row.
   const userId = session.sub;
-  const requestedModel =
-    typeof body.selectedModel === 'string' && body.selectedModel
-      ? body.selectedModel
-      : null;
+  const requestedModel = parsed.data.selectedModel || null;
   const [selectedModel, userMemories] = await Promise.all([
     (requestedModel
       ? Promise.resolve(requestedModel)
@@ -166,7 +199,8 @@ export async function POST(req: NextRequest) {
     providerOptions: {
       anthropic: {
         effort: 'high',
-        thinking: { type: 'adaptive', display: 'summarized' }
+        thinking: { type: 'adaptive', display: 'summarized' },
+        cacheControl: { type: 'ephemeral' }
       } satisfies AnthropicProviderOptions
     },
     tools: {
@@ -195,37 +229,6 @@ export async function POST(req: NextRequest) {
     // 10 steps gives multi-tool chains room: e.g. web search → chart →
     // PDF → memory is 4 tool calls + follow-up lookups + the final answer.
     stopWhen: isStepCount(10),
-    // Moving cache breakpoint: mark the LAST message on every step, so
-    // steps 2-10 and the next user turn get cache reads covering the
-    // conversation INCLUDING prior steps' tool outputs. Earlier marks are
-    // stripped first so they don't accumulate across steps (Anthropic allows
-    // max 4 breakpoints per request and silently drops the newest ones).
-    prepareStep: ({ messages }) => {
-      if (messages.length === 0) return {};
-      const stripped = messages.map((message) => {
-        const anthropicOptions = message.providerOptions?.anthropic;
-        if (!anthropicOptions || !('cacheControl' in anthropicOptions)) {
-          return message;
-        }
-        const { cacheControl: _dropped, ...rest } = anthropicOptions;
-        return {
-          ...message,
-          providerOptions: { ...message.providerOptions, anthropic: rest }
-        };
-      });
-      const last = stripped[stripped.length - 1];
-      stripped[stripped.length - 1] = {
-        ...last,
-        providerOptions: {
-          ...last.providerOptions,
-          anthropic: {
-            ...(last.providerOptions?.anthropic ?? {}),
-            cacheControl: { type: 'ephemeral' }
-          }
-        }
-      };
-      return { messages: stripped };
-    },
     onAbort: async () => {
       // An abort before the first step completed means onStepEnd never ran —
       // persist the user message so the chat still exists on reload.

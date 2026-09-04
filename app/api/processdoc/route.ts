@@ -1,7 +1,9 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { embed } from 'ai';
+import { z } from 'zod';
 import { getSession } from '@/lib/server/supabase';
 import { createAdminClient } from '@/lib/server/admin';
+import { isOwnStoragePath, rejectCrossOrigin } from '@/lib/server/security';
 import {
   preliminaryAnswerChainAgent,
   generateDocumentMetadata
@@ -11,6 +13,12 @@ import type { TablesInsert } from '@/types/database';
 import { revalidatePath } from 'next/cache';
 
 export const maxDuration = 800;
+
+const bodySchema = z.object({
+  // Storage object key returned by /api/upload/presigned-url.
+  filePath: z.string().min(1).max(512),
+  fileName: z.string().trim().min(1).max(255)
+});
 
 const embeddingModel = voyage('voyage-4-large');
 
@@ -27,7 +35,12 @@ interface MistralOCRResponse {
 
 type DocumentVectorRecord = TablesInsert<'user_documents_vec'>;
 
-async function processFile(pages: string[], fileName: string, userId: string) {
+async function processFile(
+  pages: string[],
+  fileName: string,
+  filePath: string,
+  userId: string
+) {
   let selectedDocuments = pages;
   if (pages.length > 19) {
     selectedDocuments = [...pages.slice(0, 10), ...pages.slice(-10)];
@@ -65,7 +78,9 @@ async function processFile(pages: string[], fileName: string, userId: string) {
         ai_maintopics: output.mainTopics,
         ai_keyentities: output.keyEntities,
         total_pages: totalPages,
-        file_path: `${userId}/${fileName}`,
+        // The real storage key (<userId>/<base64(fileName)>) — the file
+        // manager deletes and previews by this path.
+        file_path: filePath,
         created_at: new Date().toISOString()
       },
       {
@@ -234,14 +249,8 @@ async function processDocumentWithAgentChains(
 
 export async function POST(req: NextRequest) {
   try {
-    // OCR is done with Mistral (mistral-ocr-latest) instead of LlamaParse.
-    if (!process.env.MISTRAL_API_KEY) {
-      console.error('MISTRAL_API_KEY is not configured');
-      return NextResponse.json(
-        { error: 'Server configuration error: MISTRAL_API_KEY is missing' },
-        { status: 500 }
-      );
-    }
+    const crossOrigin = rejectCrossOrigin(req);
+    if (crossOrigin) return crossOrigin;
 
     const session = await getSession();
     if (!session) {
@@ -253,12 +262,30 @@ export async function POST(req: NextRequest) {
 
     const userId = session.sub;
 
-    const { filePath, fileName } = await req.json();
-    if (!filePath || !fileName) {
+    // OCR is done with Mistral (mistral-ocr-latest).
+    if (!process.env.MISTRAL_API_KEY) {
+      console.error('MISTRAL_API_KEY is not configured');
       return NextResponse.json(
-        { error: 'Missing filePath or fileName' },
+        { error: 'Document processing is not configured on this server' },
+        { status: 500 }
+      );
+    }
+
+    const parsed = bodySchema.safeParse(await req.json().catch(() => null));
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Missing or invalid filePath / fileName' },
         { status: 400 }
       );
+    }
+    const { filePath, fileName } = parsed.data;
+
+    // The download below runs with the service-role client, which bypasses
+    // storage RLS — so the ownership check has to happen here. Without it a
+    // caller could point this route at another user's object and have it
+    // OCR'd and indexed into their own documents.
+    if (!isOwnStoragePath(filePath, userId)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const supabase = createAdminClient();
@@ -269,8 +296,9 @@ export async function POST(req: NextRequest) {
       .download(filePath);
 
     if (dlError || !fileData) {
+      console.error('Storage download failed:', dlError);
       return NextResponse.json(
-        { error: `Download failed: ${dlError?.message}` },
+        { error: 'Could not read the uploaded file' },
         { status: 500 }
       );
     }
@@ -355,9 +383,9 @@ export async function POST(req: NextRequest) {
     }
 
     // 5. Embed pages + store metadata in user_documents / user_documents_vec
-    await processFile(pages, fileName, userId);
+    await processFile(pages, fileName, filePath, userId);
     revalidatePath('/chat', 'layout');
-    revalidatePath('/filer');
+    revalidatePath('/chat/filer');
     return NextResponse.json({ status: 'SUCCESS' });
   } catch (error) {
     console.error('Error in POST request:', error);

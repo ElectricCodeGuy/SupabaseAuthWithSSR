@@ -3,53 +3,30 @@
 import { z } from 'zod';
 import { redirect } from 'next/navigation';
 import { createServerSupabaseClient } from '@/lib/server/server';
-
-const passwordValidation = z
-  .string()
-  .min(6, 'Password must be at least 6 characters long')
-  .regex(/^(?=.*[a-z])/, 'Password must contain at least one lowercase letter')
-  .regex(/^(?=.*[A-Z])/, 'Password must contain at least one uppercase letter')
-  .regex(/^(?=.*\d)/, 'Password must contain at least one number');
+import { passwordSchema } from '@/lib/validation/auth';
 
 const formDataSchemaResetPassword = z.object({
-  newPassword: passwordValidation
+  newPassword: passwordSchema
 });
 
 export async function resetPassword(formData: FormData) {
-  const supabase = await createServerSupabaseClient();
-
   const result = formDataSchemaResetPassword.safeParse({
-    newPassword: formData.get('newPassword') ? formData.get('newPassword') : ''
+    newPassword: formData.get('newPassword') ?? ''
   });
 
   if (!result.success) {
-    // Direct access to error issues - simplest approach
-    const errors = result.error.issues;
-
-    let errorMessage = 'Invalid input';
-
-    // Get the first error message (usually the most relevant)
-    if (errors.length > 0) {
-      errorMessage = errors[0].message;
-    }
-
-    // Or if you want to find errors for a specific field:
-    const passwordError = errors.find(
-      (issue) => issue.path[0] === 'newPassword'
-    );
-    if (passwordError) {
-      errorMessage = passwordError.message;
-    }
-
+    const errorMessage = result.error.issues[0]?.message ?? 'Invalid input';
     redirect(
       '/redirect/auth-password-update?error=' + encodeURIComponent(errorMessage)
     );
   }
 
-  const { newPassword } = result.data;
-
+  // updateUser only works for the session established by the recovery
+  // link — with no session Supabase rejects it, which lands in the error
+  // branch below.
+  const supabase = await createServerSupabaseClient();
   const { error } = await supabase.auth.updateUser({
-    password: newPassword
+    password: result.data.newPassword
   });
 
   if (error) {

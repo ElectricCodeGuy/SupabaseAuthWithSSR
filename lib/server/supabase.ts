@@ -20,11 +20,17 @@ export const getSession = cache(async () => {
 //This memoizes/dedupes the request
 // if it is called multiple times in the same request.
 export const getUserInfo = cache(async () => {
+  const claims = await getSession();
+  if (!claims) return null;
+
   const supabase = await createServerSupabaseClient();
   try {
+    // RLS already limits this to the caller's row; the explicit id filter
+    // keeps that true even if the policy is ever loosened.
     const { data, error } = await supabase
       .from('users')
       .select('full_name, email, id')
+      .eq('id', claims.sub)
       .maybeSingle(); // MaybeSingle returns null if no data is found. single() returns an error if no data is found.
 
     if (error) {

@@ -162,7 +162,7 @@ IMPORTANT: After creating the document, do NOT put a link to the PDF in your rep
         return {
           success: true as const,
           fileName,
-          viewerUrl: `/filer?doc=${encodedFileName}`,
+          viewerUrl: `/chat/filer?doc=${encodeURIComponent(encodedFileName)}`,
           metadata: {
             title,
             author: author ?? null,

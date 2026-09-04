@@ -7,6 +7,8 @@ import { type Database } from '@/types/database';
 // as an extra security measure. This is why 'server-only' is imported at the top.
 // You can always handle everything through SSR anyway, so there's no need to expose
 // the client to the browser. All Supabase operations go through server components or API routes/server actions.
+// This file isn't used anywhere in the project — it's kept purely as a reference
+// for how the browser client would be set up if you did need one.
 
 export function createClient() {
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {

@@ -1,5 +1,5 @@
-import SignUpCard from './SignUpCard';
-import Content from '@/app/(frontpage)/components/auth/Content';
+import SignUpCard from '@/app/signup/SignUpCard';
+import Content from '@/app/components/auth/Content';
 import ModalWrapper from './ModalWrapper';
 import { getSession } from '@/lib/server/supabase';
 
