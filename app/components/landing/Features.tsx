@@ -4,6 +4,7 @@ import {
   FileSearch,
   FileText,
   Globe,
+  ImageIcon,
   PanelRight
 } from 'lucide-react';
 
@@ -29,9 +30,9 @@ const features = [
   },
   {
     icon: ChartColumn,
-    title: 'Interactive charts',
+    title: 'Interactive visualizations',
     description:
-      'The AI renders bar, line, area, and pie charts from real conversation data with a colorblind-safe palette and a data-table fallback.'
+      'The AI builds charts, dashboards, diagrams and small interactive tools from real conversation data — rendered in a sandboxed iframe, inline or in the side panel.'
   },
   {
     icon: FileText,
@@ -44,6 +45,12 @@ const features = [
     title: 'Web search built in',
     description:
       'Exa-powered search with relevance-ranked highlights, inline source citations, and links that open where they should: in a new tab.'
+  },
+  {
+    icon: ImageIcon,
+    title: 'Image generation',
+    description:
+      'Text-to-image on your own GPU with Qwen-Image-2.1 — any aspect ratio, transparent backgrounds, compressed to WebP with sharp and stored right in Postgres.'
   }
 ];
 
@@ -63,7 +70,12 @@ export function Features() {
 
         <div className="mt-12 grid gap-px overflow-hidden rounded-xl border bg-border sm:grid-cols-2 lg:grid-cols-3">
           {features.map(({ icon: Icon, title, description }) => (
-            <div key={title} className="bg-card p-6 sm:p-7">
+            // Odd count (7): the last card spans the final row at both
+            // breakpoints, so the bg-border gaps never show as empty cells.
+            <div
+              key={title}
+              className="bg-card p-6 sm:p-7 sm:last:col-span-2 lg:last:col-span-3"
+            >
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                 <Icon className="h-5 w-5 text-primary" />
               </div>

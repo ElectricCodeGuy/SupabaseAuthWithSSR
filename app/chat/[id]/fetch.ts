@@ -81,10 +81,12 @@ function reconstructPart(
     case 'tool-websiteSearchTool':
     case 'tool-saveMemory':
     case 'tool-conversationSearch':
-    case 'tool-createChart':
     case 'tool-createPDF':
     case 'tool-createArtifact':
-    case 'tool-updateArtifact': {
+    case 'tool-updateArtifact':
+    case 'tool-createVisualization':
+    case 'tool-updateVisualization':
+    case 'tool-generateImage': {
       const toolPart: ToolUIPart<UITools> = {
         type: part.type,
         approval: (part.tool_approval as any) || undefined,

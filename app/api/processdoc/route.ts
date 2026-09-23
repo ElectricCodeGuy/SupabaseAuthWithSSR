@@ -12,7 +12,7 @@ import { voyage } from 'voyage-ai-provider';
 import type { TablesInsert } from '@/types/database';
 import { revalidatePath } from 'next/cache';
 
-export const maxDuration = 800;
+export const maxDuration = 60;
 
 const bodySchema = z.object({
   // Storage object key returned by /api/upload/presigned-url.

@@ -1,5 +1,65 @@
 ## CHANGELOG
 
+## [v5.1.0] - 2026-09-23
+
+### Added
+
+- **Image generation (`generateImage` tool):** text-to-image via a local
+  [Qwen-Image-2.1](https://huggingface.co/Qwen/Qwen-Image-2.1) server
+  (OpenAI-compatible `POST /v1/images/generations`, `IMAGE_GEN_BASE_URL`,
+  default `http://localhost:8004/v1`). The model writes only the prompt, an
+  aspect ratio (the model card's 7 sizes, up to 2752×1536) and a
+  `transparent` flag for RGBA stickers/logos. An RTX 5090 (32 GB VRAM) is
+  recommended to run the model.
+  - The raw PNG is re-encoded with `sharp` to a lossy WebP (long edge capped
+    at 1536 px, quality 82, alpha preserved — typically 150–400 KB) and
+    stored as base64 directly in the new `generated_images` table — no
+    storage bucket.
+  - The tool output carries only the image id and URL, never the bytes, so
+    `message_parts`, the request body and the model context stay small.
+  - New `GET /api/images/[id]` route serves an image only to its owner
+    (session check + RLS + `user_id` filter) with a `private, immutable`
+    cache header.
+  - Chat UI: aspect-ratio placeholder while generating, then the image
+    inline with open-full-size and download buttons; transparent images show
+    over a checkerboard; failed/aborted generations render a red card.
+  - Optional env overrides: `IMAGE_GEN_MODEL`, `IMAGE_GEN_STEPS`
+    (`num_inference_steps`), `IMAGE_GEN_TIMEOUT_MS` (default 10 min).
+- **Interactive HTML visualizations (`createVisualization` /
+  `updateVisualization`):** the model writes a complete self-contained HTML
+  document (charts, dashboards, diagrams, flows, timelines, calculators),
+  rendered in a sandboxed iframe (`HtmlFrame`, no `allow-same-origin`, CSP
+  pinned to a CDN whitelist: chart.js, echarts, d3, mermaid, three) either
+  inline in the answer or in the side panel. Versions are the stored tool
+  calls, share the artifacts panel/version browser, and runtime errors
+  surface a "Fix it" button that asks the model to repair the document.
+- **Local LLM provider:** the chat route can serve models from a local vLLM
+  server (`VLLM_BASE_URL`, via `@ai-sdk/openai-compatible`) alongside
+  Anthropic. `resolveModelId` now returns the provider, and the model
+  catalog seeds `Qwen3.8 27B (local)` at zero cost. Local models get one
+  merged system message and Qwen thinking-mode sampling settings.
+
+### Changed
+
+- Tool parts left in an input state by an aborted generation now render as
+  stopped/failed instead of spinning forever.
+- README, in-app guide and landing page feature grid document the new
+  tools.
+
+### Removed
+
+- The fixed-shape Recharts `createChart` tool (`ChartTool.ts` /
+  `ChartTool.tsx`), superseded by the HTML visualizations.
+
+### Database
+
+- `setup.sql` STEP 15 adds `generated_images` (RLS: owner only; cascades on
+  chat session and user delete). Re-run `setup.sql` to upgrade.
+
+### Dependencies
+
+- Added `sharp` and `@ai-sdk/openai-compatible` as direct dependencies.
+
 ## [v5.0.1] - 2026-09-02
 
 ### Security
@@ -108,7 +168,7 @@
     Storage and previewable in the file manager. **Replaces the Word/`docx`
     document tool.**
   - `createArtifact` / `updateArtifact` — a versioned document workspace in a
-    side panel: content streams in live (it travels in the tool *input*),
+    side panel: content streams in live (it travels in the tool _input_),
     every create/update is a persisted version, auto-opens on new versions,
     desktop push-panel / mobile slide-over, copy + Markdown download. No new
     tables — versions ARE the stored tool calls.
@@ -162,7 +222,7 @@
 
 - **Auto-generated chat titles**: after the first exchange, a Claude Haiku
   call in the stream's `onFinish` names the conversation from the user's
-  message *and* the assistant's answer.
+  message _and_ the assistant's answer.
 - **New landing page**: SaaS-style Hero / Features / Showcase / CTA built from
   real product facts — a pure-CSS product mock (tool traces, mini chart, cache
   footer) instead of screenshots, a stack strip instead of made-up stats.
@@ -416,7 +476,6 @@
 ### Major Changes
 
 - **Incremental Message Saving System**: Completely redesigned how chat messages are saved to the database
-
   - Messages are now saved incrementally as each AI step completes using `onStepFinish`
   - Preserves exact order of tools, reasoning, and text as they are generated
   - Uses a single assistant message ID across all steps for proper grouping
@@ -432,7 +491,6 @@
 
 - **SaveToDbIncremental.ts**: New incremental saving function with proper sanitization and type safety
 - **Tool Output Display**: Enhanced UI components for displaying tool results
-
   - Collapsible sections using shadcn/ui components
   - Shows sources with clickable links and titles
   - Displays search queries used by tools
@@ -444,13 +502,11 @@
 ### Changed
 
 - **Chat Route Architecture**:
-
   - Removed `onFinish` database operations in favor of `onStepFinish`
   - Added step counter and message tracking for incremental saves
   - Improved error handling with detailed logging
 
 - **Frontend Components**:
-
   - Chat component now renders all parts in chronological order
   - Removed separate grouping of text, reasoning, and tools
   - WebsiteChatTool and DocumentChatTool updated with collapsible UI
@@ -580,7 +636,6 @@ CREATE TABLE public.message_parts (
 ### Added
 
 - **UI Framework Upgrade**:
-
   - Replaced Material-UI (MUI) with ShadCN UI
   - Improved component consistency and design system
   - Better developer experience with more customizable components
@@ -594,7 +649,6 @@ CREATE TABLE public.message_parts (
 The transition from MUI to ShadCN provides:
 
 - **Better Developer Experience**:
-
   - More consistent styling API
   - Headless components with full styling control
   - Simpler theming and customization
@@ -609,13 +663,11 @@ The transition from MUI to ShadCN provides:
 Replacing OpenAI's embedding model with voyage-3-large offers:
 
 - **Technical Advantages**:
-
   - Support for 1024 dimensions with int8 quantization
   - Perfect compatibility with pgvector in Supabase (under 2000 dimension limit)
   - Optimized storage efficiency without compromising accuracy
 
 - **Superior Embeddings**:
-
   - Better semantic understanding of legal documents
   - Improved multilingual support for Nordic languages
   - More accurate similarity matching for case law comparisons
@@ -640,13 +692,11 @@ https://blog.voyageai.com/2025/01/07/voyage-3-large/
 While Pinecone is popular, it presented significant challenges in production:
 
 - **Lack of Type Safety**:
-
   - No proper TypeScript support
   - Difficult to maintain type consistency
   - Error-prone metadata management
 
 - **Data Management Nightmare**:
-
   - No SQL support for updating metadata
   - Having to maintain data in two separate systems
   - Complex and limited update operations
@@ -661,13 +711,11 @@ While Pinecone is popular, it presented significant challenges in production:
 The migration to pgvector provides:
 
 - **Unified Data Layer**:
-
   - Single database for all application data
   - Native PostgreSQL features
   - Built-in Row Level Security (RLS)
 
 - **Better Development**:
-
   - Familiar SQL interface
   - Strong type checking
   - Improved debugging tools
@@ -819,7 +867,6 @@ For more information about implementing vector similarity search with pgvector, 
 ### New Features Include:
 
 - **Web Search Capabilities**:
-
   - Real-time internet searches during conversations
   - Accurate and up-to-date information from reliable sources
   - Source links provided with responses
@@ -860,13 +907,11 @@ For more information about implementing vector similarity search with pgvector, 
 ### New Features Include:
 
 - **Document Processing Pipeline**:
-
   - Support for multiple document formats (PDF, DOCX)
   - Automatic text extraction and preprocessing
   - Smart document chunking for optimal context retrieval
 
 - **Enhanced Chat Interface**:
-
   - Document-aware chat responses
   - Source attribution for answers
   - Context highlighting in responses

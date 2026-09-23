@@ -38,21 +38,28 @@ export function errorHandler(error: unknown) {
 }
 
 // ── Model resolution ─────────────────────────────────────────────────────────
-// Anthropic-only: resolve the user's selected model against the active
-// ai_models rows, but only accept anthropic-provider models. Anything else
-// (stale google/openai selections) falls back to the first active anthropic
-// model, then the hardcoded default.
-export async function resolveModelId(selectedModel: string): Promise<string> {
+// Resolve the user's selected model against the active ai_models rows. The
+// route can call two providers: 'anthropic' (Claude API) and 'vllm' (the
+// local Qwen deployment on the GPU box). Anything else (stale google/openai
+// selections, unknown ids) falls back to the first active anthropic model,
+// then the hardcoded default — so a tampered body can only ever select a
+// real, allowed model.
+export async function resolveModelId(
+  selectedModel: string
+): Promise<{ modelId: string; provider: 'anthropic' | 'vllm' }> {
   const config = await getModelConfig();
-  const anthropicModels = config.filter((m) => m.provider === 'anthropic');
 
-  const match = anthropicModels.find((m) => m.model_id === selectedModel);
-  if (match) {
-    return match.model_id;
+  const match = config.find((m) => m.model_id === selectedModel);
+  if (match && (match.provider === 'anthropic' || match.provider === 'vllm')) {
+    return { modelId: match.model_id, provider: match.provider };
   }
 
-  console.warn('Non-anthropic or unknown model selected:', selectedModel);
-  return anthropicModels[0]?.model_id ?? DEFAULT_MODEL_ID;
+  console.warn('Unknown or unsupported model selected:', selectedModel);
+  const fallback = config.find((m) => m.provider === 'anthropic');
+  return {
+    modelId: fallback?.model_id ?? DEFAULT_MODEL_ID,
+    provider: 'anthropic'
+  };
 }
 
 // ── Auto-titling ─────────────────────────────────────────────────────────────

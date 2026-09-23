@@ -462,11 +462,12 @@ USING (true);
 
 -- Seed models. logo_url is intentionally omitted: the UI maps `provider` to a
 -- local image in public/images/ai-providers/.
--- The chat API route is Anthropic-only (for prompt caching), so only
--- anthropic-provider models are seeded. All seeded models support adaptive
--- thinking, which the route enables unconditionally. Costs are the official
--- API sticker prices per 1M tokens (they feed the /usage and /admin cost
--- estimates). Note: Sonnet 5 has introductory pricing of $2/$10 per MTok
+-- The chat API route serves two providers: 'anthropic' (Claude API, prompt
+-- cached, adaptive thinking) and 'vllm' — the local OpenAI-compatible vLLM
+-- server on the GPU box (VLLM_BASE_URL), where model_id must equal the model
+-- tag vLLM was launched with. Costs are the official API sticker prices per
+-- 1M tokens (they feed the /usage and /admin cost estimates); the local model
+-- is free. Note: Sonnet 5 has introductory pricing of $2/$10 per MTok
 -- through 2026-08-31 — the sticker price is stored so estimates stay valid
 -- after the intro period.
 INSERT INTO public.ai_models
@@ -474,7 +475,8 @@ INSERT INTO public.ai_models
 VALUES
   ('claude-sonnet-5', 'Sonnet 5', 'anthropic',  3.0000, 15.0000, true, 'The best combination of speed and intelligence — near-Opus quality on coding and agentic work. Intro pricing ($2/$10 per MTok) until Aug 31, 2026.', 'https://www.anthropic.com/claude', 'medium', '~$0.45/answer', 1, true),
   ('claude-opus-4-8', 'Opus 4.8', 'anthropic',  5.0000, 25.0000, true, 'Anthropic''s most capable Opus-tier model — complex agentic coding and enterprise work.',                                                              'https://www.anthropic.com/claude', 'high',   '~$1.25/answer', 2, true),
-  ('claude-fable-5',  'Fable 5',  'anthropic', 10.0000, 50.0000, true, 'Anthropic''s most capable widely released model — next-generation intelligence for the most demanding reasoning and long-running agents. Requires 30-day data retention on your Anthropic org.', 'https://www.anthropic.com/claude', 'high', '~$2.50/answer', 3, true)
+  ('claude-fable-5',  'Fable 5',  'anthropic', 10.0000, 50.0000, true, 'Anthropic''s most capable widely released model — next-generation intelligence for the most demanding reasoning and long-running agents. Requires 30-day data retention on your Anthropic org.', 'https://www.anthropic.com/claude', 'high', '~$2.50/answer', 3, true),
+  ('orcarouter/Qwen3.8-27B-Uncensored-FP8', 'Qwen3.8 27B (local)', 'vllm', 0.0000, 0.0000, true, 'Uncensored Qwen3.8-27B (FP8) served by vLLM on your own GPU box — no API cost. Thinking on at medium effort with previous turns'' reasoning preserved.', 'https://huggingface.co/orcarouter/Qwen3.8-27B-Uncensored-FP8', 'low', 'free (local)', 4, true)
 ON CONFLICT (model_id) DO UPDATE SET
   display_name = EXCLUDED.display_name,
   input_cost_per_million_usd = EXCLUDED.input_cost_per_million_usd,
@@ -608,6 +610,55 @@ SET public = false,
     file_size_limit = 52428800, -- 50 MB
     allowed_mime_types = ARRAY['application/pdf']
 WHERE id = 'userfiles';
+
+-- =============================================================================
+-- STEP 15: CREATE GENERATED IMAGES TABLE (generateImage chat tool)
+-- =============================================================================
+-- Images produced by the generateImage tool (local Qwen-Image server,
+-- IMAGE_GEN_BASE_URL, default http://localhost:8004/v1). The raw PNG is
+-- re-encoded to a lossy WebP with sharp before insert (~150-400 KB), so the
+-- bytes live directly in the row — no storage bucket. The tool part in message_parts only carries the image id;
+-- the browser loads the bytes from GET /api/images/[id].
+-- Deleting the chat (or the user) removes its images via the cascades.
+
+CREATE TABLE IF NOT EXISTS public.generated_images (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  chat_session_id uuid NOT NULL,
+  prompt text NOT NULL,
+  width integer NOT NULL,
+  height integer NOT NULL,
+  media_type text NOT NULL DEFAULT 'image/webp',
+  size_bytes integer NOT NULL,
+  -- Base64 of the encoded image (text survives PostgREST round-trips as-is;
+  -- bytea would come back hex-encoded at twice the size)
+  data_base64 text NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT generated_images_pkey PRIMARY KEY (id),
+  CONSTRAINT generated_images_user_id_fkey FOREIGN KEY (user_id)
+    REFERENCES public.users (id) ON DELETE CASCADE,
+  CONSTRAINT generated_images_chat_session_id_fkey FOREIGN KEY (chat_session_id)
+    REFERENCES public.chat_sessions (id) ON DELETE CASCADE,
+  -- Hard ceiling (~6 MB of base64) so a misbehaving encoder can't bloat rows
+  CONSTRAINT generated_images_data_length CHECK (char_length(data_base64) <= 8000000)
+);
+
+CREATE INDEX IF NOT EXISTS idx_generated_images_user_id
+  ON public.generated_images USING btree (user_id);
+CREATE INDEX IF NOT EXISTS idx_generated_images_chat_session_id
+  ON public.generated_images USING btree (chat_session_id);
+
+-- Enable RLS for generated_images
+ALTER TABLE public.generated_images ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policy for generated_images
+DROP POLICY IF EXISTS "Users can manage own generated images" ON public.generated_images;
+CREATE POLICY "Users can manage own generated images"
+ON public.generated_images
+FOR ALL
+TO public
+USING (user_id = (SELECT auth.uid()))
+WITH CHECK (user_id = (SELECT auth.uid()));
 
 -- =============================================================================
 -- SETUP COMPLETE

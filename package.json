@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.1",
+    "@ai-sdk/openai-compatible": "^3.0.45",
     "@ai-sdk/react": "^4.0.5",
     "@date-fns/tz": "^1.2.0",
     "@radix-ui/react-navigation-menu": "^1.2.19",
@@ -39,6 +40,7 @@
     "rehype-highlight": "^7.0.0",
     "remark-gfm": "^4.0.0",
     "server-only": "^0.0.1",
+    "sharp": "^0.35.4",
     "sonner": "^2.0.5",
     "swr": "^2.2.5",
     "tailwind-merge": "^3.0.2",

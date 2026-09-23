@@ -1,7 +1,7 @@
 'use server';
 
 import { z } from 'zod';
-import { revalidatePath } from 'next/cache';
+import { refresh } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createServerSupabaseClient } from '@/lib/server/server';
 import {
@@ -55,7 +55,7 @@ export async function login(formData: FormData): Promise<AuthResponse> {
     return { success: false, message: 'Invalid email or password' };
   }
 
-  revalidatePath('/', 'layout');
+  refresh();
   return { success: true, message: 'Successfully logged in' };
 }
 

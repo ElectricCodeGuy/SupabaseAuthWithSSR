@@ -98,16 +98,6 @@ export const websiteSearchTool = tool({
       };
     }
 
-    const contextArray = results.map((result) => ({
-      type: 'website',
-      title: result.title,
-      url: result.url,
-      // The most relevant excerpts first — read these before the full text.
-      highlights: result.highlights,
-      content: result.content,
-      publishedDate: result.publishedDate
-    }));
-
     const instructions = `Answer the user's question based on the website content above. Each result carries "highlights" — the passages most relevant to the query — read those first; "content" is the (capped) full page text for surrounding context. Guidelines:
 
 1. Cite sources inline as Markdown links right where the information is used, e.g. "According to [Page title](URL), ...". Never collect references at the end.
@@ -118,7 +108,15 @@ export const websiteSearchTool = tool({
 
     return {
       instructions,
-      context: contextArray
+      context: results.map((result) => ({
+        type: 'website',
+        title: result.title,
+        url: result.url,
+        // The most relevant excerpts first — read these before the full text.
+        highlights: result.highlights,
+        content: result.content,
+        publishedDate: result.publishedDate
+      }))
     };
   }
 });

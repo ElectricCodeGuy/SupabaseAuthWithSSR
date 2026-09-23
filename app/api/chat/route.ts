@@ -11,6 +11,7 @@ import {
 } from 'ai';
 import type { AnthropicProviderOptions } from '@ai-sdk/anthropic';
 import { anthropic } from '@ai-sdk/anthropic';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { z } from 'zod';
 import { getSession } from '@/lib/server/supabase';
 import { rejectCrossOrigin } from '@/lib/server/security';
@@ -30,7 +31,6 @@ import {
   formatMemoriesForPrompt
 } from './tools/MemoryTool';
 import { conversationSearch } from './tools/ConversationSearchTool';
-import { createChart } from './tools/ChartTool';
 import { createPDF } from './tools/CreatePDFTool';
 import {
   buildArtifactStore,
@@ -38,8 +38,27 @@ import {
   createArtifactTool,
   updateArtifactTool
 } from './tools/ArtifactTool';
+import {
+  buildVisualizationStore,
+  buildVisualizationPrompt,
+  createVisualizationTool,
+  updateVisualizationTool
+} from './tools/VisualizationTool';
+import { generateImageTool } from './tools/ImageGenerationTool';
 
 export const maxDuration = 60;
+
+// Local vLLM deployment on the GPU box (Qwen3.8-27B-Uncensored-FP8, launched
+// with --reasoning-parser qwen3 --enable-auto-tool-choice). `name` is the
+// providerOptions routing key used further down; the server ignores the key.
+const vllm = createOpenAICompatible({
+  name: 'vllm',
+  baseURL: process.env.VLLM_BASE_URL ?? 'http://192.168.0.29:8000/v1',
+  apiKey: 'not-needed',
+  // vLLM only reports token usage on a stream when asked (stream_options);
+  // without it buildStepUsage would log zeros for this model.
+  includeUsage: true
+});
 
 // Request-shape guard. The message history is the AI SDK's UIMessage[] (too
 // polymorphic to model fully here), so only the envelope is validated: a real
@@ -78,7 +97,8 @@ TOOL GUIDE:
 - websiteSearchTool: search the web for up-to-date information. Use for questions about recent events or facts that may have changed.
 - conversationSearch: search the user's past chats. Use when the user references something discussed in an earlier conversation ("what did we say about...", "find the chat where..."). Include the returned links in your answer.
 - saveMemory: manage long-term memories. ONLY when the user explicitly asks you to remember, forget, or list what you remember — never for facts mentioned in passing. Stored memories appear in <userMemories>.
-- createChart: render an interactive chart. Use when the user asks for a visualization, or when a comparison/trend/breakdown you are presenting is clearer as a chart. Only chart real data from the conversation or tool results — never invent numbers. After the chart renders, add interpretation instead of repeating the numbers as a list.
+- createVisualization / updateVisualization: build an interactive HTML visualization (chart, dashboard, diagram, flow, timeline, stepper, calculator) rendered in a sandboxed iframe — inline in the answer or in the side panel. Use when a visual beats prose, and ONLY with real data from the conversation, the user's documents or tool results — never invent numbers. After it renders, add interpretation instead of repeating the numbers as a list. Full guidance is in <visualizations>.
+- generateImage: create an image (illustration, photo, poster, logo, sticker, icon) from a text prompt. Use when the user asks you to draw, generate, design or create a picture. Write a detailed prompt (subject, composition, style, lighting, colours; exact text in double quotes) and pick the aspect ratio that fits; set transparent for stickers/logos/cut-outs. The image appears automatically — reply with one short sentence, never a markdown image or link.
 - createPDF: generate a polished PDF document saved to the user's files. Use when the user asks for a PDF, report, memo, letter, or contract as a downloadable file. Afterwards, tell the user it is ready in the panel above — don't also paste the full content into the chat.
 
 FORMATTING: Your responses are rendered using react-markdown with the following capabilities:
@@ -123,18 +143,21 @@ export async function POST(req: NextRequest) {
 
   // The conversation's model comes over in the request body (the picker is
   // client state — it must work before the chat session row even exists).
-  // resolveModelId validates it against the active anthropic catalog, so a
-  // tampered body can only ever select a real, allowed model. When absent,
-  // fall back to the user's default model from their users row.
+  // resolveModelId validates it against the active ai_models catalog and
+  // tells us which provider serves it, so a tampered body can only ever
+  // select a real, allowed model. When absent, fall back to the user's
+  // default model from their users row.
   const userId = session.sub;
   const requestedModel = parsed.data.selectedModel || null;
-  const [selectedModel, userMemories] = await Promise.all([
-    (requestedModel
-      ? Promise.resolve(requestedModel)
-      : getSelectedModelId()
-    ).then(resolveModelId),
-    fetchUserMemories(userId)
-  ]);
+  const [{ modelId: selectedModel, provider: selectedProvider }, userMemories] =
+    await Promise.all([
+      (requestedModel
+        ? Promise.resolve(requestedModel)
+        : getSelectedModelId()
+      ).then(resolveModelId),
+      fetchUserMemories(userId)
+    ]);
+  const isLocalModel = selectedProvider === 'vllm';
 
   let stepCount = 0;
   let userMessageSaved = false;
@@ -151,6 +174,9 @@ export async function POST(req: NextRequest) {
   // into the dynamic system block because pruneMessages strips older tool
   // parts (and with them the document contents) from the model's context.
   const artifactStore = buildArtifactStore(messages);
+  // Same pattern for HTML visualizations — latest state per id, injected
+  // into the dynamic system block so the model can revise them later.
+  const visualizationStore = buildVisualizationStore(messages);
 
   const modelMessages = await convertToModelMessages(messages, {
     ignoreIncompleteToolCalls: true
@@ -158,51 +184,87 @@ export async function POST(req: NextRequest) {
   // Keep tool calls/results from roughly the last two exchanges so (1) the
   // moving cache breakpoint below still matches the previous request's prefix
   // (0.1× reads) and (2) the model retains recent tool output for follow-ups.
-  // Older tool content and reasoning are pruned to keep the prompt lean.
+  // Older tool content and reasoning are pruned to keep the prompt lean —
+  // except for the local Qwen: its chat template runs with
+  // preserve_thinking, and the openai-compatible provider sends assistant
+  // reasoning parts back as reasoning_content, so keeping them is what lets
+  // earlier turns' thinking be replayed.
   const prunedMessages = pruneMessages({
     messages: modelMessages,
-    reasoning: 'before-last-message',
+    reasoning: isLocalModel ? 'none' : 'before-last-message',
     toolCalls: 'before-last-12-messages',
     emptyMessages: 'remove'
   });
 
+  // Per-request tail of the system prompt: date, memories, artifacts.
+  const dynamicSystemPrompt = [
+    `The current date is ${new Date().toISOString().slice(0, 10)}.`,
+    formatMemoriesForPrompt(userMemories),
+    buildArtifactPrompt(artifactStore),
+    buildVisualizationPrompt(visualizationStore)
+  ]
+    .filter(Boolean)
+    .join('\n\n');
+
   const result = streamText({
-    model: anthropic(selectedModel),
+    model: isLocalModel ? vllm(selectedModel) : anthropic(selectedModel),
     abortSignal,
-    // Two system blocks, ordered by change frequency for Anthropic prompt
+    // Qwen3.8 thinking-mode sampling per the model card (temperature 1.0,
+    // top_p 0.95; top_k/min_p/presence_penalty ride in providerOptions).
+    // Anthropic stays unset — adaptive thinking rejects a custom temperature.
+    ...(isLocalModel ? { temperature: 1.0, topP: 0.95 } : {}),
+    // Anthropic: two system blocks, ordered by change frequency for prompt
     // caching (prefix match; render order is tools → system → messages):
     // 1. staticSystemPrompt — carries the breakpoint. Because tools render
     //    BEFORE system, this single breakpoint caches the tool definitions +
     //    the static instructions in one entry, shared across turns and users.
     // 2. dynamic block (date, memories, artifacts) — uncached tail; never
     //    busts the cached prefix.
-    instructions: [
-      {
-        role: 'system',
-        content: staticSystemPrompt,
-        providerOptions: {
-          anthropic: { cacheControl: { type: 'ephemeral' } }
-        }
-      },
-      {
-        role: 'system',
-        content: [
-          `The current date is ${new Date().toISOString().slice(0, 10)}.`,
-          formatMemoriesForPrompt(userMemories),
-          buildArtifactPrompt(artifactStore)
+    // Local Qwen: ONE merged system message — the Qwen chat template rejects
+    // a second system message ("System message must be at the beginning").
+    instructions: isLocalModel
+      ? [
+          {
+            role: 'system',
+            content: `${staticSystemPrompt}\n\n${dynamicSystemPrompt}`
+          }
         ]
-          .filter(Boolean)
-          .join('\n\n')
-      }
-    ],
+      : [
+          {
+            role: 'system',
+            content: staticSystemPrompt,
+            providerOptions: {
+              anthropic: { cacheControl: { type: 'ephemeral' } }
+            }
+          },
+          { role: 'system', content: dynamicSystemPrompt }
+        ],
     messages: prunedMessages,
-    providerOptions: {
-      anthropic: {
-        effort: 'high',
-        thinking: { type: 'adaptive', display: 'summarized' },
-        cacheControl: { type: 'ephemeral' }
-      } satisfies AnthropicProviderOptions
-    },
+    providerOptions: isLocalModel
+      ? {
+          // Passed through verbatim into the vLLM request body. The
+          // chat_template_kwargs are Qwen3.8's template switches: thinking
+          // on at medium effort, and previous turns' reasoning kept in the
+          // prompt (preserve_thinking) instead of being stripped.
+          vllm: {
+            top_k: 20,
+            min_p: 0.0,
+            presence_penalty: 0.0,
+            repetition_penalty: 1.0,
+            chat_template_kwargs: {
+              enable_thinking: true,
+              reasoning_effort: 'medium',
+              preserve_thinking: true
+            }
+          }
+        }
+      : {
+          anthropic: {
+            effort: 'high',
+            thinking: { type: 'adaptive', display: 'summarized' },
+            cacheControl: { type: 'ephemeral' }
+          } satisfies AnthropicProviderOptions
+        },
     tools: {
       websiteSearchTool: websiteSearchTool,
       searchUserDocument: searchUserDocument({ userId }),
@@ -211,23 +273,31 @@ export async function POST(req: NextRequest) {
         userId,
         currentChatId: chatSessionId
       }),
-      createChart: createChart,
       createPDF: createPDF({ userId }),
       createArtifact: createArtifactTool({ store: artifactStore }),
-      updateArtifact: updateArtifactTool({ store: artifactStore })
+      updateArtifact: updateArtifactTool({ store: artifactStore }),
+      createVisualization: createVisualizationTool({
+        store: visualizationStore
+      }),
+      updateVisualization: updateVisualizationTool({
+        store: visualizationStore
+      }),
+      generateImage: generateImageTool({ userId, chatSessionId })
     },
     activeTools: [
       'websiteSearchTool',
       'searchUserDocument',
       'saveMemory',
       'conversationSearch',
-      'createChart',
       'createPDF',
       'createArtifact',
-      'updateArtifact'
+      'updateArtifact',
+      'createVisualization',
+      'updateVisualization',
+      'generateImage'
     ],
-    // 10 steps gives multi-tool chains room: e.g. web search → chart →
-    // PDF → memory is 4 tool calls + follow-up lookups + the final answer.
+    // 10 steps gives multi-tool chains room: e.g. web search → visualization
+    // → PDF → memory is 4 tool calls + follow-up lookups + the final answer.
     stopWhen: isStepCount(10),
     onAbort: async () => {
       // An abort before the first step completed means onStepEnd never ran —

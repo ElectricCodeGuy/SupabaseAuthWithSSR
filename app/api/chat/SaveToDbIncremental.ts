@@ -213,7 +213,7 @@ export const saveMessagesToDB = async ({
 
           default: {
             // TOOL PARTS - all tools share the generic tool_* columns; `type`
-            // records which tool this part is (e.g. 'tool-createChart'), so
+            // records which tool this part is (e.g. 'tool-createVisualization'), so
             // new tools persist without a new case here.
             if (part.type.startsWith('tool-')) {
               const toolPart = part as Extract<

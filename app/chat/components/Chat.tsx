@@ -16,9 +16,10 @@ import DocumentSearchTool from './tools/DocumentChatTool';
 import { WebsiteSearchTool } from './tools/WebsiteSearchTool';
 import { MemoryTool } from './tools/MemoryTool';
 import { ConversationSearchTool } from './tools/ConversationSearchTool';
-import { ChartTool } from './tools/ChartTool';
 import { PdfTool } from './tools/PdfTool';
 import { ArtifactTool } from './tools/ArtifactTool';
+import { VisualizationTool } from './tools/VisualizationTool';
+import { ImageGenerationTool } from './tools/ImageGenerationTool';
 import { ArtifactPanel } from './ArtifactPanel';
 import {
   deriveArtifacts,
@@ -106,7 +107,7 @@ const ChatComponent: React.FC<ChatProps> = ({
     );
   };
 
-  // ── Document workspace (artifacts) ────────────────────────────────────────
+  // ── Workspace (documents + HTML visualizations) ───────────────────────────
   // Fully derived from messages each render — no effects, no refs. The only
   // state is user INTENT:
   //  - dismissedKey: the newest version key at the moment the user closed the
@@ -118,12 +119,37 @@ const ChatComponent: React.FC<ChatProps> = ({
   // Groups are addressed by groupKey() (first version's part key), which is
   // stable across the pending→real artifactId flip — ids never leak into
   // state, so there is nothing to remap.
-  const artifacts = useMemo(() => deriveArtifacts(messages), [messages]);
-  const latest = findLatestArtifactVersion(artifacts);
+  // The message being generated right now (null when idle). Parts in an
+  // input state outside it are leftovers from aborted generations (their
+  // tool_state persists verbatim) and must render as failed, not as
+  // eternally streaming.
+  const liveMessageId =
+    status === 'streaming' || status === 'submitted'
+      ? (messages[messages.length - 1]?.id ?? null)
+      : null;
+
+  const artifacts = useMemo(
+    () => deriveArtifacts(messages, liveMessageId),
+    [messages, liveMessageId]
+  );
+  // Panel state follows the newest PANEL-RELEVANT version only (documents +
+  // panel-mode visualizations): inline visualizations render in the
+  // transcript and must never open, close or re-target the panel.
+  const latest = findLatestArtifactVersion(artifacts, true);
+
+  // Latest version key per group — superseded inline visualizations collapse
+  // to a compact card instead of keeping a live iframe running.
+  const latestVersionKeys = useMemo(
+    () =>
+      new Set(
+        artifacts.map((g) => g.versions[g.versions.length - 1]?.key ?? '')
+      ),
+    [artifacts]
+  );
 
   const [dismissedKey, setDismissedKey] = useState<string | null>(() => {
     const restored = deriveArtifacts(currentChat ?? []);
-    return findLatestArtifactVersion(restored)?.version.key ?? null;
+    return findLatestArtifactVersion(restored, true)?.version.key ?? null;
   });
   const [pinned, setPinned] = useState<{
     groupKey: string;
@@ -143,6 +169,13 @@ const ChatComponent: React.FC<ChatProps> = ({
     pinnedGroup ??
     (latest && latest.version.key !== dismissedKey ? latest.group : null);
   const artifactVersionIndex = pinnedGroup ? activePin!.versionIndex : null;
+
+  // Version keys of the open group — its cards in the transcript mark
+  // themselves as "open in the panel", and their button becomes a close
+  // button. Plain const (not useMemo): the Set is cheap to build.
+  const openArtifactKeys = new Set(
+    openArtifact?.versions.map((v) => v.key) ?? []
+  );
 
   const closeArtifactPanel = () => {
     setPinned(null);
@@ -164,6 +197,24 @@ const ChatComponent: React.FC<ChatProps> = ({
         return;
       }
     }
+  };
+
+  // Error bridge: "Fix it" on a broken visualization sends an ORDINARY user
+  // message (visible in the transcript, billed like any turn) asking the
+  // model to repair it via updateVisualization — no separate API call.
+  const requestVisualizationFix = (errorText: string, title: string) => {
+    if (status !== 'ready') return;
+    sendMessage(
+      {
+        text: `The visualization "${title}" throws an error in the browser:\n\n\`\`\`\n${errorText}\n\`\`\`\n\nFix the root cause and update the visualization with updateVisualization — keep everything else unchanged.`
+      },
+      {
+        body: {
+          chatId: chatId,
+          selectedModel: selectedOption
+        }
+      }
+    );
   };
 
   // Version navigation inside the panel is also a pin (on the open group).
@@ -432,19 +483,60 @@ const ChatComponent: React.FC<ChatProps> = ({
                                 );
                               }
                               if (
-                                part.type === 'tool-createChart' &&
+                                (part.type === 'tool-createVisualization' ||
+                                  part.type === 'tool-updateVisualization') &&
                                 !isUserMessage
                               ) {
+                                const partKey = `${message.id}:${partIndex}`;
                                 return (
-                                  <ChartTool
+                                  <VisualizationTool
                                     key={`part-${partIndex}`}
                                     toolInvocation={
                                       part as Extract<
                                         ToolUIPart<UITools>,
-                                        { type: 'tool-createChart' }
+                                        | { type: 'tool-createVisualization' }
+                                        | { type: 'tool-updateVisualization' }
                                       >
                                     }
-                                    index={indexStr}
+                                    aborted={
+                                      (part.state === 'input-streaming' ||
+                                        part.state === 'input-available') &&
+                                      message.id !== liveMessageId
+                                    }
+                                    isLatestVersion={latestVersionKeys.has(
+                                      partKey
+                                    )}
+                                    isOpen={openArtifactKeys.has(partKey)}
+                                    onOpen={() =>
+                                      openArtifactKeys.has(partKey)
+                                        ? closeArtifactPanel()
+                                        : openArtifactForPart(
+                                            message.id,
+                                            partIndex
+                                          )
+                                    }
+                                    onFixError={requestVisualizationFix}
+                                  />
+                                );
+                              }
+                              if (
+                                part.type === 'tool-generateImage' &&
+                                !isUserMessage
+                              ) {
+                                return (
+                                  <ImageGenerationTool
+                                    key={`part-${partIndex}`}
+                                    toolInvocation={
+                                      part as Extract<
+                                        ToolUIPart<UITools>,
+                                        { type: 'tool-generateImage' }
+                                      >
+                                    }
+                                    aborted={
+                                      (part.state === 'input-streaming' ||
+                                        part.state === 'input-available') &&
+                                      message.id !== liveMessageId
+                                    }
                                   />
                                 );
                               }
@@ -527,6 +619,7 @@ const ChatComponent: React.FC<ChatProps> = ({
         versionIndex={artifactVersionIndex}
         onVersionChange={handleArtifactVersionChange}
         onClose={closeArtifactPanel}
+        onFixVisualization={requestVisualizationFix}
       />
     </div>
   );

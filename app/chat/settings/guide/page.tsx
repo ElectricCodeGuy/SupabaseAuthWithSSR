@@ -6,6 +6,7 @@ import {
   FileText,
   Globe,
   History,
+  ImageIcon,
   Lightbulb,
   MessageSquarePlus,
   PanelRight,
@@ -37,9 +38,15 @@ const tools = [
   },
   {
     icon: ChartColumn,
-    title: 'Charts',
+    title: 'Visualizations',
     description:
-      'Ask for a comparison or trend and the assistant renders an interactive chart — with a data table behind it.'
+      'Ask for a chart, diagram, timeline or calculator and the assistant builds an interactive visualization — inline in the answer or in the side panel, with a version history when you iterate on it.'
+  },
+  {
+    icon: ImageIcon,
+    title: 'Image generation',
+    description:
+      'Ask the assistant to draw, design or create a picture — a poster, logo, sticker or photo — and it generates the image right in the chat, ready to open or download.'
   },
   {
     icon: FileText,

@@ -3,8 +3,8 @@ import { createServerSupabaseClient } from '@/lib/server/server';
 import { getSession } from '@/lib/server/supabase';
 
 // Default model used when a user has not chosen one yet. The chat API route
-// is anthropic-only (for prompt caching), so the default must be an
-// anthropic model.
+// serves anthropic and the local vllm provider (see resolveModelId); the
+// default stays an anthropic model.
 export const DEFAULT_MODEL_ID = 'claude-sonnet-5';
 
 export type SelectableModel = {

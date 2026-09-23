@@ -269,15 +269,17 @@ Typical flows: "what documents do I have" → list. "summarize my rental contrac
         return { mode: 'search' as const, query: q, results: [] };
       }
 
-      const results = (matches ?? []).map((m) => ({
-        documentId: m.document_id,
-        title: m.ai_title || m.title,
-        fileName: m.title,
-        page: m.page_number,
-        totalPages: m.total_pages,
-        text: m.text_content
-      }));
-
-      return { mode: 'search' as const, query: q, results };
+      return {
+        mode: 'search' as const,
+        query: q,
+        results: (matches ?? []).map((m) => ({
+          documentId: m.document_id,
+          title: m.ai_title || m.title,
+          fileName: m.title,
+          page: m.page_number,
+          totalPages: m.total_pages,
+          text: m.text_content
+        }))
+      };
     }
   });

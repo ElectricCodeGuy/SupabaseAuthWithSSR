@@ -24,7 +24,7 @@ import {
 
 // A scripted replay of one real turn in the chat: the question is typed into
 // the input box and sent, the assistant reasons, calls searchUserDocument,
-// websiteSearchTool, createChart and createArtifact, answers, then handles a
+// websiteSearchTool, createVisualization and createArtifact, answers, then handles a
 // follow-up with updateArtifact and saveMemory. The artifact panel slides
 // open and "writes itself" as the tool calls land, the same way the live
 // panel streams the tool input. Timings are in ms from the start of a run;
@@ -84,7 +84,7 @@ const STEPS: Step[] = [
     kind: 'tool',
     at: 7100,
     icon: ChartColumn,
-    label: 'Created chart',
+    label: 'Created visualization',
     summary: '3 series'
   },
   { kind: 'chart', at: 7900 },

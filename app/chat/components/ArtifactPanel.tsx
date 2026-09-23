@@ -1,8 +1,9 @@
 'use client';
 
-// The document workspace surface ("artifact panel"), modeled on the artifact
-// chrome in vercel/ai-chatbot (close on the left, title + status line, icon
-// actions right, version bar at the bottom).
+// The workspace surface ("artifact panel") for documents AND HTML
+// visualizations, modeled on the artifact chrome in vercel/ai-chatbot (close
+// on the left, title + status line, icon actions right, version bar at the
+// bottom).
 //
 // Layout has two modes:
 //  - lg and up: an IN-FLOW flex sibling of the conversation column that
@@ -23,10 +24,12 @@ import {
   Check,
   Download,
   Loader2,
-  History
+  History,
+  TriangleAlert
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import MemoizedMarkdown from './tools/MemoizedMarkdown';
+import { HtmlFrame } from './HtmlFrame';
 import type { ArtifactGroup } from '@/app/chat/lib/artifacts';
 
 interface ArtifactPanelProps {
@@ -35,6 +38,11 @@ interface ArtifactPanelProps {
   versionIndex: number | null;
   onVersionChange: (index: number | null) => void;
   onClose: () => void;
+  /**
+   * Error bridge for HTML visualizations: called with the captured runtime
+   * error and the visualization title when the user clicks "Fix it".
+   */
+  onFixVisualization?: (errorText: string, title: string) => void;
 }
 
 function slugifyFilename(title: string): string {
@@ -47,11 +55,53 @@ function slugifyFilename(title: string): string {
   );
 }
 
+// Building animation shown while a visualization's HTML streams in — a
+// pulsing mock chart with staggered bars plus a live size counter, so the
+// user sees progress without ever seeing raw HTML source.
+const BUILD_BARS = [45, 75, 55, 90, 40, 65, 80];
+
+const VisualizationBuilding: React.FC<{ chars: number }> = ({ chars }) => (
+  <div className="flex w-full max-w-sm flex-col items-center gap-6 px-6">
+    <div className="w-full rounded-xl border border-border/60 bg-muted/30 p-5">
+      <div className="mb-1.5 h-3 w-1/2 animate-pulse rounded bg-muted" />
+      <div className="mb-5 h-2.5 w-1/3 animate-pulse rounded bg-muted/70" />
+      <div className="flex h-28 items-end gap-2" aria-hidden>
+        {BUILD_BARS.map((height, i) => (
+          <div
+            key={i}
+            className="flex-1 animate-pulse rounded-t-sm bg-primary/25"
+            style={{ height: `${height}%`, animationDelay: `${i * 140}ms` }}
+          />
+        ))}
+      </div>
+      <div className="mt-3 flex gap-2">
+        <div className="h-2.5 w-14 animate-pulse rounded bg-muted/70" />
+        <div className="h-2.5 w-10 animate-pulse rounded bg-muted/70" />
+        <div className="h-2.5 w-16 animate-pulse rounded bg-muted/70" />
+      </div>
+    </div>
+    <p className="flex items-center gap-2 text-sm text-muted-foreground">
+      <Loader2 className="h-4 w-4 animate-spin" />
+      <span>Building visualization…</span>
+      {chars > 0 && (
+        <span className="text-xs tabular-nums">
+          {(chars / 1024).toLocaleString('en-US', {
+            minimumFractionDigits: 1,
+            maximumFractionDigits: 1
+          })}{' '}
+          kB
+        </span>
+      )}
+    </p>
+  </div>
+);
+
 export const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
   artifact,
   versionIndex,
   onVersionChange,
-  onClose
+  onClose,
+  onFixVisualization
 }) => {
   const open = artifact !== null;
 
@@ -63,7 +113,17 @@ export const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
   const shown = artifact ?? lastArtifact;
 
   const [copied, setCopied] = useState(false);
+  // Runtime error from the sandboxed frame, keyed to the version that
+  // produced it — a stale error never sticks to a newer/other version.
+  const [frameError, setFrameError] = useState<{
+    key: string;
+    message: string;
+  } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // HTML visualizations share the panel with markdown documents: the body
+  // renders a sandboxed iframe instead of markdown and downloads are .html.
+  const isHtml = shown?.kind === 'html';
 
   const versions = shown?.versions ?? [];
   const latestIndex = versions.length - 1;
@@ -92,21 +152,23 @@ export const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
     }
   };
 
-  const handleDownloadMarkdown = () => {
+  const handleDownloadSource = () => {
     if (!shown || !active) return;
     const blob = new Blob([active.content], {
-      type: 'text/markdown;charset=utf-8'
+      type: isHtml ? 'text/html;charset=utf-8' : 'text/markdown;charset=utf-8'
     });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${slugifyFilename(shown.title)}.md`;
+    a.download = `${slugifyFilename(shown.title)}.${isHtml ? 'html' : 'md'}`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
   const statusText = active?.streaming
-    ? 'Writing…'
+    ? isHtml
+      ? 'Building…'
+      : 'Writing…'
     : versions.length > 0
       ? `Version ${activeIndex + 1} of ${versions.length}`
       : '';
@@ -144,7 +206,7 @@ export const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
                 size="icon"
                 className="h-8 w-8 shrink-0"
                 onClick={onClose}
-                title="Close the document panel"
+                title="Close the panel"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -168,7 +230,7 @@ export const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
                   size="icon"
                   className="h-8 w-8"
                   onClick={handleCopy}
-                  title="Copy markdown"
+                  title={isHtml ? 'Copy HTML' : 'Copy markdown'}
                 >
                   {copied ? (
                     <Check className="h-4 w-4 text-green-600" />
@@ -181,38 +243,96 @@ export const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8"
-                  onClick={handleDownloadMarkdown}
-                  title="Download as markdown (.md)"
+                  onClick={handleDownloadSource}
+                  title={
+                    isHtml
+                      ? 'Download as HTML (.html)'
+                      : 'Download as markdown (.md)'
+                  }
                 >
                   <Download className="h-4 w-4" />
                 </Button>
               </div>
             </div>
 
-            {/* Document body */}
-            <div ref={scrollRef} className="flex-1 overflow-y-auto">
-              <div className="mx-auto w-full max-w-[700px] px-5 py-6 lg:px-8">
-                {active.content ? (
-                  <>
-                    <MemoizedMarkdown
-                      content={active.content}
-                      id={`artifact-${shown.id}-v${activeIndex}`}
+            {/* Body — finished HTML renders the sandboxed frame full-height
+                (the frame scrolls itself); a streaming visualization shows a
+                building animation (never the raw HTML source — the iframe
+                only mounts on the finished document, since re-setting srcDoc
+                per token would reload it constantly); markdown documents use
+                the scroll container. */}
+            {isHtml ? (
+              active.content && !active.streaming ? (
+                <div className="flex flex-1 flex-col overflow-hidden">
+                  {frameError?.key === active.key && (
+                    <div className="flex items-center gap-2 border-b border-border/60 bg-amber-50 px-3 py-1.5 dark:bg-amber-950/30">
+                      <TriangleAlert className="h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+                      <p
+                        className="min-w-0 flex-1 truncate text-xs text-amber-800 dark:text-amber-200"
+                        title={frameError.message}
+                      >
+                        The visualization reported an error
+                      </p>
+                      {onFixVisualization && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-6 shrink-0 rounded-md px-2 text-xs"
+                          onClick={() =>
+                            onFixVisualization(frameError.message, shown.title)
+                          }
+                        >
+                          Fix it
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                  <div className="flex-1 overflow-hidden">
+                    <HtmlFrame
+                      html={active.content}
+                      title={shown.title}
+                      className="h-full"
+                      onRuntimeError={(message) =>
+                        setFrameError((prev) =>
+                          prev && prev.key === active.key
+                            ? prev
+                            : { key: active.key, message }
+                        )
+                      }
                     />
-                    {active.streaming && (
-                      <span className="mt-1 inline-block h-4 w-2 animate-pulse rounded-sm bg-foreground/60" />
-                    )}
-                  </>
-                ) : (
-                  // First tokens not in yet — skeleton lines
-                  <div className="space-y-3 pt-2" aria-hidden>
-                    <div className="h-5 w-2/3 animate-pulse rounded bg-muted" />
-                    <div className="h-3.5 w-full animate-pulse rounded bg-muted" />
-                    <div className="h-3.5 w-full animate-pulse rounded bg-muted" />
-                    <div className="h-3.5 w-4/5 animate-pulse rounded bg-muted" />
                   </div>
-                )}
+                </div>
+              ) : (
+                <div className="flex flex-1 items-center justify-center overflow-hidden">
+                  <VisualizationBuilding chars={active.content.length} />
+                </div>
+              )
+            ) : (
+              <div ref={scrollRef} className="flex-1 overflow-y-auto">
+                <div className="mx-auto w-full max-w-[700px] px-5 py-6 lg:px-8">
+                  {active.content ? (
+                    <>
+                      <MemoizedMarkdown
+                        content={active.content}
+                        id={`artifact-${shown.id}-v${activeIndex}`}
+                      />
+                      {active.streaming && (
+                        <span className="mt-1 inline-block h-4 w-2 animate-pulse rounded-sm bg-foreground/60" />
+                      )}
+                    </>
+                  ) : (
+                    // First tokens not in yet — skeleton lines
+                    <div className="space-y-3 pt-2" aria-hidden>
+                      <div className="h-5 w-2/3 animate-pulse rounded bg-muted" />
+                      <div className="h-3.5 w-full animate-pulse rounded bg-muted" />
+                      <div className="h-3.5 w-full animate-pulse rounded bg-muted" />
+                      <div className="h-3.5 w-4/5 animate-pulse rounded bg-muted" />
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Version bar — ai-chatbot style footer, only with history */}
             {versions.length > 1 && (

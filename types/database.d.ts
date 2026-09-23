@@ -158,6 +158,60 @@ export type Database = {
         }
         Relationships: []
       }
+      generated_images: {
+        Row: {
+          chat_session_id: string
+          created_at: string
+          data_base64: string
+          height: number
+          id: string
+          media_type: string
+          prompt: string
+          size_bytes: number
+          user_id: string
+          width: number
+        }
+        Insert: {
+          chat_session_id: string
+          created_at?: string
+          data_base64: string
+          height: number
+          id?: string
+          media_type?: string
+          prompt: string
+          size_bytes: number
+          user_id: string
+          width: number
+        }
+        Update: {
+          chat_session_id?: string
+          created_at?: string
+          data_base64?: string
+          height?: number
+          id?: string
+          media_type?: string
+          prompt?: string
+          size_bytes?: number
+          user_id?: string
+          width?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generated_images_chat_session_id_fkey"
+            columns: ["chat_session_id"]
+            isOneToOne: false
+            referencedRelation: "chat_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generated_images_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_parts: {
         Row: {
           chat_session_id: string

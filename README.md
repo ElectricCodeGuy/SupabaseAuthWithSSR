@@ -40,7 +40,7 @@ Most chat templates stop at "streaming text in a box." This one is the full prod
 
 |  |  |  |
 | --- | --- | --- |
-| **🔐 Real auth, done right** — Supabase SSR with signup, signin, magic links, password reset, email templates and RLS on every table. No client-side key exposure. | **🧠 Eight AI tools** — document RAG, web search, artifacts, memory, conversation search, charts, PDFs. The AI decides when to use them; you get typed UI components for each. | **💰 Every token accounted for** — per-step usage stored on the message itself, rolled up into user and admin dashboards with cache-aware cost estimates. |
+| **🔐 Real auth, done right** — Supabase SSR with signup, signin, magic links, password reset, email templates and RLS on every table. No client-side key exposure. | **🧠 Eight AI tools** — document RAG, web search, artifacts, memory, conversation search, visualizations, PDFs, image generation. The AI decides when to use them; you get typed UI components for each. | **💰 Every token accounted for** — per-step usage stored on the message itself, rolled up into user and admin dashboards with cache-aware cost estimates. |
 | **⚡ Prompt caching that actually works** — a two-tier Anthropic cache setup (static system + tools block, moving conversation breakpoint) serves multi-step tool turns at ~10% of normal input price. | **📄 Documents in, answers out** — upload a PDF and it's OCR'd (Mistral), embedded (Voyage), and searchable via hybrid vector + keyword RRF search. Fully autonomous — no file pickers. | **🗄️ One SQL file** — the entire schema (tables, RLS, triggers, storage policies, search functions, model seed) is a single idempotent `setup.sql`. Re-run it to upgrade. |
 
 ## Quickstart
@@ -64,6 +64,7 @@ npm run dev
 | `MISTRAL_API_KEY` | [Mistral](https://mistral.ai/) | PDF OCR (`mistral-ocr-latest`) |
 | `VOYAGE_API_KEY` | [Voyage](https://www.voyageai.com/) | Document embeddings (`voyage-4-large`) |
 | `EXA_API_KEY` | [Exa](https://exa.ai/) | Web search |
+| `IMAGE_GEN_BASE_URL` *(optional)* | Your own [Qwen-Image-2.1](https://huggingface.co/Qwen/Qwen-Image-2.1) server ([setup](#running-the-local-image-server)) | `generateImage` tool — defaults to `http://localhost:8004/v1` |
 
 4. **Sign up** at `http://localhost:3000/signup` with a real email and click the confirmation link.
 5. **(Optional) Make yourself admin** to unlock `/chat/admin`:
@@ -72,7 +73,7 @@ npm run dev
 UPDATE public.users SET is_admin = true WHERE email = 'you@example.com';
 ```
 
-**Upgrading an existing install?** Just re-run [`database/setup.sql`](database/setup.sql) — it is idempotent (`IF NOT EXISTS` / `CREATE OR REPLACE` throughout), so it adds only what's new in v5: `user_memories`, `users.is_admin`, the `message_parts.usage` JSON column, `chat_sessions.settings`, the hybrid `match_documents` function, and the Anthropic model catalog (Sonnet 5, Opus 4.8, Fable 5 with official API pricing).
+**Upgrading an existing install?** Just re-run [`database/setup.sql`](database/setup.sql) — it is idempotent (`IF NOT EXISTS` / `CREATE OR REPLACE` throughout), so it adds only what's new in v5: `user_memories`, `users.is_admin`, the `message_parts.usage` JSON column, `chat_sessions.settings`, the hybrid `match_documents` function, the Anthropic model catalog (Sonnet 5, Opus 4.8, Fable 5 with official API pricing), and the `generated_images` table behind the image tool.
 
 > **v5.0.1 hardening:** re-running `setup.sql` also applies two security fixes — column-level write privileges on `public.users` (a user can no longer flip their own `is_admin` through PostgREST) and a 50 MB / PDF-only limit on the `userfiles` bucket. Run it once more after the bucket exists so the bucket limits take effect.
 
@@ -90,11 +91,15 @@ Ask for a document and it opens in a side panel next to the chat, streaming in l
 
 The AI renders bar, line, area and pie charts with a colorblind-safe palette, tooltips, legends and a data-table fallback. Below, it researched SaaS churn benchmarks on the web, checked the user's documents for internal numbers, charted the spread — then wrote the same analysis into a polished PDF report and saved it to the user's files:
 
-![The chart tool rendering churn benchmarks after a web search, with the PDF report saved below](public/images/ChartToolImage.png)
+![The visualization tool rendering churn benchmarks after a web search, with the PDF report saved below](public/images/ChartToolImage.png)
 
 The `createPDF` tool renders style-templated documents (report/memo/letter/contract — cover page, table of contents, callouts, tables) with `@react-pdf/renderer`. The built-in file manager previews any PDF, and uploads are OCR'd, embedded and indexed for RAG automatically:
 
 ![The file manager previewing an AI-generated churn benchmark report PDF](public/images/FileManImage.png)
+
+### 🖼️ Image generation on your own GPU
+
+Ask for a picture, poster, logo or sticker and the model writes a detailed prompt for `generateImage`, which renders it on a local [Qwen-Image-2.1](https://huggingface.co/Qwen/Qwen-Image-2.1) server — no per-image API cost. A placeholder at the chosen aspect ratio shows while the GPU works, then the image lands inline with open-full-size and download buttons. Transparent (RGBA) output is supported for stickers and cut-outs, shown over a checkerboard. An RTX 5090 (32 GB VRAM) is recommended to run the model.
 
 ### 🧠 Memory & model control
 
@@ -168,9 +173,57 @@ Every tool follows the same pattern — a server-side definition in `app/api/cha
 | `websiteSearchTool` | Exa web search — the AI's query goes straight to Exa (no intermediate LLM round-trip), returning full text plus query-relevant highlights | Exa API key |
 | `saveMemory` | Long-term memory: save / list / delete facts the user asks to remember; injected into every system prompt | `user_memories` table |
 | `conversationSearch` | Keyword search across all the user's past chats, with snippets and links | none (reuses chat tables) |
-| `createChart` | Interactive bar/line/area/pie charts rendered with Recharts from a Zod-validated spec | none |
+| `createVisualization` / `updateVisualization` | Interactive HTML visualizations (charts, dashboards, diagrams, flows, timelines, calculators) the model writes as a complete HTML document, rendered in a sandboxed iframe inline or in the side panel; libraries from a CDN whitelist (chart.js, echarts, d3, mermaid, three) | none |
 | `createPDF` | One-shot polished PDFs — templates, cover page, TOC, callouts, tables, images — uploaded to Storage and previewable in the file manager | `@react-pdf/renderer` + bundled Inter fonts |
 | `createArtifact` / `updateArtifact` | The document workspace: complete Markdown documents streamed live into a side panel, with version history | none (versions ARE the stored tool calls) |
+| `generateImage` | Text-to-image via a local [Qwen-Image-2.1](https://huggingface.co/Qwen/Qwen-Image-2.1) server (7 aspect ratios up to 2752×1536, optional transparent background); re-encoded to lossy WebP with `sharp` and stored in the database | Local image server + `generated_images` table |
+
+**How image generation works:** the model only writes the prompt, aspect ratio and a `transparent` flag. The tool calls `POST {IMAGE_GEN_BASE_URL}/images/generations` (OpenAI-compatible, via the AI SDK's `generateImage`), shrinks the ~6 MB 2K PNG to a 1536 px-long-edge WebP at quality 82 (typically 150–400 KB, alpha preserved), and inserts the bytes as base64 into `generated_images` — no storage bucket. The tool *output* carries only the image id and `/api/images/[id]`, never the bytes, so `message_parts`, the request body the client re-sends every turn, and the model's context all stay small. The image route checks the session and serves the row only to its owner (RLS + an explicit `user_id` filter) with a long-lived `private, immutable` cache header; deleting a chat cascades to its images.
+
+<details id="running-the-local-image-server">
+<summary><strong>🖥️ Running the local image server</strong> — any server that speaks the OpenAI images API works</summary>
+
+<br>
+
+> **Hardware:** an NVIDIA RTX 5090 (32 GB VRAM) is recommended to run Qwen-Image-2.1 locally.
+
+The tool needs an endpoint that accepts `POST /v1/images/generations` with `{ model, prompt, n, size: "2048x2048", response_format: "b64_json" }` and returns `{ "data": [{ "b64_json": "..." }] }`. Serving [Qwen-Image-2.1](https://huggingface.co/Qwen/Qwen-Image-2.1) through [vLLM-Omni](https://github.com/vllm-project/vllm-omni) gives you that out of the box; alternatively wrap the diffusers pipeline in a few lines of FastAPI:
+
+```python
+# image_server.py — pip install torch diffusers transformers accelerate pillow fastapi uvicorn
+import base64, io, torch
+from fastapi import FastAPI
+from pydantic import BaseModel
+from diffusers import QwenImage21Pipeline
+
+pipe = QwenImage21Pipeline.from_pretrained(
+    "Qwen/Qwen-Image-2.1", torch_dtype=torch.bfloat16
+).to("cuda")
+app = FastAPI()
+
+class Req(BaseModel):
+    prompt: str
+    size: str = "2048x2048"
+    num_inference_steps: int = 40
+    model: str | None = None
+    n: int = 1
+    response_format: str = "b64_json"
+
+@app.post("/v1/images/generations")
+def generate(req: Req):
+    width, height = map(int, req.size.split("x"))
+    image = pipe(prompt=req.prompt, width=width, height=height,
+                 num_inference_steps=req.num_inference_steps).images[0]
+    buf = io.BytesIO()
+    image.save(buf, format="PNG")
+    return {"data": [{"b64_json": base64.b64encode(buf.getvalue()).decode()}]}
+
+# uvicorn image_server:app --host 0.0.0.0 --port 8004
+```
+
+Optional env overrides: `IMAGE_GEN_MODEL` (default `Qwen/Qwen-Image-2.1`), `IMAGE_GEN_STEPS` (sent as `num_inference_steps`), `IMAGE_GEN_TIMEOUT_MS` (default `600000`, 10 min). A 2K image at 40 steps can take several minutes, which is why the chat route's `maxDuration` is 800 s. If the server is down, the tool returns an error the model relays to the user, and the chat shows a failed-image card.
+
+</details>
 
 **How the artifacts panel works:** the document content travels in the tool *input*, so the panel gets live typewriter streaming for free from the SDK's input-streaming states, and every create/update is automatically a persisted version. On desktop the panel is an in-flow flex sibling that pushes the chat aside (width animates 0 ↔ 45%); on mobile it's a slide-over. It auto-opens on new versions, remembers when you dismissed it, and lets you pin and browse older versions.
 
@@ -224,10 +277,11 @@ app/
 │   ├── landing/          #   landing page sections (Hero, live ChatDemo, …)
 │   └── auth/             #   shared sign-in / sign-up content
 └── api/
+    ├── images/[id]/      # Serves generated images (owner-only)
     └── chat/
         └── tools/        # documentChat · WebsiteSearchTool · MemoryTool
-                          # ConversationSearchTool · ChartTool · CreatePDFTool
-                          # ArtifactTool
+                          # ConversationSearchTool · VisualizationTool · CreatePDFTool
+                          # ArtifactTool · ImageGenerationTool
 ```
 
 Everything signed-in lives under `/chat` — `/chat/filer`, `/chat/usage`, `/chat/admin`, `/chat/profile`, `/chat/settings` — so a single `app/chat/layout.tsx` provides the dashboard shell (sidebar, header, AI settings modal) and it persists across all of them. The public pages (`/`, `/signin`, `/signup`) render the navbar and footer themselves.
@@ -236,7 +290,7 @@ Everything signed-in lives under `/chat` — `/chat/filer`, `/chat/usage`, `/cha
 
 The entire schema — tables, indexes, RLS policies, the signup trigger, storage policies, and the `match_documents` search function — lives in a single idempotent file: [`database/setup.sql`](database/setup.sql). Run it in the Supabase SQL Editor and you're done; every statement uses `IF NOT EXISTS` / `CREATE OR REPLACE`, so it's safe to re-run.
 
-> The schema covers users (with the `is_admin` flag), chat sessions (with `is_favorite` / `is_public` share flags and the `settings` JSON column that persists each conversation's model), incremental `message_parts` (with the per-step `usage` JSON column), long-term `user_memories`, document metadata, and the `pgvector` embeddings table with an HNSW index tuned for sub-second similarity search.
+> The schema covers users (with the `is_admin` flag), chat sessions (with `is_favorite` / `is_public` share flags and the `settings` JSON column that persists each conversation's model), incremental `message_parts` (with the per-step `usage` JSON column), long-term `user_memories`, `generated_images` (WebP bytes from the image tool), document metadata, and the `pgvector` embeddings table with an HNSW index tuned for sub-second similarity search.
 
 <details>
 <summary><strong>📖 Deep dive: tuning the HNSW vector index</strong> — <code>m</code>/<code>ef_construction</code>, <code>halfvec</code>, the no-filtering rule, and hard-won production advice</summary>
@@ -419,7 +473,7 @@ For the auth flow to work with the API routes in this codebase, update your emai
 
 Everything talks to Supabase from the server. The anon key never reaches the browser — every query runs in a Server Component, Server Action or route handler (the one browser-client factory, `lib/client/client.ts`, is unused and imports `server-only`, so it can never end up in a bundle). The service-role key is only used where a request legitimately spans users, and every table has RLS. On top of that:
 
-- **Route handlers verify the caller, the origin and the input.** `/api/chat`, `/api/processdoc` and the two `/api/upload/*` routes check the session, reject cross-origin requests (Next.js only does this for Server Actions, not for route handlers), validate the body with zod, and refuse storage paths outside the caller's own `<userId>/` folder — the service-role client bypasses storage RLS, so this check is what stops one user from having another user's PDF OCR'd into their own documents.
+- **Route handlers verify the caller, the origin and the input.** `/api/chat`, `/api/processdoc` and the two `/api/upload/*` routes check the session (as does `/api/images/[id]`, which only ever returns the caller's own images), reject cross-origin requests (Next.js only does this for Server Actions, not for route handlers), validate the body with zod, and refuse storage paths outside the caller's own `<userId>/` folder — the service-role client bypasses storage RLS, so this check is what stops one user from having another user's PDF OCR'd into their own documents.
 - **Least privilege by default.** Signed URLs, uploads, quota checks and every chat mutation go through the session client so RLS applies. The service role is confined to the admin dashboard, the public share page (gated on `is_public`) and the long-running OCR job.
 - **Column-level grants on `users`.** RLS scopes rows, not columns; `setup.sql` revokes table-level writes from the API roles and grants `UPDATE` only on `full_name` and `selected_model`, so `is_admin` can only change through the service role.
 - **Baseline response headers** (`X-Frame-Options`, `frame-ancestors 'none'`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`, HSTS) are set in `next.config.ts`. A nonce-based script CSP is the natural next step.
@@ -442,6 +496,7 @@ Every route directory follows the same shape — `page.tsx` renders, `fetch.ts` 
 | AI | Vercel AI SDK v7 + Anthropic Claude (Sonnet 5 / Opus 4.8 / Fable 5, prompt caching, adaptive thinking) |
 | RAG pipeline | Mistral OCR → Voyage `voyage-4-large` embeddings → hybrid pgvector + FTS search (RRF) |
 | Web search | Exa (full text + highlights) |
+| Image generation | Local [Qwen-Image-2.1](https://huggingface.co/Qwen/Qwen-Image-2.1) (OpenAI-compatible images API) → `sharp` WebP, stored in Postgres |
 | UI | Tailwind CSS v4, shadcn/ui, Recharts, `@react-pdf/renderer` |
 
 ---
