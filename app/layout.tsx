@@ -5,6 +5,13 @@ import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Outfit, Geist_Mono } from 'next/font/google';
 import './globals.css';
+import {
+  AUTHOR,
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  SITE_TITLE,
+  SITE_URL
+} from '@/lib/site';
 
 // Fonts are wired through CSS variables, not applied directly:
 // next/font only DEFINES --font-sans / --font-mono on <body>; globals.css
@@ -28,10 +35,26 @@ const fontMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('http://localhost:3000/'),
-  title: 'SupaChat — AI Chat Starter for Next.js & Supabase',
-  description:
-    'Open-source AI chat starter: Supabase SSR auth, Claude-powered chat with document RAG, artifacts, memory, charts, PDF generation and per-token usage dashboards.'
+  metadataBase: new URL(SITE_URL),
+  title: SITE_TITLE,
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  authors: [{ name: AUTHOR.name, url: AUTHOR.url }],
+  creator: AUTHOR.name,
+  // openGraph.url and alternates.canonical are set per page (see
+  // app/page.tsx): metadata inherits down the tree, so a canonical of '/'
+  // here would mark every other route as a duplicate of the landing page.
+  openGraph: {
+    type: 'website',
+    siteName: SITE_NAME,
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION
+  }
 };
 
 export default async function RootLayout({

@@ -6,6 +6,11 @@ import NavBar from '@/app/components/layout/Navbar/Header';
 import Footer from '@/app/components/layout/Footer/Footer';
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/server/supabase';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  alternates: { canonical: '/signin' }
+};
 
 export default async function AuthPage() {
   const session = await getSession();

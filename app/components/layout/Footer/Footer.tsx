@@ -92,10 +92,18 @@ const Footer: React.FC = () => {
         </div>
 
         <div className="mt-10 flex flex-col items-center justify-between gap-2 border-t pt-6 text-xs text-muted-foreground sm:flex-row">
+          <p>© {new Date().getFullYear()} SupabaseAuthWithSSR · MIT licensed</p>
           <p>
-            © {new Date().getFullYear()} SupabaseAuthWithSSR · MIT licensed
+            Built with Next.js, Supabase &amp; Claude · Built by{' '}
+            <a
+              href="https://www.olh.dk"
+              target="_blank"
+              rel="noopener"
+              className="transition-colors hover:text-foreground"
+            >
+              Oscar Lauge Hoffmann
+            </a>
           </p>
-          <p>Built with Next.js, Supabase &amp; Claude</p>
         </div>
       </div>
     </footer>

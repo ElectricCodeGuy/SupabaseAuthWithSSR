@@ -1,7 +1,13 @@
 {
   "name": "supachat",
-  "version": "5.0.1",
+  "version": "5.1.0",
   "license": "MIT",
+  "author": "Oscar Lauge Hoffmann (https://www.olh.dk)",
+  "homepage": "https://www.supa-chat.dev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ElectricCodeGuy/SupabaseAuthWithSSR"
+  },
   "scripts": {
     "dev": "next dev --turbo",
     "build": "next build",

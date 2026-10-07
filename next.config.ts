@@ -29,8 +29,7 @@ const nextConfig: NextConfig = {
     staleTimes: {
       dynamic: 30,
       static: 180
-    },
-    appNewScrollHandler: true
+    }
   },
   logging: {
     browserToTerminal: true

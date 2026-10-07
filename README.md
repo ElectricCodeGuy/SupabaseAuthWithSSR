@@ -11,12 +11,14 @@ Claude-powered chat with document RAG, a versioned artifacts workspace, long-ter
 interactive charts, PDF generation and per-token cost dashboards — on top of a complete
 Supabase SSR authentication system. Clone it, run one SQL file, ship.
 
-[![Version](https://img.shields.io/badge/version-5.0.1-c96442)](Changelog.md)
+[![Version](https://img.shields.io/badge/version-5.1.0-c96442)](Changelog.md)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE.md)
 [![Next.js 16](https://img.shields.io/badge/Next.js_16-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org)
 [![Supabase](https://img.shields.io/badge/Supabase_SSR-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com)
 [![AI SDK v7](https://img.shields.io/badge/AI_SDK-v7-000000?logo=vercel&logoColor=white)](https://sdk.vercel.ai)
 [![Claude](https://img.shields.io/badge/Anthropic-Claude-c96442)](https://www.anthropic.com)
+
+**[Live site → supa-chat.dev](https://www.supa-chat.dev)** · Built and maintained by [Oscar Lauge Hoffmann](https://www.olh.dk), founder of [Lovguiden](https://www.lovguiden.dk).
 
 **[Quickstart](#quickstart)** · **[Tour](#the-tour)** · **[Tool Suite](#the-ai-tool-suite)** · **[Architecture](#application-structure)** · **[Database Setup](#database-setup)** · **[Changelog](Changelog.md)**
 
