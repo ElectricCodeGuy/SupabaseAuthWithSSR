@@ -266,7 +266,10 @@ export async function POST(req: NextRequest) {
           } satisfies AnthropicProviderOptions
         },
     tools: {
-      websiteSearchTool: websiteSearchTool,
+      websiteSearchTool: websiteSearchTool({
+        chatSessionId,
+        modelName: selectedModel
+      }),
       searchUserDocument: searchUserDocument({ userId }),
       saveMemory: saveMemory({ userId }),
       conversationSearch: conversationSearch({
