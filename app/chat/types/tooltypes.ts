@@ -22,7 +22,10 @@ const _toolSet = {
   searchUserDocument: searchUserDocument({
     userId: '123'
   }),
-  websiteSearchTool: websiteSearchTool,
+  websiteSearchTool: websiteSearchTool({
+    chatSessionId: '123',
+    modelName: '123'
+  }),
   saveMemory: saveMemory({ userId: '123' }),
   conversationSearch: conversationSearch({
     userId: '123',

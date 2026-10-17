@@ -13,10 +13,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "types": "supabase gen types typescript --project-id fqwpshzgiqthgzwtucxz > types/database.d.ts"
+    "types": "supabase gen types typescript --project-id fqwpshzgiqthgzwtucxz > types/database.d.ts",
+    "test:search": "node --experimental-strip-types --test app/api/chat/tools/WebsiteSearchTool.test.mjs"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.1",
+    "@ai-sdk/mcp": "^2.0.69",
     "@ai-sdk/openai-compatible": "^3.0.45",
     "@ai-sdk/react": "^4.0.5",
     "@date-fns/tz": "^1.2.0",

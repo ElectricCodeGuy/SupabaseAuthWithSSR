@@ -65,7 +65,7 @@ npm run dev
 | `ANTHROPIC_API_KEY` | [Anthropic](https://console.anthropic.com/dashboard) | Chat, chat titles, document metadata |
 | `MISTRAL_API_KEY` | [Mistral](https://mistral.ai/) | PDF OCR (`mistral-ocr-latest`) |
 | `VOYAGE_API_KEY` | [Voyage](https://www.voyageai.com/) | Document embeddings (`voyage-4-large`) |
-| `EXA_API_KEY` | [Exa](https://exa.ai/) | Web search |
+| `EXA_API_KEY` | [Exa](https://exa.ai/) | Web search with the default Exa provider; optional with Parallel |
 | `IMAGE_GEN_BASE_URL` *(optional)* | Your own [Qwen-Image-2.1](https://huggingface.co/Qwen/Qwen-Image-2.1) server ([setup](#running-the-local-image-server)) | `generateImage` tool — defaults to `http://localhost:8004/v1` |
 
 4. **Sign up** at `http://localhost:3000/signup` with a real email and click the confirmation link.
@@ -172,7 +172,7 @@ Every tool follows the same pattern — a server-side definition in `app/api/cha
 | Tool | What it does | Extra infra |
 | --- | --- | --- |
 | `searchUserDocument` | RAG over uploaded PDFs: list the newest documents, find one by name, read a page range or full content, or run a hybrid vector + keyword search (RRF fusion) | pgvector + Voyage embeddings |
-| `websiteSearchTool` | Exa web search — the AI's query goes straight to Exa (no intermediate LLM round-trip), returning full text plus query-relevant highlights | Exa API key |
+| `websiteSearchTool` | Web search with inline citations: Exa full text + highlights by default, or Parallel search excerpts | Exa API key, or no search key with Parallel |
 | `saveMemory` | Long-term memory: save / list / delete facts the user asks to remember; injected into every system prompt | `user_memories` table |
 | `conversationSearch` | Keyword search across all the user's past chats, with snippets and links | none (reuses chat tables) |
 | `createVisualization` / `updateVisualization` | Interactive HTML visualizations (charts, dashboards, diagrams, flows, timelines, calculators) the model writes as a complete HTML document, rendered in a sandboxed iframe inline or in the side panel; libraries from a CDN whitelist (chart.js, echarts, d3, mermaid, three) | none |
@@ -230,6 +230,25 @@ Optional env overrides: `IMAGE_GEN_MODEL` (default `Qwen/Qwen-Image-2.1`), `IMAG
 **How the artifacts panel works:** the document content travels in the tool *input*, so the panel gets live typewriter streaming for free from the SDK's input-streaming states, and every create/update is automatically a persisted version. On desktop the panel is an in-flow flex sibling that pushes the chat aside (width animates 0 ↔ 45%); on mobile it's a slide-over. It auto-opens on new versions, remembers when you dismissed it, and lets you pin and browse older versions.
 
 **How the caching works:** the system prompt is split into a *static* block (instructions + tool definitions) with an Anthropic `cacheControl` breakpoint, and a *dynamic* block (date, memories, artifact state) that stays out of the cache. Each generation step re-places a moving breakpoint on the last message, so in a 10-step tool turn, steps 2–10 read the whole conversation from cache at ~10% of the input price. The usage dashboard shows the hit rate so you can see it working.
+
+### Optional keyless web search
+
+To use [Parallel Search MCP](https://docs.parallel.ai/integrations/mcp/search-mcp)
+for `websiteSearchTool`, set this in `.env.local` and restart the app:
+
+```dotenv
+WEB_SEARCH_PROVIDER=parallel
+```
+
+Parallel connects over HTTP to `https://search.parallel.ai/mcp`. Anonymous search
+is free with lower rate limits, uses Fast mode, and needs no account or API key.
+It returns source URLs and relevant excerpts in the existing web search cards;
+it does not fetch full pages. Searches time out after 30 seconds, and service
+errors return the tool's existing search-failed message. Queries are sent to the
+selected provider. Set `WEB_SEARCH_PROVIDER=exa` (or leave it unset) to use Exa
+with `EXA_API_KEY`. The provider setting applies to the whole deployment.
+
+Run the search tool's network-mocked checks with `npm run test:search` on Node.js 22.18+.
 
 ## Usage Tracking & Dashboards
 
@@ -497,7 +516,7 @@ Every route directory follows the same shape — `page.tsx` renders, `fetch.ts` 
 | Auth & Database | Supabase (SSR cookies, Postgres, RLS, Storage, pgvector) |
 | AI | Vercel AI SDK v7 + Anthropic Claude (Sonnet 5 / Opus 4.8 / Fable 5, prompt caching, adaptive thinking) |
 | RAG pipeline | Mistral OCR → Voyage `voyage-4-large` embeddings → hybrid pgvector + FTS search (RRF) |
-| Web search | Exa (full text + highlights) |
+| Web search | Exa (full text + highlights), optional Parallel Search MCP (excerpts) |
 | Image generation | Local [Qwen-Image-2.1](https://huggingface.co/Qwen/Qwen-Image-2.1) (OpenAI-compatible images API) → `sharp` WebP, stored in Postgres |
 | UI | Tailwind CSS v4, shadcn/ui, Recharts, `@react-pdf/renderer` |
 
